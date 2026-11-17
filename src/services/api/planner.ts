@@ -5,6 +5,7 @@ import type {
   ConfirmPlanningCaseBody,
   ForceWindowBody,
   PatchPlannerSettingsBody,
+  PlannerAccuracy,
   PlannerForecast,
   PlannerRun,
   PlanningCaseDetail,
@@ -95,5 +96,11 @@ export const replanTask = async (taskId: string): Promise<PlanningCaseDetail> =>
     undefined,
     v2,
   );
+  return data;
+};
+
+/** GET /v2/fleet/maintenance-planner/accuracy: cuánto acertó la fecha proyectada de los vencimientos en las tareas cerradas (últimos 180 días). */
+export const getPlannerAccuracy = async (): Promise<PlannerAccuracy> => {
+  const { data } = await http.get<PlannerAccuracy>('/fleet/maintenance-planner/accuracy', v2);
   return data;
 };

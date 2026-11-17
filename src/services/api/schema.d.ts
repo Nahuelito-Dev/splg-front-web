@@ -24144,6 +24144,28 @@ export interface components {
       conversionRate: number | null;
       /** @description Total de los pedidos que crearon las aceptadas (sin los cancelados) */
       acceptedRevenue: number;
+      /** @description Acierto de la fecha proyectada de recompra contra la primera compra entregada después de la invitación */
+      accuracy: components['schemas']['PredictionAccuracyDto'];
+    };
+    PredictionAccuracyDto: {
+      /** @description Predicciones que ya se pudieron comparar */
+      measured: number;
+      /** @description Error medio absoluto en días; `null` si no hay nada medido */
+      meanAbsoluteErrorDays: number | null;
+      /** @description Parte de las medidas dentro del margen, de 0 a 1; `null` si no hay nada medido */
+      withinMarginRate: number | null;
+      /** @description Margen en días de `withinMarginRate` */
+      marginDays: number;
+      /** @description Error medio con signo en días: positivo = pasó después de lo proyectado, negativo = antes; `null` si no hay nada medido */
+      meanBiasDays: number | null;
+    };
+    PlannerAccuracyResponseDto: {
+      /** Format: date-time */
+      from: string;
+      /** Format: date-time */
+      to: string;
+      /** @description Primera fecha proyectada del vencimiento por kilometraje contra la fecha en que se hizo el trabajo, en las tareas cerradas del período */
+      accuracy: components['schemas']['PredictionAccuracyDto'];
     };
     RunRepurchaseDto: {
       /** @description Con true sólo calcula a quién se invitaría: no escribe, no vence nada y no avisa a nadie. Por omisión, false */

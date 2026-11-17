@@ -3,6 +3,7 @@ import {
   cancelPlanningCase,
   confirmPlanningCase,
   forceTaskWindow,
+  getPlannerAccuracy,
   getPlannerForecast,
   getPlannerSettings,
   getPlanningCase,
@@ -54,6 +55,10 @@ export const usePlannerForecast = (carId?: string, { enabled = true }: Options =
     queryFn: () => getPlannerForecast(carId),
     enabled,
   });
+
+/** Cuánto acierta la fecha proyectada de los vencimientos, contra cuándo se hizo el trabajo. */
+export const usePlannerAccuracy = ({ enabled = true }: Options = {}) =>
+  useQuery({ queryKey: keys.detail('accuracy'), queryFn: getPlannerAccuracy, enabled });
 
 export const usePlannerSettings = ({ enabled = true }: Options = {}) =>
   useQuery({ queryKey: keys.detail('settings'), queryFn: getPlannerSettings, enabled });

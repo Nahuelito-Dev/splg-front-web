@@ -6,6 +6,7 @@ const state = vi.hoisted(() => ({
   needsDistributor: false,
   cases: vi.fn(),
   forecast: vi.fn(),
+  accuracy: vi.fn(),
   detail: vi.fn(),
   settings: vi.fn(),
   run: {} as Record<string, unknown>,
@@ -23,6 +24,7 @@ vi.mock('../../../hooks', async (importOriginal) => ({
 }));
 vi.mock('../../../services/queries/planner', () => ({
   usePlanningCases: (...args: unknown[]) => state.cases(...args) as unknown,
+  usePlannerAccuracy: () => state.accuracy() as unknown,
   usePlannerForecast: (...args: unknown[]) => state.forecast(...args) as unknown,
   usePlanningCase: (...args: unknown[]) => state.detail(...args) as unknown,
   usePlannerSettings: (...args: unknown[]) => state.settings(...args) as unknown,
@@ -159,9 +161,24 @@ const FORECAST = {
   ],
 };
 
+const NO_ACCURACY = {
+  measured: 0,
+  meanAbsoluteErrorDays: null,
+  withinMarginRate: null,
+  marginDays: 7,
+  meanBiasDays: null,
+};
+
+const WITH_ACCURACY = {
+  from: '2026-05-01T03:00:00.000Z',
+  to: '2026-11-18T03:00:00.000Z',
+  accuracy: { measured: 4, meanAbsoluteErrorDays: 3.2, withinMarginRate: 0.75, marginDays: 7, meanBiasDays: -1 },
+};
+
 const setup = (over: { cases?: unknown; forecast?: unknown } = {}) => {
   state.cases.mockReturnValue(over.cases ?? ok({ data: [CASE], total: 1, counts: COUNTS }));
   state.forecast.mockReturnValue(over.forecast ?? ok(FORECAST));
+  state.accuracy.mockReturnValue(ok({ from: '', to: '', accuracy: NO_ACCURACY }));
   state.detail.mockReturnValue(ok(DETAIL));
   state.settings.mockReturnValue(ok(undefined, { data: undefined }));
   state.run = mutation();
@@ -178,6 +195,19 @@ afterEach(() => {
 const draw = (url = '/fleet/planner') => renderPage(<FleetPlanner />, { url });
 
 describe('FleetPlanner: casos', () => {
+  it('la tarjeta de acierto muestra los números del planificador y el vacío sin trabajos cerrados', () => {
+    setup();
+    state.accuracy.mockReturnValue(ok(WITH_ACCURACY));
+    draw('/fleet/planner');
+    expect(screen.getByText('3,2 días')).toBeInTheDocument();
+    expect(screen.getByText('75 %')).toBeInTheDocument();
+    expect(screen.getByText(/Tiende a adelantarse/)).toBeInTheDocument();
+    cleanup();
+    state.accuracy.mockReturnValue(ok({ ...WITH_ACCURACY, accuracy: NO_ACCURACY }));
+    draw('/fleet/planner');
+    expect(screen.getByText('Todavía no hay trabajos para comparar')).toBeInTheDocument();
+  });
+
   it('lista los casos con su estado y por qué se escaló', () => {
     setup();
     draw();

@@ -11,7 +11,8 @@ import {
   type TabItem,
 } from '../../../common/components/ui';
 import { usePermissions, useUrlParam } from '../../../hooks';
-import { usePlannerSettings, useRunPlanner } from '../../../services/queries/planner';
+import { PredictionAccuracyCard } from '../../../common/components/PredictionAccuracyCard';
+import { usePlannerAccuracy, usePlannerSettings, useRunPlanner } from '../../../services/queries/planner';
 import { notify } from '../../../utils/notifications';
 import { PlannerCasesTab } from './PlannerCasesTab';
 import { PlannerForecastTab } from './PlannerForecastTab';
@@ -32,6 +33,7 @@ export const FleetPlanner = () => {
   const { needsDistributor, canWrite, writeHint } = usePermissions();
   const [tab, setTab] = useUrlParam('tab', 'cases');
   const [configuring, setConfiguring] = useState(false);
+  const accuracy = usePlannerAccuracy({ enabled: !needsDistributor });
   const settings = usePlannerSettings({ enabled: configuring && !needsDistributor });
   const run = useRunPlanner();
   const active = tab === 'forecast' ? 'forecast' : 'cases';
@@ -77,12 +79,23 @@ export const FleetPlanner = () => {
           />
         </Card>
       ) : (
-        <Card>
-          <Tabs items={TABS} value={active} onChange={setTab} label="Secciones del planificador" idPrefix={TABS_ID} />
-          <div {...tabPanelProps(TABS_ID, active)} className="p-4">
-            {active === 'cases' ? <PlannerCasesTab /> : <PlannerForecastTab />}
-          </div>
-        </Card>
+        <>
+          <PredictionAccuracyCard
+            accuracy={accuracy.data?.accuracy}
+            loading={accuracy.isPending}
+            error={accuracy.error}
+            onRetry={() => void accuracy.refetch()}
+            subtitle="Qué tan cerca estuvo la fecha proyectada del vencimiento de cuando se hizo el trabajo, en los últimos 180 días"
+            emptyHint="trabajos"
+            tendencySubject="el trabajo se hace"
+          />
+          <Card>
+            <Tabs items={TABS} value={active} onChange={setTab} label="Secciones del planificador" idPrefix={TABS_ID} />
+            <div {...tabPanelProps(TABS_ID, active)} className="p-4">
+              {active === 'cases' ? <PlannerCasesTab /> : <PlannerForecastTab />}
+            </div>
+          </Card>
+        </>
       )}
       {configuring && settings.data && (
         <PlannerSettingsModal
