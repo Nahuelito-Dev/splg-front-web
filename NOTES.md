@@ -1,19 +1,15 @@
-## v2.1.0 - 2026-11-17
+## v2.2.0 - 2026-11-17
 
 ### Funcionalidades
 
-- **chat:** ✨ métricas de mensajes y tablero de soporte en el panel (B4) (411eb2e)
-- **chat:** ✨ adjuntos en el chat del panel (CH7) (e7f66b9)
-
-### Correcciones
-
-- **auth:** 🐛 mensajes claros cuando falla el ingreso (cff5787)
-- **hosting:** 🐛 la pestaña abierta se actualiza sola con la versión nueva (e522b79)
-- **hosting:** 🐛 cabeceras de seguridad en todas las rutas del panel (41fcd5e)
+- **chat:** ✨ asignación automática en el panel: estado en línea, equipo de mensajes, topes y aviso de colisión (8b) (4e4dd20)
+- **roles:** ✨ roles del personal, cambiar rol y alta de admins con su rol (e07ce20)
+- **chat:** ✨ etiquetas de la bandeja, tiempo de respuesta esperado y cierre por inactividad en el panel (7c) (34d682d)
+- **observabilidad:** ✨ errores y trazas del panel en Sentry (7845702)
+- **assistant:** ✨ probador del asistente, preguntas sin respuesta y lote de pruebas en el panel (7b) (3b0afc8)
 
 ### Mantenimiento
 
-- **kit:** 💄 componentes comunes del panel según la auditoría de diseño (d57e12a)
-- 👷 más tiempo para el deploy (el gate en GitHub tarda ~20 min) (37f43f1)
-- 👷 avisos de Telegram con versión, cambios, paso que falló y duración (57ea3ad)
+- **marca:** 🔧 aclarar que OrixTech es Nahuel Wagner en el pie del menú (8f8be5c)
+- **release:** 👷 el release nocturno despacha el deploy y corre fuera de la hora en punto (97e84d1)
 
