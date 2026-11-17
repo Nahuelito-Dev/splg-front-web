@@ -57,7 +57,7 @@ export const PoweredByPlatform = ({ className }: { className?: string }) => {
   if (!platform?.name) return null;
   return (
     <p className={cx('text-center text-[10.5px] font-medium text-side-muted', className)}>
-      con tecnología de <span className="font-semibold text-side-text">{platform.name}</span>
+      con tecnología de <span className="font-semibold text-side-text">{platform.name}</span> (Nahuel Wagner)
     </p>
   );
 };
