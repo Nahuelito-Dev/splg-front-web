@@ -14141,6 +14141,66 @@ export interface components {
       /** @description Por qué se cancela */
       notes?: string;
     };
+    FleetTaskBoardCarDto: {
+      /** Format: uuid */
+      id: string;
+      plate: string | null;
+      label: string;
+    };
+    FleetTaskBoardAssigneeDto: {
+      /** Format: uuid */
+      employeeId: string;
+      name: string;
+    };
+    FleetTaskBoardCardDto: {
+      /** Format: uuid */
+      id: string;
+      title: string;
+      category: string;
+      status: 'forecast' | 'scheduled' | 'in_progress' | 'overdue' | 'done' | 'cancelled';
+      column: 'forecast' | 'scheduled' | 'in_progress' | 'done' | null;
+      isOverdue: boolean;
+      /** Format: date-time */
+      dueAt: string | null;
+      dueKm: number | null;
+      /** Format: date-time */
+      scheduledAt: string | null;
+      car: components['schemas']['FleetTaskBoardCarDto'] | null;
+      assignee: components['schemas']['FleetTaskBoardAssigneeDto'] | null;
+      attachmentsCount: number;
+      cost: number | null;
+      position: number;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    FleetTaskBoardColumnsDto: {
+      forecast: components['schemas']['FleetTaskBoardCardDto'][];
+      scheduled: components['schemas']['FleetTaskBoardCardDto'][];
+      in_progress: components['schemas']['FleetTaskBoardCardDto'][];
+      done: components['schemas']['FleetTaskBoardCardDto'][];
+    };
+    FleetTaskBoardDto: {
+      columns: components['schemas']['FleetTaskBoardColumnsDto'];
+      cancelledCount: number;
+    };
+    FleetTaskBoardEventDto: {
+      /** Format: uuid */
+      id: string;
+      change: 'created' | 'moved' | 'updated' | 'closed' | 'cancelled' | 'overdue' | 'reordered';
+      card: components['schemas']['FleetTaskBoardCardDto'];
+    };
+    MoveFleetTaskDto: {
+      /** @enum {string} */
+      to: 'forecast' | 'scheduled' | 'in_progress';
+      /** Format: date-time */
+      scheduledAt?: string;
+      /** Format: uuid */
+      beforeId?: string;
+      /** Format: uuid */
+      afterId?: string;
+      /** Format: date-time */
+      expectedUpdatedAt?: string;
+    };
     FleetTaskV2ResponseDto: {
       /** Format: uuid */
       taskId: string;

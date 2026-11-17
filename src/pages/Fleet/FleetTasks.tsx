@@ -11,7 +11,6 @@ import {
   EmptyState,
   ErrorState,
   IdentityCell,
-  TableSkeleton,
   PageHeader,
   RowActions,
   SearchInput,
@@ -23,23 +22,19 @@ import type { FleetTask } from '../../services/api/types';
 import { useCancelFleetTask, useFleetPlans, useFleetTasks } from '../../services/queries/fleet';
 import { confirm, notify } from '../../utils/notifications';
 import { FLEET_TASK_STATUS, labelOf } from '../../utils/statusLabels';
-import { FleetTaskCloseModal } from './components/FleetTaskCloseModal';
 import { FleetTaskFormModal } from './components/FleetTaskFormModal';
 import { FleetTaskDueCell } from './components/FleetTaskDueCell';
 import { FleetTaskOwnerCell } from './components/FleetTaskOwnerCell';
 import { taskSubject } from './fleetTaskSubject';
-import { FleetTaskKanban } from './components/FleetTaskKanban';
+import { FleetTaskBoardView } from './board/FleetTaskBoardView';
 import { useFleetOwners } from './components/useFleetOwners';
 
 type View = 'board' | 'table';
 
 const VIEWS = [
   { id: 'board', label: 'Tablero', icon: <ViewKanban aria-hidden="true" fontSize="inherit" /> },
-  { id: 'table', label: 'Tabla', icon: <TableRows aria-hidden="true" fontSize="inherit" /> },
+  { id: 'table', label: 'Lista', icon: <TableRows aria-hidden="true" fontSize="inherit" /> },
 ];
-
-/** El back pagina de a 100 como máximo: el tablero muestra hasta esa cantidad y avisa si hay más. */
-const BOARD_PAGE = { page: 0, pageSize: 100 };
 
 const STATUS_OPTIONS = [
   { value: '', label: 'Todos los estados' },
@@ -56,7 +51,6 @@ export const FleetTasks = () => {
   const navigate = useNavigate();
   const { needsDistributor, canWrite } = usePermissions();
   const [view, setView] = useState<View>('board');
-  const [closing, setClosing] = useState<FleetTask | null>(null);
   const [editing, setEditing] = useState<FleetTask | null>(null);
   const cancelTask = useCancelFleetTask();
   const [status, setStatus] = useState<FleetTask['status'] | ''>('');
@@ -86,8 +80,7 @@ export const FleetTasks = () => {
     { ...filters, status: status || undefined },
     { enabled: !needsDistributor && view === 'table' },
   );
-  const board = useFleetTasks(BOARD_PAGE, filters, { enabled: !needsDistributor && view === 'board' });
-  const { data, isPending, error, refetch } = view === 'board' ? board : table;
+  const { data, isPending, error, refetch } = table;
   const { data: plans } = useFleetPlans({}, { enabled: !needsDistributor });
 
   const planOptions = useMemo(
@@ -187,7 +180,9 @@ export const FleetTasks = () => {
         }
       />
 
-      {needsDistributor ? (
+      {view === 'board' ? (
+        <FleetTaskBoardView />
+      ) : needsDistributor ? (
         <Card className="p-6">
           <EmptyState
             title="Elegí una distribuidora"
@@ -204,14 +199,14 @@ export const FleetTasks = () => {
               value={search}
               onChange={(e) => filter(setSearch)(e.target.value)}
             />
-            {view === 'table' && (
+            {
               <Select
                 label="Estado"
                 options={STATUS_OPTIONS}
                 value={status}
                 onChange={(e) => filter(setStatus)(e.target.value as FleetTask['status'] | '')}
               />
-            )}
+            }
             <Select
               label="Vehículo"
               options={[
@@ -248,30 +243,6 @@ export const FleetTasks = () => {
             <div className="p-4">
               <ErrorState error={error} resource="Las tareas" onRetry={() => void refetch()} />
             </div>
-          ) : view === 'board' ? (
-            isPending ? (
-              <TableSkeleton columns={4} />
-            ) : (data?.rows.length ?? 0) === 0 ? (
-              <EmptyState title="Sin tareas" description="Ningún resultado con estos filtros." />
-            ) : (
-              <>
-                <FleetTaskKanban
-                  tasks={data?.rows ?? []}
-                  carMap={carMap}
-                  driverMap={driverMap}
-                  canWrite={canWrite}
-                  cancelling={cancelTask.isPending}
-                  onOpen={(task) => navigate(`/fleet/tasks/${task.taskId}`)}
-                  onClose={setClosing}
-                  onCancel={(task) => void handleCancel(task)}
-                />
-                {(data?.total ?? 0) > BOARD_PAGE.pageSize && (
-                  <p className="border-t border-outline px-4 py-3 text-xs text-muted">
-                    Mostrando {BOARD_PAGE.pageSize} de {data?.total} tareas: afiná con los filtros o pasá a la tabla.
-                  </p>
-                )}
-              </>
-            )
           ) : (
             <DataTable
               rows={data?.rows ?? []}
@@ -294,7 +265,6 @@ export const FleetTasks = () => {
         carType={editing?.carId ? carMap.get(editing.carId)?.type_car : undefined}
         task={editing}
       />
-      <FleetTaskCloseModal open={Boolean(closing)} onClose={() => setClosing(null)} task={closing} />
     </PageContainer>
   );
 };
