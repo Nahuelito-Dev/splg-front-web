@@ -48,6 +48,7 @@ import { confirm, notify } from '../../../utils/notifications';
 import { AssignModal } from './AssignModal';
 import { ClaimFromChatModal } from './ClaimFromChatModal';
 import { ConversationContext } from './ConversationContext';
+import { ConversationMeta } from './ConversationMeta';
 import { hasConversationContext } from './hasConversationContext';
 import { ReplySuggestions } from './ReplySuggestions';
 
@@ -308,6 +309,11 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
           )}
           <MoreActionsMenu actions={more} label="Más acciones" />
         </header>
+        <ConversationMeta
+          conversation={conversation}
+          canLabel={isCustomer ? access.customers : access.drivers}
+          canConfigure={access.configure}
+        />
         <ChatThread
           side="company"
           source={binding.source}

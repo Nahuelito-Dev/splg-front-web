@@ -1,5 +1,5 @@
 import { AtSign, HardHat, MessageSquareText, UserRound } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { cx, EmptyState, ErrorState, PersonAvatar, SearchInput, Skeleton, Tabs } from '../../../common/components/ui';
 import { useDebounce } from '../../../hooks/useDebounce';
@@ -7,12 +7,15 @@ import { useMinuteClock } from '../../../hooks/useMinuteClock';
 import { AWAITING_HUMAN_LABEL } from '../../../features/chat/awaitingHuman';
 import { AwaitingHumanMark } from '../../../features/chat/components/AwaitingHumanMark';
 import { counterpartName, subjectLabel } from '../../../features/chat/inbox/inboxLabels';
+import { LabelList } from '../../../features/chat/labels/LabelList';
 import { messageHref } from '../../../features/chat/routes';
 import { INBOX_SEARCH_MAX, INBOX_SEARCH_MIN, type InboxChannel, type InboxQuery } from '../../../services/api/inbox';
 import type { InboxConversation } from '../../../services/api/types';
 import { awaitingFilterApplies, tabQuery, type InboxFilter, type InboxTab, isInboxTab } from '../inboxTabs';
+import { useChatLabels } from '../../../services/queries/chatLabels';
 import { useInboxConversations, useInboxSummary } from '../../../services/queries/inbox';
 import { formatElapsed } from '../../../utils/format';
+import { LabelFilter } from './LabelFilter';
 
 const PAGE = 50;
 
@@ -40,6 +43,9 @@ interface Props {
   /** Sólo las que el asistente pasó a una persona (de las que trae la página). */
   awaitingOnly: boolean;
   onAwaitingOnly: (awaitingOnly: boolean) => void;
+  /** La etiqueta por la que se filtra (`?etiqueta=` en la URL); vacío: todas. */
+  labelId: string;
+  onLabel: (labelId: string) => void;
   selectedId: string | undefined;
 }
 
@@ -138,6 +144,7 @@ const Row = ({ conversation, selected, now, search }: RowProps) => {
             <span className="font-medium text-warn">· Sin asignar</span>
           )}
         </span>
+        <LabelList labels={conversation.labels} max={3} size="xs" inline />
         {!closed && conversation.awaitingHumanSince && (
           <AwaitingHumanMark since={conversation.awaitingHumanSince} now={now} className="justify-self-start" />
         )}
@@ -155,6 +162,8 @@ export const InboxList = ({
   bothChannels,
   awaitingOnly,
   onAwaitingOnly,
+  labelId,
+  onLabel,
   selectedId,
 }: Props) => {
   const [term, setTerm] = useState('');
@@ -162,11 +171,22 @@ export const InboxList = ({
   const q = debounced.length >= INBOX_SEARCH_MIN ? debounced.slice(0, INBOX_SEARCH_MAX) : undefined;
   // «Mías» nunca tiene (asignar limpia la marca) y las cerradas ya no esperan: ahí el filtro no va.
   const onlyAwaiting = awaitingOnly && awaitingFilterApplies(tab);
+  // La etiqueta de la URL filtra sólo si está en el catálogo: mientras carga o si falla, no se aplica; si ya no existe
+  // (dada de baja, de otra empresa), se saca de la URL.
+  const catalog = useChatLabels();
+  const labels = catalog.data?.items ?? [];
+  const known = Boolean(labelId) && labels.some((l) => l.id === labelId);
+  const label = known ? labelId : undefined;
+  const stale = Boolean(labelId) && Boolean(catalog.data) && !known;
+  useEffect(() => {
+    if (stale) onLabel('');
+  }, [stale, onLabel]);
   const params: InboxQuery = {
     ...tabQuery(tab),
     ...(onlyAwaiting ? { awaiting: true } : {}),
     ...(filter !== 'all' ? { channel: filter } : {}),
     ...(q ? { q } : {}),
+    ...(label ? { labelId: label } : {}),
     limit: PAGE,
     offset: 0,
   };
@@ -228,6 +248,13 @@ export const InboxList = ({
             {AWAITING_HUMAN_LABEL}
           </button>
         )}
+        <LabelFilter
+          labels={labels}
+          value={catalog.error ? labelId : (label ?? '')}
+          onChange={onLabel}
+          failed={Boolean(catalog.error) && !catalog.data}
+          onOpen={() => void catalog.refetch()}
+        />
         {bothChannels && (
           <div className="flex gap-1" role="group" aria-label="Filtrar por canal">
             {(
@@ -273,6 +300,13 @@ export const InboxList = ({
         ) : items.length === 0 ? (
           q ? (
             <EmptyState icon={MessageSquareText} title="Sin resultados" description={`Nada coincide con «${q}».`} />
+          ) : label ? (
+            <EmptyState
+              icon={MessageSquareText}
+              illustration="search"
+              title="Sin conversaciones con esa etiqueta"
+              description="Probá con otra pestaña o sacá el filtro de etiqueta."
+            />
           ) : onlyAwaiting ? (
             <EmptyState
               icon={MessageSquareText}

@@ -48,6 +48,7 @@ export const Messages = () => {
   const [tabParam, setTab] = useUrlParam('tab', 'unassigned');
   const [filterParam, setFilter] = useUrlParam('canal', 'all');
   const [awaitingParam, setAwaiting] = useUrlParam('esperando', '');
+  const [labelParam, setLabel] = useUrlParam('etiqueta', '');
   const tab: InboxTab = isInboxTab(tabParam) ? tabParam : 'unassigned';
   const filter: InboxFilter = isInboxFilter(filterParam) ? filterParam : 'all';
   const [broadcasting, setBroadcasting] = useState(false);
@@ -110,6 +111,8 @@ export const Messages = () => {
             bothChannels={access.customers && access.drivers}
             awaitingOnly={awaitingParam === '1'}
             onAwaitingOnly={(only) => setAwaiting(only ? '1' : '')}
+            labelId={labelParam}
+            onLabel={setLabel}
             selectedId={id}
           />
         </Card>

@@ -50,3 +50,23 @@ describe('texto de los mensajes', () => {
     expect(isOutOfHoursReply(msg(1, { kind: 'auto_reply', templateKey: 'recibido' }))).toBe(false);
   });
 });
+
+describe('avisos del cierre por inactividad en la bandeja (7c)', () => {
+  const system = (systemCode: 'inactivity_warning' | 'closed_inactivity', payload: Record<string, unknown> | null) =>
+    msg(5, { party: 'system', kind: 'system', systemCode, payload, body: 'texto del back' });
+
+  it('el aviso dice en cuánto se cierra (en horas si corresponde); sin plazo, igual se entiende', () => {
+    expect(systemText(system('inactivity_warning', { minutes: 90 }), 'SPLG', 'inbox')).toBe(
+      'Se avisó que la conversación se cierra en 1 h 30 min si no hay respuesta',
+    );
+    expect(systemText(system('inactivity_warning', null), 'SPLG', 'inbox')).toBe(
+      'Se avisó que la conversación se cierra si no hay respuesta',
+    );
+  });
+
+  it('el cierre explica que fue solo', () => {
+    expect(systemText(system('closed_inactivity', null), 'SPLG', 'inbox')).toBe(
+      'Se cerró sola por inactividad: no hubo respuesta en el plazo de la configuración',
+    );
+  });
+});

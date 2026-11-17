@@ -1,6 +1,7 @@
 import type { MessageDto } from '../../services/api/types';
 import { argentinaDay, formatDay } from '../../utils/format';
 import { TICKET_STATUS } from '../../utils/statusLabels';
+import { formatMinutes } from './inbox/inboxLabels';
 
 const isTicketStatus = (value: string): value is keyof typeof TICKET_STATUS => value in TICKET_STATUS;
 
@@ -82,7 +83,13 @@ export const systemText = (
       case 'closed_manual':
         return 'Se cerró la conversación. Queda en lectura; si te vuelven a escribir, se abre otra.';
       case 'closed_inactivity':
-        return 'Se cerró por inactividad';
+        return 'Se cerró sola por inactividad: no hubo respuesta en el plazo de la configuración';
+      case 'inactivity_warning': {
+        const minutes = Number(payload.minutes);
+        return Number.isInteger(minutes) && minutes > 0
+          ? `Se avisó que la conversación se cierra en ${formatMinutes(minutes)} si no hay respuesta`
+          : 'Se avisó que la conversación se cierra si no hay respuesta';
+      }
       case 'reopened':
         return 'Se reabrió la conversación';
       case 'driver_changed':

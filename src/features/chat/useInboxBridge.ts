@@ -26,6 +26,9 @@ import { typingStore } from './typing';
 /** Varios avisos seguidos (un mensaje trae `chat:message` y `chat:inbox`) releen la bandeja una sola vez. */
 const LISTS_DEBOUNCE_MS = 300;
 
+/** El `change` de `chat:conversation` / `chat:inbox` cuando cambian las etiquetas de una conversación (7c). */
+const LABELS_CHANGE = 'labels';
+
 const fromPerson = (party: string) => party === 'customer' || party === 'driver';
 /** Un canal de la bandeja (el resto es del chat con la plataforma, que lleva su propio puente). */
 const isInboxChannel = (channel: string | undefined) => channel === 'staff_customer' || channel === 'staff_driver';
@@ -85,16 +88,24 @@ export const useInboxBridge = (enabled: boolean) => {
         applyMessageUpdate(queryClient, message);
         refresh();
       }),
-      subscribe<InboxConversationEvent>(CHAT_EVENTS.CONVERSATION, ({ conversationId, conversation }) => {
+      subscribe<InboxConversationEvent>(CHAT_EVENTS.CONVERSATION, ({ conversationId, conversation, change }) => {
         if (!isInboxChannel(conversation?.channel)) return;
-        // La ficha llega con el «sin leer» de la sala (0): se conserva el de quien mira.
+        // La ficha llega con el «sin leer» de la sala (0): se conserva el de quien mira. El tiempo esperado sólo lo trae
+        // el detalle por HTTP: también se conserva.
         queryClient.setQueryData<InboxConversation>(
           inboxKeys.detail(conversationId),
           (current: InboxConversation | undefined) =>
             current && conversation?.channel
-              ? { ...conversation, unreadCount: current.unreadCount, lastReadSeq: current.lastReadSeq }
+              ? {
+                  ...conversation,
+                  unreadCount: current.unreadCount,
+                  lastReadSeq: current.lastReadSeq,
+                  expectedReply: conversation.expectedReply ?? current.expectedReply,
+                }
               : current,
         );
+        // Etiquetas puestas, sacadas, renombradas o dadas de baja (acá o en otra pestaña): también el catálogo.
+        if (change === LABELS_CHANGE) void queryClient.invalidateQueries({ queryKey: inboxKeys.labels() });
         refresh();
       }),
       subscribe<ChatReadEvent>(CHAT_EVENTS.READ, ({ conversationId, party, lastReadSeq }) => {
@@ -107,6 +118,7 @@ export const useInboxBridge = (enabled: boolean) => {
       }),
       subscribe<InboxListEvent>(CHAT_EVENTS.INBOX, (event) => {
         if (!isInboxChannel(event.channel)) return;
+        if (event.change === LABELS_CHANGE) void queryClient.invalidateQueries({ queryKey: inboxKeys.labels() });
         refresh();
         const last = event.lastMessage;
         // Un mensaje nuevo de un cliente o un chofer en una conversación que no está en pantalla: aviso genérico.

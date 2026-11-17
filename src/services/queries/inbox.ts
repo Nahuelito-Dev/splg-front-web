@@ -62,6 +62,8 @@ export const inboxKeys = {
   suggestions: (conversationId: string, lastSeq: number) => [...root, 'suggestions', conversationId, lastSeq] as const,
   /** El resumen de la encuesta de satisfacción (último mes). */
   csat: () => [...root, 'csat'] as const,
+  /** El catálogo de etiquetas de la empresa (7c). */
+  labels: () => [...root, 'labels'] as const,
 };
 
 /** Relee listas, fichas y contadores de la bandeja (los hilos se ponen al día por `seq`, no se releen). */
@@ -69,7 +71,9 @@ export const invalidateInbox = (queryClient: QueryClient) =>
   queryClient.invalidateQueries({
     queryKey: root,
     predicate: (query) =>
-      !['settings', 'hours', 'templates', 'suggestions', 'assignees', 'csat'].includes(String(query.queryKey[1])),
+      !['settings', 'hours', 'templates', 'suggestions', 'assignees', 'csat', 'labels'].includes(
+        String(query.queryKey[1]),
+      ),
   });
 
 /** Cada cuánto se relee el resumen aunque el socket esté callado (red caída sin aviso). */
