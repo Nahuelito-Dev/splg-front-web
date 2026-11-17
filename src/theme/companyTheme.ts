@@ -1,6 +1,7 @@
 import type { ThemeModeTokens, ThemeTokens } from '../services/api/types';
 import { isHexToken } from './themeTokens';
-import { onColor } from './colorContrast';
+import brand from './brand.json';
+import { onColor, readableOn } from './colorContrast';
 
 /**
  * Tema de la distribuidora del contexto (company, support, owned): marca, menú lateral y superficies (las oscuras y el
@@ -50,18 +51,27 @@ export const hexToChannels = (hex: string): string | null => {
   return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
 };
 
-const declarations = (tokens: ThemeModeTokens): string =>
+/** La tinta de cada modo (no la pisa la empresa). */
+const INK = { light: brand.tinta['900'], dark: brand.dark.ink } as const;
+
+const declarations = (tokens: ThemeModeTokens, mode: keyof typeof INK): string =>
   (Object.keys(VARIABLES) as Array<keyof ThemeModeTokens>)
     .map((key) => {
       const channels = hexToChannels(tokens[key]);
       return channels ? `--c-${VARIABLES[key]}: ${channels};` : '';
     })
     .concat(`--c-on-accent: ${hexToChannels(onColor(tokens.accent))};`)
+    // Texto de los tonos suaves de la marca (`Badge`, contadores): el fuerte de la empresa si llega a 4,5:1 sobre su
+    // suave; si no, la tinta del modo (un acento claro en oscuro no deja el texto ilegible).
+    .concat(
+      `--c-on-primary-soft: ${hexToChannels(readableOn(tokens.primarySoft, tokens.primaryStrong, INK[mode]))};`,
+      `--c-on-accent-soft: ${hexToChannels(readableOn(tokens.accentSoft, INK[mode], INK[mode]))};`,
+    )
     .join(' ');
 
 /** La hoja de estilos de un tema: `:root:root` le gana a la base de Tailwind sin `!important`. */
 export const companyThemeCss = (tokens: ThemeTokens): string =>
-  `:root:root { ${declarations(tokens.light)} }\n:root:root.dark { ${declarations(tokens.dark)} }`;
+  `:root:root { ${declarations(tokens.light, 'light')} }\n:root:root.dark { ${declarations(tokens.dark, 'dark')} }`;
 
 type Listener = () => void;
 const listeners = new Set<Listener>();

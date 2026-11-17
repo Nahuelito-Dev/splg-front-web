@@ -26,7 +26,13 @@ const summary = (batch: MovementBatch) =>
     .map((m) => `${m.quantity} ${m.gasCylinderType} · ${labelOf(STOCK_CONDITION, m.fromCondition).text}`)
     .join(' · ');
 
-/** «Contraasentada» o el botón para contraasentar el lote; mientras no se sabe (o si falló) no se ofrece nada. */
+/** El estado del lote: «Contraasentada» si ya tiene contraasiento; si no (o mientras no se sabe), nada. */
+const BatchStatus = ({ batchId, className }: { batchId: string; className?: string }) => {
+  const reversed = useBatchReversed(batchId);
+  return reversed.data ? <Badge label={{ text: 'Contraasentada', tone: 'danger' }} className={className} /> : null;
+};
+
+/** El botón para contraasentar el lote: sólo si se sabe que no tiene contraasiento y se puede escribir. */
 const BatchAction = ({
   batchId,
   canWrite,
@@ -37,8 +43,7 @@ const BatchAction = ({
   onReverse: () => void;
 }) => {
   const reversed = useBatchReversed(batchId);
-  if (reversed.data) return <Badge label={{ text: 'Contraasentada', tone: 'danger' }} />;
-  if (!canWrite || !reversed.isSuccess) return null;
+  if (reversed.data || !canWrite || !reversed.isSuccess) return null;
   return (
     <Button size="sm" variant="secondary" icon={<Undo2 />} onClick={onReverse}>
       Contraasentar lote
@@ -91,6 +96,13 @@ export const Transfers = () => {
     },
     {
       field: 'status',
+      headerName: 'Estado',
+      width: 150,
+      sortable: false,
+      renderCell: ({ row }) => <BatchStatus batchId={row.batchId} />,
+    },
+    {
+      field: 'actions',
       headerName: '',
       width: 190,
       sortable: false,
@@ -137,6 +149,7 @@ export const Transfers = () => {
                 <IdentityCell title={route(row)} subtitle={formatDateTime(row.occurredAt)} icon={ArrowLeftRight} />
                 <p className="text-sm text-ink">{summary(row)}</p>
                 {row.notes && <p className="text-sm text-muted">{row.notes}</p>}
+                <BatchStatus batchId={row.batchId} className="self-start" />
                 <BatchAction batchId={row.batchId} canWrite={canWrite} onReverse={() => setReversing(row.batchId)} />
               </>
             )}

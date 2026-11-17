@@ -44,7 +44,7 @@ export const CarFinesTab = ({ carId, canWrite, writeHint }: Props) => {
               <span className="font-medium text-ink">
                 Acta {fine.actNumber} · {fine.jurisdiction}
               </span>
-              <span className="font-mono text-ink-2">
+              <span className="tabular-nums text-ink-2">
                 {formatCurrency(fine.amount)} · vence {formatDay(fine.dueDate)}
               </span>
               <Badge label={labelOf(TRAFFIC_FINE_STATUS, fine.status)} />

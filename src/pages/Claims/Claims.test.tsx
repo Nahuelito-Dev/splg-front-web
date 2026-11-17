@@ -74,7 +74,7 @@ describe('Claims', () => {
     expect(screen.getByText('Carla Ruiz')).toBeInTheDocument();
     expect(screen.queryByText('Ana Pérez')).not.toBeInTheDocument();
     const chips = screen.getByRole('group', { name: 'Filtros activos' });
-    expect(chips).toHaveTextContent('1 resultado');
+    expect(screen.getByText('1', { selector: 'b' }).parentElement).toHaveTextContent('1 reclamo');
     expect(within(chips).getByText('Estado: Resuelto')).toBeInTheDocument();
   });
 

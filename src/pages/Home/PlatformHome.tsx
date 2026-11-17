@@ -17,6 +17,7 @@ import {
   DateRangeFilter,
   ErrorState,
   KpiCard,
+  KpiGrid,
   LoadingState,
   PageContainer,
   PageHeader,
@@ -97,7 +98,7 @@ const Overview = ({ overview }: { overview: PlatformOverview }) => {
         Período: {formatRange(overview.range)}. Actualizado el {formatDateTime(overview.generatedAt)}.
       </p>
 
-      <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-3">
+      <KpiGrid className="sm:grid-cols-2 xl:grid-cols-3">
         <KpiCard
           title="Empresas"
           icon={Building2}
@@ -133,7 +134,7 @@ const Overview = ({ overview }: { overview: PlatformOverview }) => {
           hint={`${formatNumber(processes.failuresLast24h)} fallas en 24 h`}
           pill={processes.alerts > 0 ? { text: 'Revisar', trend: 'warn' } : { text: 'Al día', trend: 'up' }}
         />
-      </div>
+      </KpiGrid>
     </div>
   );
 };

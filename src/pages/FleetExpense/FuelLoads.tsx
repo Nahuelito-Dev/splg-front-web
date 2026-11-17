@@ -11,6 +11,7 @@ import {
   ErrorState,
   IdentityCell,
   KpiCard,
+  KpiGrid,
   PageHeader,
   ResponsiveTable,
   RowActions,
@@ -147,7 +148,7 @@ export const FuelLoads = () => {
           </Button>
         }
       />
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+      <KpiGrid className="mb-4 sm:grid-cols-3">
         <KpiCard title="Cargas" icon={Fuel} value={data ? formatNumber(data.total) : '—'} loading={!data && !error} />
         <KpiCard
           title="Litros"
@@ -163,9 +164,10 @@ export const FuelLoads = () => {
           loading={!data && !error}
           hint={filtered ? 'Con los filtros' : undefined}
         />
-      </div>
+      </KpiGrid>
       <Card>
         <TableToolbar
+          resultCount={data?.total}
           filters={
             <>
               <Select

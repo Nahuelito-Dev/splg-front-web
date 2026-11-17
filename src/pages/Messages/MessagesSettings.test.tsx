@@ -476,7 +476,8 @@ describe('Mensajes y horario: respuestas guardadas', () => {
     api.deleteCompanyTemplate.mockResolvedValue(undefined);
     show();
     await screen.findByText('Pedido en camino');
-    fireEvent.click(screen.getByRole('button', { name: /Dar de baja/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Más acciones de respuesta/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Dar de baja' }));
     await waitFor(() => expect(api.deleteCompanyTemplate).toHaveBeenCalledWith('tpl-1'));
     expect(confirmMock).toHaveBeenCalled();
   });

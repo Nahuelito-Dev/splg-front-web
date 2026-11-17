@@ -81,7 +81,7 @@ export const SupportAccess = () => {
         headerName: 'Estado',
         width: 140,
         sortable: false,
-        renderCell: ({ row }) => <Badge label={labelOf(SUPPORT_SESSION_STATUS, row.status)} variant="critical" />,
+        renderCell: ({ row }) => <Badge label={labelOf(SUPPORT_SESSION_STATUS, row.status)} />,
       },
       {
         field: 'createdAt',
@@ -158,7 +158,9 @@ export const SupportAccess = () => {
                 </div>
               </Card>
             ) : (
-              <p className="text-sm text-muted">Nadie del soporte tiene acceso ahora.</p>
+              <Card>
+                <EmptyState compact title="Nadie del soporte tiene acceso ahora." />
+              </Card>
             )}
           </section>
 
@@ -171,7 +173,9 @@ export const SupportAccess = () => {
             ) : pending.error ? (
               <ErrorState error={pending.error} resource="Los pedidos" onRetry={() => void pending.refetch()} />
             ) : pendingRows.length === 0 ? (
-              <p className="text-sm text-muted">No hay pedidos esperando tu respuesta.</p>
+              <Card>
+                <EmptyState compact title="No hay pedidos esperando tu respuesta." />
+              </Card>
             ) : (
               pendingRows.map((session) => (
                 <PendingRequestCard
@@ -203,7 +207,7 @@ export const SupportAccess = () => {
                   >
                     <span className="flex items-center justify-between gap-2">
                       <span className="truncate font-medium text-ink">{row.requestedBy.fullName ?? 'Soporte'}</span>
-                      <Badge label={labelOf(SUPPORT_SESSION_STATUS, row.status)} variant="critical" />
+                      <Badge label={labelOf(SUPPORT_SESSION_STATUS, row.status)} />
                     </span>
                     <span className="line-clamp-2 text-sm text-ink-2">{row.reason}</span>
                     <span className="text-xs text-muted">{formatDateTime(row.createdAt)}</span>

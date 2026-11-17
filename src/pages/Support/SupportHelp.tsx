@@ -22,31 +22,31 @@ export const SupportHelp = () => {
         title={`Ayuda de ${platformName}`}
         description="Lo que se resuelve en el momento, por el chat. Lo que necesita seguimiento, en un ticket."
       />
-      <Tabs
-        label="Ayuda"
-        idPrefix={TAB_PREFIX}
-        value={active}
-        onChange={setTab}
-        items={[
-          { id: 'chat', label: 'Chat', count: summary.data ? summary.data.chatUnread || undefined : undefined },
-          {
-            id: 'tickets',
-            label: 'Tickets',
-            count: summary.data ? summary.data.ticketsUnread || undefined : undefined,
-          },
-        ]}
-      />
-      <div {...tabPanelProps(TAB_PREFIX, active)}>
-        {active === 'chat' ? (
-          <Card className="flex h-[calc(100dvh-260px)] min-h-[440px] flex-col overflow-hidden p-0">
-            <CompanyChatPanel />
-          </Card>
-        ) : (
-          <Card>
+      <Card className="overflow-hidden">
+        <Tabs
+          label="Ayuda"
+          idPrefix={TAB_PREFIX}
+          value={active}
+          onChange={setTab}
+          items={[
+            { id: 'chat', label: 'Chat', count: summary.data ? summary.data.chatUnread || undefined : undefined },
+            {
+              id: 'tickets',
+              label: 'Tickets',
+              count: summary.data ? summary.data.ticketsUnread || undefined : undefined,
+            },
+          ]}
+        />
+        <div {...tabPanelProps(TAB_PREFIX, active)}>
+          {active === 'chat' ? (
+            <div className="flex h-[calc(100dvh-310px)] min-h-[440px] flex-col">
+              <CompanyChatPanel />
+            </div>
+          ) : (
             <CompanyTicketsPanel />
-          </Card>
-        )}
-      </div>
+          )}
+        </div>
+      </Card>
     </PageContainer>
   );
 };

@@ -40,7 +40,8 @@ describe('IncidentsTable: acciones por estado', () => {
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: /^Editar incidencia/ }));
-    fireEvent.click(screen.getByRole('button', { name: /^Descartar incidencia/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Más acciones de incidencia/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Descartar' }));
     expect(onEdit).toHaveBeenCalledTimes(1);
     expect(onDiscard).toHaveBeenCalledTimes(1);
   });
@@ -57,7 +58,7 @@ describe('IncidentsTable: acciones por estado', () => {
     );
     expect(screen.getAllByRole('button', { name: /^Ver incidencia/ })).toHaveLength(2);
     expect(screen.queryByRole('button', { name: /^Editar incidencia/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /^Descartar incidencia/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Más acciones de incidencia/ })).toBeNull();
   });
 });
 
@@ -74,7 +75,8 @@ describe('IncidentsTable: cobro impago', () => {
     );
     expect(screen.getByText('Cobro impago')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Editar incidencia/ })).toBeNull();
-    expect(screen.getByRole('button', { name: /^Descartar incidencia/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^Más acciones de incidencia/ }));
+    expect(screen.getByRole('menuitem', { name: 'Descartar' })).toBeInTheDocument();
   });
 });
 
@@ -95,6 +97,8 @@ describe('IncidentsTable: impago sin resolver', () => {
         onDiscard={vi.fn()}
       />,
     );
-    expect(screen.queryByRole('button', { name: /^Descartar incidencia/ })).toBeNull();
+    const more = screen.queryByRole('button', { name: /^Más acciones de incidencia/ });
+    if (more) fireEvent.click(more);
+    expect(screen.queryByRole('menuitem', { name: 'Descartar' })).toBeNull();
   });
 });

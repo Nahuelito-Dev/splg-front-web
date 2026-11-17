@@ -116,13 +116,12 @@ export const CloseSessionModal = ({ open, onClose, sessionId }: Props) => {
         <div className="grid gap-5">
           <DetailList
             items={[
-              { label: 'Monto inicial', value: formatCurrency(session.openingAmount), mono: true },
-              { label: 'Entradas', value: formatCurrency(live?.totalIn ?? session.totalIn), mono: true },
-              { label: 'Salidas', value: formatCurrency(live?.totalOut ?? session.totalOut), mono: true },
+              { label: 'Monto inicial', value: formatCurrency(session.openingAmount) },
+              { label: 'Entradas', value: formatCurrency(live?.totalIn ?? session.totalIn) },
+              { label: 'Salidas', value: formatCurrency(live?.totalOut ?? session.totalOut) },
               {
                 label: 'Saldo según el libro',
                 value: formatCurrency(live?.expectedAmount ?? session.currentBalance),
-                mono: true,
               },
             ]}
           />

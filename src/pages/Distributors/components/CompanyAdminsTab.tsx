@@ -22,7 +22,7 @@ export const CompanyAdminsTab = ({ admins }: { admins: CompanyAdmin[] }) => (
                 avatarName={admin.name ?? admin.email ?? '?'}
               />
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-                {admin.blocked && <Badge label={{ text: 'Bloqueado', tone: 'danger' }} variant="critical" />}
+                {admin.blocked && <Badge label={{ text: 'Bloqueado', tone: 'danger' }} />}
                 <Badge label={{ text: admin.staffRole ?? 'Sin rol de personal', tone: 'neutral' }} />
                 <span>
                   {admin.lastLoginAt ? `Último ingreso: ${formatDateTime(admin.lastLoginAt)}` : 'Nunca ingresó'}

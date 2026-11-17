@@ -35,8 +35,8 @@ export const LoadSuggestionCard = ({ sheetId }: { sheetId: string }) => {
             {data.items.map((item) => (
               <tr key={item.gasCylinderId}>
                 <td className="py-1.5 text-ink">{item.type ?? 'Garrafa'}</td>
-                <td className="py-1.5 text-right font-mono text-ink">{item.fullUnits}</td>
-                <td className="py-1.5 text-right font-mono text-ink">{item.emptyUnitsBack}</td>
+                <td className="py-1.5 text-right tabular-nums text-ink">{item.fullUnits}</td>
+                <td className="py-1.5 text-right tabular-nums text-ink">{item.emptyUnitsBack}</td>
               </tr>
             ))}
           </tbody>

@@ -56,10 +56,10 @@ export const ZoneDetailPanel = ({ zoneId, onClose, onEdit, onDelete }: Props) =>
           </div>
           <DetailList
             items={[
-              { label: 'Recargo', value: formatSurcharge(zone.surchargeType, zone.surchargeValue), mono: true },
-              { label: 'Prioridad', value: zone.priority, mono: true },
+              { label: 'Recargo', value: formatSurcharge(zone.surchargeType, zone.surchargeValue) },
+              { label: 'Prioridad', value: zone.priority },
               { label: 'Etiqueta', value: zone.label ?? '—' },
-              { label: 'Vértices', value: countVertices(zone.area.coordinates[0]), mono: true },
+              { label: 'Vértices', value: countVertices(zone.area.coordinates[0]) },
               { label: 'Vigencia', value: formatValidity(zone.validFrom, zone.validUntil) ?? 'Siempre', wide: true },
               { label: 'Alta', value: formatDateTime(zone.createdAt) },
               { label: 'Última modificación', value: formatDateTime(zone.updatedAt) },

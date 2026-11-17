@@ -53,7 +53,7 @@ const ReadingInfoCard = ({ reading }: { reading: DocumentReading }) => (
         { label: 'Tipo detectado', value: reading.detectedType ? DOCUMENT_TYPE_LABEL[reading.detectedType] : '—' },
         { label: 'Leída', value: formatDateTime(reading.readAt) },
         { label: 'Intentos', value: String(reading.attempts) },
-        { label: 'Costo', value: formatUsd(reading.costUsd), mono: true },
+        { label: 'Costo', value: formatUsd(reading.costUsd) },
         ...(reading.lastError ? [{ label: 'Último error', value: reading.lastError, wide: true }] : []),
         ...(reading.duplicateOfId
           ? [

@@ -92,7 +92,7 @@ export const CashSessionsCard = ({ cashBoxId }: Props) => {
           '—'
         ) : (
           <span className="flex flex-col items-end py-1">
-            <span className="font-mono">{formatCurrencyExact(row.countedAmount)}</span>
+            <span className="tabular-nums">{formatCurrencyExact(row.countedAmount)}</span>
             <span className="text-xs text-muted">esperado {formatCurrencyExact(row.expectedAmount)}</span>
           </span>
         ),
@@ -110,7 +110,7 @@ export const CashSessionsCard = ({ cashBoxId }: Props) => {
           '—'
         ) : (
           <span className="flex flex-col items-end gap-0.5 py-1">
-            <span className="font-mono">{formatCurrencyExact(row.difference)}</span>
+            <span className="tabular-nums">{formatCurrencyExact(row.difference)}</span>
             <Badge label={verdict} />
           </span>
         );
@@ -181,10 +181,10 @@ export const CashSessionsCard = ({ cashBoxId }: Props) => {
                     </p>
                     <p className="flex flex-wrap items-center gap-2 text-sm">
                       <span>
-                        Contado <b className="font-mono">{formatCurrencyExact(row.countedAmount)}</b> de{' '}
+                        Contado <b className="tabular-nums">{formatCurrencyExact(row.countedAmount)}</b> de{' '}
                         {formatCurrencyExact(row.expectedAmount)}
                       </span>
-                      <span className="font-mono">{formatCurrencyExact(row.difference)}</span>
+                      <span className="tabular-nums">{formatCurrencyExact(row.difference)}</span>
                       <Badge label={verdict} />
                     </p>
                   </>

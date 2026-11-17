@@ -13,7 +13,7 @@ export const LoadBar = ({ sheet, className }: { sheet: RouteSheet; className?: s
     <div className={cx('grid gap-1.5 text-xs text-muted', className)}>
       <div className="flex justify-between gap-2">
         <span>Carga</span>
-        <span className={cx('font-mono', warn ? 'font-semibold text-warn' : 'text-ink-2')}>
+        <span className={cx('tabular-nums', warn ? 'font-semibold text-warn' : 'text-ink-2')}>
           {loadText(sheet)}
           {pct !== null && ` · ${pct} %`}
         </span>

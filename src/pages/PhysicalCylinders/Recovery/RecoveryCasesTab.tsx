@@ -89,7 +89,7 @@ export const RecoveryCasesTab = () => {
         width: 170,
         renderCell: ({ row }) => (
           <div className="leading-tight">
-            <Badge label={RECOVERY_CASE_STATUS[row.status]} variant="critical" />
+            <Badge label={RECOVERY_CASE_STATUS[row.status]} />
             <span className="mt-0.5 block text-[11.5px] text-muted">{recoveryStepText(row.step)}</span>
           </div>
         ),
@@ -100,7 +100,9 @@ export const RecoveryCasesTab = () => {
         width: 130,
         align: 'right',
         headerAlign: 'right',
-        renderCell: ({ row }) => <span className="font-mono text-ink">{formatCurrencyExact(row.depositAmount)}</span>,
+        renderCell: ({ row }) => (
+          <span className="tabular-nums text-ink">{formatCurrencyExact(row.depositAmount)}</span>
+        ),
       },
       {
         field: 'next',
@@ -184,7 +186,7 @@ export const RecoveryCasesTab = () => {
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-mono text-sm text-ink">{row.cylinder.serial}</span>
-                  <Badge label={RECOVERY_CASE_STATUS[row.status]} variant="critical" />
+                  <Badge label={RECOVERY_CASE_STATUS[row.status]} />
                 </div>
                 <p className="mt-1 text-sm text-ink">{row.customer.fullName ?? 'Sin nombre'}</p>
                 <p className="text-xs text-muted">

@@ -154,7 +154,7 @@ export const RecoveryCaseDrawer = ({ caseId, onClose }: Props) => {
                 },
                 { label: 'Producto', value: recoveryCase.cylinder.product ?? 'Sin producto asignado' },
                 { label: 'Estado del envase', value: labelOf(CYLINDER_STATE, recoveryCase.cylinder.state).text },
-                { label: 'Depósito comprometido', value: formatCurrencyExact(recoveryCase.depositAmount), mono: true },
+                { label: 'Depósito comprometido', value: formatCurrencyExact(recoveryCase.depositAmount) },
                 { label: 'Cliente', value: recoveryCase.customer.fullName ?? 'Sin nombre' },
                 {
                   label: 'Contacto',
@@ -162,7 +162,7 @@ export const RecoveryCaseDrawer = ({ caseId, onClose }: Props) => {
                     [recoveryCase.customer.email, recoveryCase.customer.phoneNumber].filter(Boolean).join(' · ') || '—',
                 },
                 { label: 'Entregado', value: formatDateTime(recoveryCase.deliveredAt) },
-                { label: 'Días en su poder', value: String(recoveryCase.daysOut), mono: true },
+                { label: 'Días en su poder', value: String(recoveryCase.daysOut) },
                 { label: 'Escalón', value: recoveryStepText(recoveryCase.step) },
                 {
                   label: recoveryCase.status === 'open' ? 'Vence el escalón' : 'Caso abierto',

@@ -58,8 +58,8 @@ const InstallmentRow = ({ installment, policy, today, canWrite, writeHint, onReg
           Vence {formatDay(installment.dueDate)} · gracia hasta {formatDay(installment.graceUntil)}
         </p>
       </div>
-      <span className="font-mono text-ink-2">{formatCurrency(installment.amount)}</span>
-      <Badge label={label} variant="critical" />
+      <span className="tabular-nums text-ink-2">{formatCurrency(installment.amount)}</span>
+      <Badge label={label} />
       {installment.status === 'pending' && (
         <div className="flex flex-wrap gap-2">
           {payUrl ? (

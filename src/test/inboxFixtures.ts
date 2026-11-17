@@ -23,6 +23,7 @@ export const inboxMsg = (seq: number, over: Partial<InboxMessage> = {}): InboxMe
   deleted: false,
   deletedAt: null,
   redacted: false,
+  attachment: null,
   createdAt: new Date(Date.UTC(2026, 10, 15, 13, seq)).toISOString(),
   ...over,
 });

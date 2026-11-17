@@ -20,6 +20,16 @@ export const onColor = (background: string): string => {
   return contrast(white, background) >= contrast(ink, background) ? white : ink;
 };
 
+/**
+ * Texto sobre un fondo suave de la marca (insignias, contadores): el preferido si llega a 4,5:1; si no, la tinta del
+ * modo; si tampoco, blanco o tinta oscura, el que llegue (`onColor`).
+ */
+export const readableOn = (background: string, preferred: string, ink: string): string => {
+  if (contrast(preferred, background) >= 4.5) return preferred;
+  if (contrast(ink, background) >= 4.5) return ink;
+  return onColor(background);
+};
+
 /** Variante clara de una marca para un fondo oscuro fijo, sin perder su tono. */
 export const colorOnDarkSurface = (color: string, surface: string, minimum: number): string => {
   if (contrast(color, surface) >= minimum) return color;

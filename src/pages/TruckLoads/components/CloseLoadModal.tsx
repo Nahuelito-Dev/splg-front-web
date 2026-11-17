@@ -103,14 +103,14 @@ export const CloseLoadModal = ({ open, onClose, load }: Props) => {
                   <th scope="row" className="py-2 pr-2 font-semibold text-ink">
                     {item.gasCylinderType}
                   </th>
-                  <td className="px-2 font-mono">
+                  <td className="px-2 tabular-nums">
                     {item.expectedFull} llenas · {item.expectedEmpty} vacías
                   </td>
-                  <td className="px-2 font-mono">
+                  <td className="px-2 tabular-nums">
                     {item.declaredReturnFull ?? '—'} · {item.declaredReturnEmpty ?? '—'}
                   </td>
                   <td
-                    className={`px-2 font-mono ${(item.differenceFull ?? 0) !== 0 || (item.differenceEmpty ?? 0) !== 0 ? 'text-danger' : ''}`}
+                    className={`px-2 tabular-nums ${(item.differenceFull ?? 0) !== 0 || (item.differenceEmpty ?? 0) !== 0 ? 'text-danger' : ''}`}
                   >
                     {signed(item.differenceFull)} · {signed(item.differenceEmpty)}
                   </td>
@@ -140,15 +140,15 @@ export const CloseLoadModal = ({ open, onClose, load }: Props) => {
         <dl className="grid grid-cols-1 gap-2 rounded-lg border border-outline bg-surface-hover p-3 text-sm sm:grid-cols-3">
           <div>
             <dt className="text-xs text-muted">Efectivo cobrado</dt>
-            <dd className="font-mono font-semibold">{formatCurrency(load.cash.cashCollectedAmount)}</dd>
+            <dd className="tabular-nums font-semibold">{formatCurrency(load.cash.cashCollectedAmount)}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted">Impago</dt>
-            <dd className="font-mono font-semibold">{formatCurrency(load.cash.unpaidAmount)}</dd>
+            <dd className="tabular-nums font-semibold">{formatCurrency(load.cash.unpaidAmount)}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted">Sin confirmar</dt>
-            <dd className="font-mono font-semibold">{formatCurrency(load.cash.pendingConfirmationAmount)}</dd>
+            <dd className="tabular-nums font-semibold">{formatCurrency(load.cash.pendingConfirmationAmount)}</dd>
           </div>
         </dl>
         <TextArea

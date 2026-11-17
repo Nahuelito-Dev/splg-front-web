@@ -154,7 +154,7 @@ export const PurchaseReceiptDetails = () => {
                 },
                 { label: 'Recibida en', value: receipt.warehouseName },
                 { label: 'Cuándo llegó', value: formatDateTime(receipt.receivedAt) },
-                { label: 'Total', value: formatCurrency(receipt.totalAmount), mono: true },
+                { label: 'Total', value: formatCurrency(receipt.totalAmount) },
                 { label: 'Notas', value: receipt.notes, wide: true },
                 ...(receipt.voidReason
                   ? [

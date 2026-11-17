@@ -54,10 +54,15 @@ describe('RatingHistoryList', () => {
         <RatingHistoryList ratings={[RATING, hidden]} />
       </MemoryRouter>,
     );
-    expect(screen.getAllByRole('button', { name: 'Ocultar calificación' })).toHaveLength(1);
     expect(screen.getByText('Oculta: Lenguaje ofensivo')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Más acciones de calificación' }));
+    const [visibleMenu, hiddenMenu] = screen.getAllByRole('button', { name: 'Más acciones de calificación' });
+    fireEvent.click(visibleMenu);
+    expect(screen.getByRole('menuitem', { name: 'Ocultar' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Volver a mostrar' })).toBeNull();
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
+    fireEvent.click(hiddenMenu);
     expect(screen.getByRole('menuitem', { name: 'Volver a mostrar' })).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: 'Ocultar' })).toBeNull();
   });
 
   it('sin reseñas lo avisa', () => {

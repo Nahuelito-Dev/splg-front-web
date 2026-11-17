@@ -126,6 +126,7 @@ export const DriverLiquidations = () => {
           idPrefix="driver-liquidations"
         >
           <TableToolbar
+            resultCount={data?.total}
             serverExport={{
               resource: 'liquidaciones',
               params: liquidationQuery(listFilters),
@@ -159,7 +160,7 @@ export const DriverLiquidations = () => {
                   />
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge label={labelOf(LIQUIDATION_STATUS, row.status)} />
-                    <span className="font-mono text-sm">Neto {formatCurrency(row.net)}</span>
+                    <span className="tabular-nums text-sm">Neto {formatCurrency(row.net)}</span>
                   </div>
                   <div>
                     <Button size="sm" variant="secondary" onClick={() => goTo(row)}>

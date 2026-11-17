@@ -88,8 +88,8 @@ describe('Distribuidoras (plataforma)', () => {
     renderPage(<Distributors />, { url: '/distributors?page=3' });
     fireEvent.change(screen.getByLabelText('Empresa propia'), { target: { value: 'false' } });
     expect(state.params).toHaveBeenLastCalledWith(expect.objectContaining({ ownedByPlatform: false, offset: 0 }));
-    // La opción del select y el chip del filtro activo.
-    expect(screen.getAllByText('Sin la propia')).toHaveLength(2);
+    // La opción del select, lo que el select de la barra muestra adentro y el chip del filtro activo.
+    expect(screen.getAllByText('Sin la propia')).toHaveLength(3);
   });
 
   it('con filtros y sin filas, el vacío lo dice', () => {

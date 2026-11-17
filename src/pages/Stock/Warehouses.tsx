@@ -14,6 +14,7 @@ import {
   ResponsiveTable,
   RowActions,
   PageContainer,
+  TableToolbar,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { WarehouseV2 as Warehouse } from '../../services/api/types';
@@ -83,9 +84,9 @@ export const Warehouses = () => {
   );
 
   const statusBadges = (row: Warehouse) => (
-    <span className="flex flex-wrap gap-1.5">
-      {row.isDefault && <Badge label={{ text: 'Predeterminado', tone: 'primary' }} />}
+    <span className="flex flex-col items-start gap-0.5">
       <Badge label={row.isActive ? { text: 'Activo', tone: 'success' } : { text: 'Inactivo', tone: 'neutral' }} />
+      {row.isDefault && <span className="text-xs text-muted">Predeterminado</span>}
     </span>
   );
 
@@ -156,13 +157,15 @@ export const Warehouses = () => {
         }
       />
       <Card>
-        <div className="border-b border-outline px-4 py-3">
-          <Checkbox
-            label="Mostrar galpones dados de baja"
-            checked={showInactive}
-            onChange={(e) => setShowInactive(e.target.checked)}
-          />
-        </div>
+        <TableToolbar
+          filters={
+            <Checkbox
+              label="Mostrar galpones dados de baja"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+            />
+          }
+        />
         {error ? (
           <ErrorState error={error} resource="Los galpones" onRetry={() => void refetch()} />
         ) : (

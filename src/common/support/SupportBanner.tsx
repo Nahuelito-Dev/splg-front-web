@@ -81,7 +81,7 @@ const ActiveBanner = ({ session }: { session: SupportSession }) => {
             <span className="whitespace-nowrap">
               {' '}
               · <Clock aria-hidden="true" className="inline h-3.5 w-3.5 align-[-2px]" /> Vence en{' '}
-              <span className="font-mono font-semibold tabular-nums" aria-live="off">
+              <span className="font-semibold tabular-nums" aria-live="off">
                 {formatRemaining(remaining)}
               </span>
             </span>

@@ -77,7 +77,7 @@ export const ImportPreviewStep = ({ preview }: Props) => {
             <tbody>
               {preview.errores.map((error) => (
                 <tr key={`${error.fila}-${error.columna}-${error.mensaje}`} className="border-t border-outline">
-                  <td className="px-3 py-2 font-mono">{error.fila}</td>
+                  <td className="px-3 py-2 tabular-nums">{error.fila}</td>
                   <td className="px-3 py-2">{error.columna}</td>
                   <td className="px-3 py-2">{error.mensaje}</td>
                 </tr>
@@ -111,7 +111,7 @@ export const ImportPreviewStep = ({ preview }: Props) => {
             <tbody>
               {preview.vistaPrevia.map((row) => (
                 <tr key={row.fila} className="border-t border-outline">
-                  <td className="px-3 py-2 font-mono">{row.fila}</td>
+                  <td className="px-3 py-2 tabular-nums">{row.fila}</td>
                   {config.columns.map((column) => (
                     <td key={column.key} className="px-3 py-2">
                       {(column.render ?? cellText)(row.datos[column.key], row.datos)}

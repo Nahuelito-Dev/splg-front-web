@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -106,5 +106,26 @@ describe('SideMenuContent: asistente del chat (M8)', () => {
     perms.data = { role: 'admin', allPermissions: false, staffRole: null, permissions: ['pedidos.ver'] };
     draw();
     expect(screen.queryByRole('link', { name: /Asistente del chat/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('SideMenuContent: secciones que no entran', () => {
+  it('un degradé abajo avisa que hay más secciones; el bloque del usuario queda fuera del desplazamiento', () => {
+    perms.data = { role: 'admin', allPermissions: true, staffRole: null, permissions: [] };
+    draw();
+    const nav = screen.getByRole('navigation', { name: 'Secciones del panel' });
+    const hint = screen.getByTestId('nav-scroll-hint');
+    expect(hint).toHaveClass('opacity-0');
+    Object.defineProperties(nav, {
+      scrollHeight: { configurable: true, value: 1400 },
+      clientHeight: { configurable: true, value: 600 },
+      scrollTop: { configurable: true, writable: true, value: 0 },
+    });
+    fireEvent.scroll(nav);
+    expect(hint).toHaveClass('opacity-100', 'bg-gradient-to-t', 'from-side');
+    nav.scrollTop = 800;
+    fireEvent.scroll(nav);
+    expect(hint).toHaveClass('opacity-0');
+    expect(nav).not.toContainElement(screen.getByRole('button', { name: 'Cerrar sesión' }));
   });
 });

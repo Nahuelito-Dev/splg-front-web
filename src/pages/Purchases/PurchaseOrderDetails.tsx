@@ -168,7 +168,7 @@ export const PurchaseOrderDetails = () => {
                 { label: 'Proveedor', value: order.supplierName },
                 { label: 'Se recibe en', value: order.destinationWarehouseName },
                 { label: 'Fecha esperada', value: formatDay(order.expectedDate) },
-                { label: 'Total', value: formatCurrency(order.totalAmount), mono: true },
+                { label: 'Total', value: formatCurrency(order.totalAmount) },
                 {
                   label: 'Avance',
                   value: `${order.receivedQuantity} de ${order.orderedQuantity} recibidas · faltan ${order.pendingQuantity}`,

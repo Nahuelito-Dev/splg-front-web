@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { receiptSummary } from '../../test/fixtures';
 import { describeListStates, ok, pageOf, renderPage } from '../../test/pageTest';
@@ -40,6 +40,15 @@ describe('PurchaseReceipts', () => {
     cleanup();
     vi.clearAllMocks();
     state.suppliers.mockReturnValue(ok({ data: [], total: 0 }));
+  });
+
+  it('un estado por celda: el de la recepción como etiqueta y el del pago como texto secundario', () => {
+    state.list.mockReturnValue(ok(pageOf([receiptSummary({ status: 'voided' })])));
+    renderPage(<PurchaseReceipts />, { url: '/purchases/receipts' });
+    const card = screen.getByText('N° 21 · Gas del Norte SA').closest('li') as HTMLElement;
+    expect(within(card).getByText('Sin pagar')).not.toHaveClass('rounded-full');
+    expect(within(card).getByText('Sin pagar')).toHaveClass('text-muted');
+    expect(within(card).getByText('Anulada')).toHaveClass('rounded-full', 'h-[22px]');
   });
 
   it('«Compra directa» abre el formulario de compra directa', () => {

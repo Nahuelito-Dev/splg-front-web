@@ -22,6 +22,26 @@ interface LoginError {
   errorMessage: string;
 }
 
+/** El texto en castellano de un error de Firebase al entrar; nunca el mensaje técnico del SDK. */
+export const loginErrorMessage = (code: string | undefined): string => {
+  switch (code) {
+    case 'auth/invalid-login-credentials':
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+    case 'auth/user-not-found':
+    case 'auth/invalid-email':
+      return 'El email o la contraseña no son correctos.';
+    case 'auth/user-disabled':
+      return 'Esta cuenta está desactivada. Hablá con quien administra el panel.';
+    case 'auth/too-many-requests':
+      return 'Hubo demasiados intentos. Esperá unos minutos y probá de nuevo.';
+    case 'auth/network-request-failed':
+      return 'No hay conexión. Revisá internet y probá de nuevo.';
+    default:
+      return 'No se pudo iniciar sesión. Probá de nuevo en un rato.';
+  }
+};
+
 /** Entra con Firebase Auth. El token sale de la API pública `getIdToken`, no de campos internos del SDK. */
 export const loginWithEmailAndPassword = async ({ email, password }: ICredentials): Promise<LoginOk | LoginError> => {
   try {
@@ -30,8 +50,7 @@ export const loginWithEmailAndPassword = async ({ email, password }: ICredential
     const { displayName, photoURL, uid } = user;
     return { ok: true, displayName, email, photoURL, uid, token };
   } catch (error) {
-    const errorMessage = error instanceof FirebaseError ? error.message : 'No se pudo iniciar sesión';
-    return { ok: false, errorMessage };
+    return { ok: false, errorMessage: loginErrorMessage(error instanceof FirebaseError ? error.code : undefined) };
   }
 };
 

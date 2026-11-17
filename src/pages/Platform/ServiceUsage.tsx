@@ -9,6 +9,7 @@ import {
   ErrorState,
   IdentityCell,
   KpiCard,
+  KpiGrid,
   LoadingState,
   PageContainer,
   PageHeader,
@@ -52,7 +53,7 @@ const columns: GridColDef<DocumentReadingUsageItem>[] = [
     sortable: false,
     align: 'right',
     headerAlign: 'right',
-    renderCell: ({ row }) => <span className="font-mono">{formatNumber(row.readings)}</span>,
+    renderCell: ({ row }) => <span className="tabular-nums">{formatNumber(row.readings)}</span>,
   },
   {
     field: 'costUsd',
@@ -62,7 +63,7 @@ const columns: GridColDef<DocumentReadingUsageItem>[] = [
     sortable: false,
     align: 'right',
     headerAlign: 'right',
-    renderCell: ({ row }) => <span className="font-mono">{formatUsd(row.costUsd)}</span>,
+    renderCell: ({ row }) => <span className="tabular-nums">{formatUsd(row.costUsd)}</span>,
   },
   {
     field: 'budgetUsedPct',
@@ -90,7 +91,7 @@ const UsageCard = (row: DocumentReadingUsageItem) => (
       <ReadingState enabled={row.enabled} />
     </div>
     <p className="text-sm text-ink-2">
-      {formatNumber(row.readings)} lecturas · <span className="font-mono">{formatUsd(row.costUsd)}</span>
+      {formatNumber(row.readings)} lecturas · <span className="tabular-nums">{formatUsd(row.costUsd)}</span>
     </p>
     <p className={row.budgetUsedPct >= 100 ? 'text-xs font-semibold text-danger' : 'text-xs text-muted'}>
       {formatPct(row.budgetUsedPct)} del tope de {formatUsd(row.monthlyBudgetUsd)}
@@ -145,7 +146,7 @@ export const ServiceUsage = () => {
         <LoadingState fullPage label="Cargando el uso…" />
       ) : (
         <>
-          <div className="grid gap-3.5 sm:grid-cols-2">
+          <KpiGrid className="sm:grid-cols-2">
             <KpiCard
               title="Lecturas del mes"
               icon={ScanText}
@@ -153,7 +154,7 @@ export const ServiceUsage = () => {
               hint={formatMonth(data.month)}
             />
             <KpiCard title="Costo del mes" icon={ScanText} value={formatUsd(data.totalCostUsd)} hint="En dólares" />
-          </div>
+          </KpiGrid>
           <Card>
             <div className="p-4 pb-0">
               <CardHeader

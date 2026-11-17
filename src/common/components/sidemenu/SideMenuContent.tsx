@@ -7,6 +7,7 @@ import { useMyAccount } from '../../../services/queries/users';
 import { CompanyBrand, PoweredByPlatform } from '../CompanyBrand';
 import { LogoSplg } from '../LogoSplg';
 import { cx } from '../ui/cx';
+import { useScrollHint } from '../ui/useScrollHint';
 import { MyAvatar } from '../MyAvatar';
 import { initialsOf } from '../../../utils/format';
 import { NavItemLink } from './NavItemLink';
@@ -59,6 +60,8 @@ export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNaviga
   const { email } = useAppSelector((state) => state.auth);
   const { data: account } = useMyAccount(email);
   const [collapsed, setCollapsed] = useState<string[]>(readCollapsedSections);
+  // Si quedan secciones más abajo, un degradé lo avisa (el bloque del usuario queda fijo, fuera del desplazamiento).
+  const navScroll = useScrollHint<HTMLElement>('y');
 
   const toggleSection = (title: string) => {
     setCollapsed((prev) => {
@@ -87,50 +90,64 @@ export const SideMenuContent = ({ isSuperAdmin, fullName, mini = false, onNaviga
       {/* En la empresa del admin el encabezado ya la nombra; en soporte y en la propia, la tarjeta dice cómo se mira. */}
       {viewer.mode !== 'company' && <TenantCard mini={mini} onNavigate={onNavigate} />}
 
-      <nav aria-label="Secciones del panel" className="relative -mx-3.5 flex-1 space-y-1.5 overflow-y-auto px-3.5">
-        {NAV_SECTIONS.map((section) => {
-          const items = section.items.filter((item) => isNavItemVisible(item, viewer));
-          if (items.length === 0) return null;
-          const isOpen = mini || !collapsed.includes(section.title);
-          const panelId = `nav-section-${section.title}`;
-          return (
-            <div
-              key={section.title}
-              className={cx('pt-3.5 first:pt-0', mini && 'border-t border-side-line first:border-0')}
-            >
-              {!mini && (
-                <button
-                  type="button"
-                  onClick={() => toggleSection(section.title)}
-                  aria-expanded={isOpen}
-                  aria-controls={panelId}
-                  className="flex w-full items-center justify-between rounded-[9px] px-2.5 pb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-side-muted transition-colors hover:text-side-text"
-                >
-                  {section.title}
-                  <ChevronDown
-                    aria-hidden="true"
-                    className={cx('h-3.5 w-3.5 shrink-0 transition-transform', isOpen ? '' : '-rotate-90')}
-                    strokeWidth={2}
-                  />
-                </button>
-              )}
-              {isOpen && (
-                <div id={panelId} className="space-y-0.5">
-                  {items.map((item) => (
-                    <NavItemLink
-                      key={item.path}
-                      item={item}
-                      mini={mini}
-                      pendingCount={pendingCount}
-                      onNavigate={onNavigate}
+      <div className="relative -mx-3.5 flex min-h-0 flex-1 flex-col">
+        <nav
+          ref={navScroll.ref}
+          aria-label="Secciones del panel"
+          className="relative min-h-0 flex-1 space-y-1.5 overflow-y-auto px-3.5"
+        >
+          {NAV_SECTIONS.map((section) => {
+            const items = section.items.filter((item) => isNavItemVisible(item, viewer));
+            if (items.length === 0) return null;
+            const isOpen = mini || !collapsed.includes(section.title);
+            const panelId = `nav-section-${section.title}`;
+            return (
+              <div
+                key={section.title}
+                className={cx('pt-3.5 first:pt-0', mini && 'border-t border-side-line first:border-0')}
+              >
+                {!mini && (
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(section.title)}
+                    aria-expanded={isOpen}
+                    aria-controls={panelId}
+                    className="flex w-full items-center justify-between rounded-[9px] px-2.5 pb-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-side-muted transition-colors hover:text-side-text"
+                  >
+                    {section.title}
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={cx('h-3.5 w-3.5 shrink-0 transition-transform', isOpen ? '' : '-rotate-90')}
+                      strokeWidth={2}
                     />
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </nav>
+                  </button>
+                )}
+                {isOpen && (
+                  <div id={panelId} className="space-y-0.5">
+                    {items.map((item) => (
+                      <NavItemLink
+                        key={item.path}
+                        item={item}
+                        mini={mini}
+                        pendingCount={pendingCount}
+                        onNavigate={onNavigate}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+        <span
+          aria-hidden="true"
+          data-testid="nav-scroll-hint"
+          className={cx(
+            'pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-side to-transparent transition-opacity',
+            navScroll.more ? 'opacity-100' : 'opacity-0',
+          )}
+        />
+      </div>
 
       {viewer.mode !== 'platform' && !mini && <PoweredByPlatform className="relative -mb-2" />}
       <div

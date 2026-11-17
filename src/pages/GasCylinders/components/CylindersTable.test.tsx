@@ -69,7 +69,8 @@ describe('CylindersTable', () => {
   it('en el catálogo activo ofrece editar y desactivar', () => {
     renderTable({ onEdit: vi.fn(), onDelete: vi.fn(), onReactivate: vi.fn() });
     expect(screen.getByRole('button', { name: 'Editar 10kg' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Desactivar 10kg' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Más acciones de 10kg' }));
+    expect(screen.getByRole('menuitem', { name: 'Desactivar' })).toBeInTheDocument();
   });
 
   it('en la vista de dados de baja sólo se puede ver y reactivar', () => {
@@ -77,8 +78,8 @@ describe('CylindersTable', () => {
     renderTable({ inactive: true, onEdit: vi.fn(), onDelete: vi.fn(), onAdjustStock: vi.fn(), onReactivate });
     expect(screen.getByRole('button', { name: 'Ver 10kg' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Editar 10kg' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Desactivar 10kg' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Más acciones de 10kg' }));
+    expect(screen.queryByRole('menuitem', { name: 'Desactivar' })).not.toBeInTheDocument();
     expect(screen.queryByRole('menuitem', { name: 'Ajustar stock' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('menuitem', { name: 'Reactivar' }));
     expect(onReactivate).toHaveBeenCalledWith(cylinder);

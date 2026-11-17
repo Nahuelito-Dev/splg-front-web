@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Button,
   Card,
+  Checkbox,
   EmptyState,
   ErrorState,
   IdentityCell,
@@ -166,30 +167,22 @@ export const PlatformTickets = () => {
         <TableToolbar
           filters={
             <>
-              <div className="sm:w-56">
-                <CompanySelect
-                  value={filters.company}
-                  onChange={(company) => setFilters({ company })}
-                  emptyLabel="Todas"
-                />
-              </div>
-              <div className="sm:w-40">
-                <Select
-                  label="Prioridad"
-                  value={filters.priority}
-                  onChange={(event) => setFilters({ priority: event.target.value })}
-                  options={PRIORITY_OPTIONS}
-                />
-              </div>
-              <label className="flex items-end gap-2 pb-2 text-sm text-ink-2">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-primary"
-                  checked={filters.overdue === '1'}
-                  onChange={(event) => setFilters({ overdue: event.target.checked ? '1' : '' })}
-                />
-                Sólo vencidos ({counts ? counts.overdue : '—'})
-              </label>
+              <CompanySelect
+                value={filters.company}
+                onChange={(company) => setFilters({ company })}
+                emptyLabel="Todas"
+              />
+              <Select
+                label="Prioridad"
+                value={filters.priority}
+                onChange={(event) => setFilters({ priority: event.target.value })}
+                options={PRIORITY_OPTIONS}
+              />
+              <Checkbox
+                label={`Sólo vencidos (${counts ? counts.overdue : '—'})`}
+                checked={filters.overdue === '1'}
+                onChange={(event) => setFilters({ overdue: event.target.checked ? '1' : '' })}
+              />
             </>
           }
           search={{

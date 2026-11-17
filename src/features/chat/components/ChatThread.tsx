@@ -19,6 +19,7 @@ import {
 import { lastCounterpartSeq, lastSeqOf, type ChatMessage, type PendingMessage } from '../thread';
 import { useTyping } from '../typing';
 import { useConversationRoom } from '../useConversationRoom';
+import { AttachButton } from './AttachButton';
 import { Composer, type ComposerBanner, type MentionSource, type QuickReply } from './Composer';
 import { MessageList } from './MessageList';
 import { ThreadSkeleton } from './ThreadSkeleton';
@@ -92,8 +93,21 @@ export const ChatThread = ({
 }: ChatThreadProps) => {
   const { conversationId } = source;
   const draftKey = conversationId ?? `${side}:new`;
-  const { thread, isPending, error, refetch, loadOlder, loadingOlder, olderError, send, edit, retry, discard, reload } =
-    useThread(source);
+  const {
+    thread,
+    isPending,
+    error,
+    refetch,
+    loadOlder,
+    loadingOlder,
+    olderError,
+    send,
+    edit,
+    retry,
+    discard,
+    reload,
+    attach,
+  } = useThread(source);
   // A qué mensaje se responde y cuál se edita, por `seq`: se muestran como están ahora en el hilo (si se borra
   // mientras tanto, «Mensaje eliminado»).
   const [replySeq, setReplySeq] = useState<number | null>(null);
@@ -311,6 +325,7 @@ export const ChatThread = ({
           counterpartLastReadSeq: Math.max(counterpartLastReadSeq, thread.counterpartLastReadSeq),
           onReply: canWrite && allowReply ? onReply : undefined,
           onEdit: canWrite && edit ? onEdit : undefined,
+          attachmentLink: source.attachments?.link,
         }}
         loadOlder={() => void loadOlder()}
         loadingOlder={loadingOlder}
@@ -338,6 +353,11 @@ export const ChatThread = ({
           editText={editText}
           rescue={rescue}
           variables={variables}
+          attach={
+            attach && source.attachments ? (
+              <AttachButton channel={source.attachments.channel} onUpload={attach} />
+            ) : undefined
+          }
           suggestions={renderSuggestions?.({
             lastCounterpartSeq: lastCounterpartSeq(thread.messages),
             pick: pickSuggestion,

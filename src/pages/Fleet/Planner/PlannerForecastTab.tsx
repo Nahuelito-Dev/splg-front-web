@@ -44,7 +44,7 @@ const ItemRow = ({
     <div className="min-w-0">
       <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-ink">
         {item.taskName}
-        <Badge label={labelOf(FLEET_TASK_CRITICALITY, item.criticality)} variant="critical" />
+        <Badge label={labelOf(FLEET_TASK_CRITICALITY, item.criticality)} />
       </p>
       <p className="text-[13px] text-ink-2">
         {item.projectedDueAt ? `${formatDay(item.projectedDueAt)} · ` : ''}
@@ -56,7 +56,7 @@ const ItemRow = ({
       )}
     </div>
     <div className="flex flex-wrap items-center gap-2">
-      <Badge label={forecastState(item)} variant="critical" />
+      <Badge label={forecastState(item)} />
       {item.needsWorkshop && (
         <>
           <Button
@@ -119,7 +119,9 @@ const VehicleCard = ({
         : 'Sin ventana de taller por ahora.'}
     </p>
     {vehicle.items.length === 0 ? (
-      <p className="mt-3 text-sm text-muted">Sin tareas abiertas.</p>
+      <div className="mt-3">
+        <EmptyState compact title="Sin tareas abiertas." />
+      </div>
     ) : (
       <ul className="mt-2 divide-y divide-outline-soft">
         {vehicle.items.map((item) => (

@@ -9,6 +9,7 @@ import {
   ErrorState,
   IdentityCell,
   KpiCard,
+  KpiGrid,
   PageHeader,
   TableToolbar,
   ResponsiveTable,
@@ -139,12 +140,12 @@ export const StockSummary = () => {
         )
       )}
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <KpiGrid className="mb-6 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard title="Llenas físicas" icon={Flame} value={kpi(totals.full)} loading={summary.isPending} />
         <KpiCard title="Vendible" icon={PackageCheck} value={kpi(totals.sellable)} loading={summary.isPending} />
         <KpiCard title="Vacías" icon={Warehouse} value={kpi(totals.empty)} loading={summary.isPending} />
         <KpiCard title="Defectuosas" icon={AlertTriangle} value={kpi(totals.defective)} loading={summary.isPending} />
-      </div>
+      </KpiGrid>
 
       <Card className="mb-6">
         <div className="border-b border-outline px-4 py-3">
@@ -152,9 +153,10 @@ export const StockSummary = () => {
           <p className="text-xs text-muted">En galpones y camiones: llenas · vacías · defectuosas.</p>
         </div>
         <TableToolbar
+          resultCount={summary.data?.length}
           serverExport={{ resource: 'stock-resumen' }}
           actions={importing.actions}
-          noun={['garrafa', 'garrafas']}
+          noun={['tipo de garrafa', 'tipos de garrafa']}
         />
         {summary.isError ? (
           <ErrorState error={summary.error} resource="El resumen" onRetry={() => void summary.refetch()} />
@@ -176,19 +178,19 @@ export const StockSummary = () => {
                 </div>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                   <dt className="text-muted">Llenas físicas</dt>
-                  <dd className="text-right font-mono">{row.physicalFull}</dd>
+                  <dd className="text-right tabular-nums">{row.physicalFull}</dd>
                   <dt className="text-muted">Vendible</dt>
-                  <dd className="text-right font-mono">{row.sellable}</dd>
+                  <dd className="text-right tabular-nums">{row.sellable}</dd>
                   <dt className="text-muted">Reservado</dt>
-                  <dd className="text-right font-mono">{row.reserved}</dd>
+                  <dd className="text-right tabular-nums">{row.reserved}</dd>
                   <dt className="text-muted">Mínimo</dt>
-                  <dd className="text-right font-mono">{row.minimumFull ?? '—'}</dd>
+                  <dd className="text-right tabular-nums">{row.minimumFull ?? '—'}</dd>
                   <dt className="text-muted">Galpones</dt>
-                  <dd className="text-right font-mono">
+                  <dd className="text-right tabular-nums">
                     {row.warehouses.full} · {row.warehouses.empty} · {row.warehouses.defective}
                   </dd>
                   <dt className="text-muted">Camiones</dt>
-                  <dd className="text-right font-mono">
+                  <dd className="text-right tabular-nums">
                     {row.vehicles.full} · {row.vehicles.empty} · {row.vehicles.defective}
                   </dd>
                 </dl>

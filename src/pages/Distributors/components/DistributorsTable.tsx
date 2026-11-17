@@ -31,7 +31,7 @@ interface Props extends Actions {
 /** El estado y, si es la propia de la plataforma, su marca. */
 const CompanyBadges = ({ company }: { company: CompanyListItem }) => (
   <div className="flex flex-col items-start gap-1">
-    <Badge label={labelOf(DISTRIBUTOR_STATUS, company.status)} variant="critical" />
+    <Badge label={labelOf(DISTRIBUTOR_STATUS, company.status)} />
     {company.ownedByPlatform && <OwnedBadge />}
   </div>
 );

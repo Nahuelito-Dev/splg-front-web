@@ -127,6 +127,7 @@ export const Tires = () => {
           idPrefix="tires"
         >
           <TableToolbar
+            resultCount={data?.total}
             filters={
               <>
                 <Select

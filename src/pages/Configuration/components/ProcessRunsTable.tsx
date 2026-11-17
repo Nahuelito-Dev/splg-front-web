@@ -57,7 +57,7 @@ export const ProcessRunsTable = ({ rows, total, loading, pagination, onPaginatio
         field: 'status',
         headerName: 'Resultado',
         width: 140,
-        renderCell: ({ row }) => <Badge label={labelOf(PROCESS_RUN_STATUS, row.status)} variant="critical" />,
+        renderCell: ({ row }) => <Badge label={labelOf(PROCESS_RUN_STATUS, row.status)} />,
       },
     ],
     [],

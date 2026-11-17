@@ -7,6 +7,7 @@ import {
   EmptyState,
   ErrorState,
   KpiCard,
+  KpiGrid,
   LoadingState,
   PageHeader,
   ResponsiveTable,
@@ -73,7 +74,7 @@ export const CustomerAging = () => {
         <ErrorState error={error} resource="El reporte" onRetry={() => void refetch()} />
       ) : (
         <div className="grid gap-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <KpiGrid className="sm:grid-cols-2 lg:grid-cols-5">
             <KpiCard title="0 a 30 días" icon={Hourglass} value={money(data.totals.upTo30Days)} />
             <KpiCard title="31 a 60 días" icon={Hourglass} value={money(data.totals.from31To60Days)} />
             <KpiCard title="61 a 90 días" icon={Hourglass} value={money(data.totals.from61To90Days)} />
@@ -84,7 +85,7 @@ export const CustomerAging = () => {
               pill={data.totals.over90Days > 0 ? { text: 'Para reclamar', trend: 'down' } : undefined}
             />
             <KpiCard title="Deuda total" icon={Hourglass} value={money(data.totals.total)} />
-          </div>
+          </KpiGrid>
           <Card>
             <ResponsiveTable
               label="deuda por cuenta"
@@ -96,7 +97,7 @@ export const CustomerAging = () => {
               renderCard={(row) => (
                 <>
                   <strong>{row.businessName}</strong>
-                  <div className="font-mono text-sm">
+                  <div className="tabular-nums text-sm">
                     Total {money(row.total)} · más de 90 días {money(row.over90Days)}
                   </div>
                 </>

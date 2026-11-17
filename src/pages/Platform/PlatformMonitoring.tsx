@@ -45,11 +45,7 @@ const ProcessRow = ({ process }: { process: PlatformProcess }) => {
           <span className="text-xs text-muted">Sin corridas</span>
         ) : (
           entries.map((entry) => (
-            <Badge
-              key={entry.key}
-              label={{ text: `${entry.label.text}: ${entry.count}`, tone: entry.label.tone }}
-              variant="critical"
-            />
+            <Badge key={entry.key} label={{ text: `${entry.label.text}: ${entry.count}`, tone: entry.label.tone }} />
           ))
         )}
       </div>

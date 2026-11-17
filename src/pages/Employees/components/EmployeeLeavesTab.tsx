@@ -52,7 +52,7 @@ const VacationBalanceCard = ({ employeeId }: { employeeId: string }) => {
           ].map((item) => (
             <div key={item.label} className="rounded-xl border border-outline-soft bg-bg p-3">
               <dt className="text-xs text-muted">{item.label}</dt>
-              <dd className="mt-1 font-mono text-lg font-semibold text-ink">
+              <dd className="mt-1 tabular-nums text-lg font-semibold text-ink">
                 {isPending ? '…' : formatNumber(item.value)}
               </dd>
             </div>

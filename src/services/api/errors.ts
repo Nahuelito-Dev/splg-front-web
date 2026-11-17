@@ -78,7 +78,9 @@ const SCOPE_REQUIRED_MESSAGE =
 const friendly = (status: number | null, messages: string[], code?: string | null): string[] => {
   if (code === 'SUPPORT_SCOPE_REQUIRED') return [SCOPE_REQUIRED_MESSAGE];
   if (code === MODULE_DISABLED_CODE) return [MODULE_DISABLED_MESSAGE];
-  if (status === 429) return [RATE_LIMITED_MESSAGE];
+  // Un 429 con `code` es una regla del negocio con su texto (`ATTACHMENT_DAILY_LIMIT`, `CHAT_RATE_LIMITED`): se muestra
+  // tal cual. Sin `code` es el límite genérico de pedidos.
+  if (status === 429) return code ? messages : [RATE_LIMITED_MESSAGE];
   if (status === 409) return messages.map((m) => (UNPAID_INCIDENT.test(m) ? UNPAID_INCIDENT_MESSAGE : m));
   return status === 400
     ? messages.map((m) => (MISSING_DISTRIBUTOR.test(m) ? MISSING_DISTRIBUTOR_MESSAGE : m))

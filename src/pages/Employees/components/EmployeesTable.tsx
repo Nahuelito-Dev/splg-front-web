@@ -64,7 +64,7 @@ export const EmployeesTable = ({
         renderCell: ({ row }) =>
           row.documentStatus ? (
             <div className="flex flex-col items-start gap-0.5">
-              <Badge label={DOCUMENT_STATUS_LABELS[row.documentStatus]} variant="critical" />
+              <Badge label={DOCUMENT_STATUS_LABELS[row.documentStatus]} />
               {row.nextDocumentDueDate && (row.documentStatus === 'due_soon' || row.documentStatus === 'expired') && (
                 <span className="text-xs text-muted">
                   {row.documentStatus === 'expired' ? 'Venció' : 'Vence'} {formatDay(row.nextDocumentDueDate)}

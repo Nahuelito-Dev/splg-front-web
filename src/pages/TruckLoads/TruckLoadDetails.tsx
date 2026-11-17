@@ -12,12 +12,14 @@ import {
   EmptyState,
   ErrorState,
   KpiCard,
+  KpiGrid,
   PageHeader,
   ResponsiveTable,
   PageContainer,
   CardHeader,
   type MenuAction,
   LinkedEntityPhoto,
+  type TableColumn,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import type { StockMovement, TruckLoadItem, TruckLoadOrder } from '../../services/api/types';
@@ -110,9 +112,10 @@ const ORDER_COLUMNS: GridColDef<TruckLoadOrder>[] = [
   },
 ];
 
-const MOVEMENT_COLUMNS: GridColDef<StockMovement>[] = [
+const MOVEMENT_COLUMNS: TableColumn<StockMovement>[] = [
   {
     field: 'occurredAt',
+    kind: 'date',
     headerName: 'Cuándo',
     width: 190,
     sortable: false,
@@ -293,7 +296,7 @@ export const TruckLoadDetails = () => {
               />
             </Card>
             <div className="min-w-0 space-y-6 lg:col-span-2">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <KpiGrid className="sm:grid-cols-3">
                 <KpiCard
                   title="Efectivo cobrado"
                   icon={Banknote}
@@ -312,7 +315,7 @@ export const TruckLoadDetails = () => {
                   value={formatCurrency(load.cash.pendingConfirmationAmount)}
                   hint={`${load.cash.pendingConfirmationCount} pedidos`}
                 />
-              </div>
+              </KpiGrid>
               {can?.isOpen && (
                 <Card>
                   <CardHeader title="Stock actual del camión" className="border-b border-outline px-4 py-3" />

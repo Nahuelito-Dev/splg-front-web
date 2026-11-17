@@ -49,10 +49,10 @@ export const VehicleAccidentDrawer = ({ accidentId, onClose }: Props) => {
               ...(accident.status === 'closed'
                 ? [
                     { label: 'Cerrado el', value: formatDateTime(accident.closedAt) },
-                    { label: 'Reparación', value: formatCurrency(accident.repairCost), mono: true },
-                    { label: 'Reintegro del seguro', value: formatCurrency(accident.insurerReimbursement), mono: true },
-                    { label: 'Franquicia', value: formatCurrency(accident.deductibleAmount), mono: true },
-                    { label: 'Costo neto', value: formatCurrency(accident.netCost), mono: true },
+                    { label: 'Reparación', value: formatCurrency(accident.repairCost) },
+                    { label: 'Reintegro del seguro', value: formatCurrency(accident.insurerReimbursement) },
+                    { label: 'Franquicia', value: formatCurrency(accident.deductibleAmount) },
+                    { label: 'Costo neto', value: formatCurrency(accident.netCost) },
                   ]
                 : []),
             ]}

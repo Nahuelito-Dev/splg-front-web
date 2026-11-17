@@ -9,7 +9,7 @@ import {
   catchUpThreads,
 } from '../../services/queries/chatThread';
 import { inboxKeys, invalidateInbox } from '../../services/queries/inbox';
-import { alertInboxMessage, alertIncoming, dismissAlert } from './alerts';
+import { alertInboxMessage, alertIncoming, dismissAlert, firstAlertOf } from './alerts';
 import { counterpartName } from './inbox/inboxLabels';
 import { isRoomOpen } from './useConversationRoom';
 import {
@@ -55,6 +55,7 @@ export const useInboxBridge = (enabled: boolean) => {
   useEffect(() => {
     if (!enabled) return;
     let timer: number | undefined;
+    const firstAlert = firstAlertOf();
     const refresh = () => {
       window.clearTimeout(timer);
       timer = window.setTimeout(() => void invalidateInbox(queryClient), LISTS_DEBOUNCE_MS);
@@ -63,11 +64,12 @@ export const useInboxBridge = (enabled: boolean) => {
       subscribe<InboxMessageEvent>(CHAT_EVENTS.MESSAGE, ({ message }) => {
         // Los del chat con la plataforma traen `visibility`: son del otro puente.
         if (!message || 'visibility' in message) return;
-        applyIncomingMessage(queryClient, message);
+        // Una versión nueva de uno que ya estaba (el adjunto ya escaneado) no se avisa otra vez.
+        const known = applyIncomingMessage(queryClient, message) === 'known';
         if (!fromPerson(message.party)) return;
         typingStore.clear(message.conversationId);
         // Con la conversación abierta en pantalla avisa éste (con el texto); si no, `chat:inbox` (sin el texto).
-        if (isRoomOpen(message.conversationId)) {
+        if (!known && isRoomOpen(message.conversationId) && firstAlert(message.conversationId, message.seq)) {
           alertIncoming(toChatMessage(message), `Mensaje de ${message.sender?.displayName ?? 'un cliente'}`);
         }
         refresh();

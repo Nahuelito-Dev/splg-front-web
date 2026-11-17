@@ -47,7 +47,7 @@ export function ReportTable<T>({ caption, columns, rows, getKey }: Props<T>) {
                   key={col.header}
                   className={cx(
                     'px-3 py-2.5 text-ink sm:px-5',
-                    col.numeric && 'text-right font-mono tabular-nums',
+                    col.numeric && 'text-right tabular-nums',
                     col.wide && 'hidden sm:table-cell',
                   )}
                 >
@@ -64,7 +64,7 @@ export function ReportTable<T>({ caption, columns, rows, getKey }: Props<T>) {
                 key={col.header}
                 className={cx(
                   'px-3 py-2.5 sm:px-5',
-                  col.numeric && 'text-right font-mono tabular-nums',
+                  col.numeric && 'text-right tabular-nums',
                   col.wide && 'hidden sm:table-cell',
                 )}
               >

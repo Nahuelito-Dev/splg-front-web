@@ -14,6 +14,16 @@ import {
   sendPlatformChatMessage,
   sendPlatformTicketMessage,
 } from '../api/supportChat';
+import {
+  getCompanyChatAttachmentLink,
+  getCompanyTicketAttachmentLink,
+  getPlatformChatAttachmentLink,
+  getPlatformTicketAttachmentLink,
+  uploadCompanyChatAttachment,
+  uploadCompanyTicketAttachment,
+  uploadPlatformChatAttachment,
+  uploadPlatformTicketAttachment,
+} from '../api/chatAttachments';
 import type { ThreadSource } from './chatThread';
 import { chatKeys, invalidateChatLists } from './supportChat';
 
@@ -44,6 +54,18 @@ export const useCompanyChatThread = (
           // Los datos del chat abierto (quién atiende, tickets) llegan después; si falla, el hilo ya está a la vista.
           void queryClient.invalidateQueries({ queryKey: chatKeys.companyChat() });
         },
+        // Un adjunto va a un chat que ya existe: el primer mensaje (el que abre el chat) es de texto.
+        attachments: conversationId
+          ? {
+              channel: 'support',
+              upload: async (input, onProgress) => {
+                const message = await uploadCompanyChatAttachment(conversationId, input, onProgress);
+                void invalidateChatLists(queryClient);
+                return message;
+              },
+              link: (messageId) => getCompanyChatAttachmentLink(conversationId, messageId),
+            }
+          : undefined,
       },
       read: conversationId ? (seq) => readCompanyChat(conversationId, seq) : undefined,
     }),
@@ -59,6 +81,10 @@ export const useCompanyArchivedChatThread = (conversationId: string): ThreadBind
         conversationId,
         fetch: (query) => listCompanyChatMessages(conversationId, query),
         send: () => Promise.reject(new Error('El chat está cerrado')),
+        attachments: {
+          channel: 'support',
+          link: (messageId) => getCompanyChatAttachmentLink(conversationId, messageId),
+        },
       },
     }),
     [conversationId],
@@ -77,6 +103,16 @@ export const useCompanyTicketThread = (ticketId: string, conversationId: string)
           // Responder cambia el estado del ticket (esperaba a la empresa o estaba resuelto → en curso).
           void invalidateChatLists(queryClient);
           return message;
+        },
+        attachments: {
+          channel: 'support',
+          upload: async (input, onProgress) => {
+            // Un adjunto también es una respuesta: mueve el ticket como un texto.
+            const message = await uploadCompanyTicketAttachment(ticketId, input, onProgress);
+            void invalidateChatLists(queryClient);
+            return message;
+          },
+          link: (messageId) => getCompanyTicketAttachmentLink(ticketId, messageId),
         },
       },
       read: (seq) => readCompanyTicket(ticketId, seq),
@@ -97,6 +133,15 @@ export const usePlatformChatThread = (conversationId: string): ThreadBinding => 
           // La primera respuesta deja el chat atendido por quien escribe.
           void invalidateChatLists(queryClient);
           return message;
+        },
+        attachments: {
+          channel: 'support',
+          upload: async (input, onProgress) => {
+            const message = await uploadPlatformChatAttachment(conversationId, input, onProgress);
+            void invalidateChatLists(queryClient);
+            return message;
+          },
+          link: (messageId) => getPlatformChatAttachmentLink(conversationId, messageId),
         },
       },
       read: (seq) => readPlatformChat(conversationId, seq),
@@ -120,6 +165,16 @@ export const usePlatformTicketThread = (ticketId: string, conversationId: string
           });
           void invalidateChatLists(queryClient);
           return message;
+        },
+        attachments: {
+          channel: 'support',
+          upload: async (input, onProgress) => {
+            // Lo ve la empresa (no hay adjuntos en una nota interna) y deja el ticket esperándola.
+            const message = await uploadPlatformTicketAttachment(ticketId, input, onProgress);
+            void invalidateChatLists(queryClient);
+            return message;
+          },
+          link: (messageId) => getPlatformTicketAttachmentLink(ticketId, messageId),
         },
       },
       read: (seq) => readPlatformTicket(ticketId, seq),

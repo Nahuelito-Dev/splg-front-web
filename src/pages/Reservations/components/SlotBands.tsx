@@ -32,7 +32,7 @@ export const SlotBands = ({ slots, compact = false }: Props) => {
           >
             <div className="flex items-baseline justify-between gap-2">
               <span className="truncate font-semibold text-ink">{slot.name}</span>
-              <span className="shrink-0 font-mono text-muted">{range}</span>
+              <span className="shrink-0 tabular-nums text-muted">{range}</span>
             </div>
             <div
               role="progressbar"

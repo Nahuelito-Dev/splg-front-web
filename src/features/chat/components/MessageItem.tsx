@@ -17,7 +17,9 @@ import { claimOfSystem, isOutOfHoursReply, systemText, ticketOfSystem } from '..
 import { messageDomId, useCanEditNow } from '../messageActions';
 import type { ChatMessage } from '../thread';
 import { aiSourcesOf, customerActionOf, handoffNoteOf } from '../inbox/messageExtras';
+import type { ChatAttachmentLinkFn } from '../../../services/queries/chatAttachments';
 import { AutomatedMark } from './AutomatedMark';
+import { ChatAttachmentItem } from './ChatAttachmentItem';
 import { CsatRequestItem, HandoffNoteItem, InternalNoteItem } from './InboxMessageExtras';
 import { MessageText } from './MessageText';
 import { QuotedExcerpt } from './QuotedExcerpt';
@@ -50,6 +52,8 @@ export interface MessageContext {
   onReply?: (message: ChatMessage) => void;
   /** «Editar» un mensaje propio dentro de los 15 minutos. Sin esto no se ofrece. */
   onEdit?: (message: ChatMessage) => void;
+  /** Pide el enlace firmado de un adjunto por el endpoint del hilo. Sin esto, un adjunto sólo muestra su nombre. */
+  attachmentLink?: ChatAttachmentLinkFn;
   /** La encuesta del último cierre de la conversación (bandeja, con un cliente): su resultado va junto al pedido. */
   csat?: InboxCsat | null;
 }
@@ -157,6 +161,8 @@ const MessageItemView = ({ message, first, ctx }: Props) => {
   // La marca «Respuesta automática»: la bandeja (siempre) y lo que la API marque como automático.
   const marked = automated || (auto && variant === 'inbox');
   const deleted = Boolean(message.deleted);
+  // Un adjunto redactado llega sin `attachment`: se muestra como cualquier mensaje no disponible.
+  const attachment = message.kind === 'attachment' && !message.redacted ? message.attachment : null;
   const selectable = ctx.selection && !auto;
   const checked = ctx.selection?.selected.has(message.seq) ?? false;
   const other = ctx.counterpartName ?? ctx.platformName;
@@ -237,6 +243,16 @@ const MessageItemView = ({ message, first, ctx }: Props) => {
               <Ban aria-hidden="true" className="h-3.5 w-3.5" />
               Mensaje eliminado
             </em>
+          ) : attachment ? (
+            <span className="flex flex-col gap-1.5">
+              <ChatAttachmentItem
+                messageId={message.id}
+                attachment={attachment}
+                caption={message.body}
+                link={ctx.attachmentLink}
+              />
+              {message.body && <MessageText body={message.body} onPrimary={onPrimary} />}
+            </span>
           ) : message.redacted || message.body === null ? (
             <em className="opacity-75">Mensaje no disponible</em>
           ) : (
@@ -337,6 +353,7 @@ export const MessageItem = memo(MessageItemView, (prev, next) => {
     Boolean(prev.ctx.onOfferTicket) === Boolean(next.ctx.onOfferTicket) &&
     Boolean(prev.ctx.onReply) === Boolean(next.ctx.onReply) &&
     Boolean(prev.ctx.onEdit) === Boolean(next.ctx.onEdit) &&
+    Boolean(prev.ctx.attachmentLink) === Boolean(next.ctx.attachmentLink) &&
     Boolean(prev.ctx.selection) === Boolean(next.ctx.selection) &&
     (prev.ctx.selection?.selected.has(seq) ?? false) === (next.ctx.selection?.selected.has(seq) ?? false)
   );

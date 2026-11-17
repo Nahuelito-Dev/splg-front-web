@@ -90,7 +90,7 @@ export const StopList = ({
             />
             <span
               className={cx(
-                'grid h-7 w-7 place-items-center rounded-full font-mono text-xs font-semibold sm:row-span-2',
+                'grid h-7 w-7 place-items-center rounded-full tabular-nums text-xs font-semibold sm:row-span-2',
                 stop.late ? 'bg-danger text-white' : stop.locked ? 'bg-ink text-surface' : 'bg-primary text-on-primary',
               )}
             >
@@ -138,7 +138,7 @@ export const StopList = ({
               </div>
             </div>
             <b
-              className="self-start justify-self-end font-mono text-sm font-semibold text-ink"
+              className="self-start justify-self-end tabular-nums text-sm font-semibold text-ink"
               data-testid="eta"
               title="Hora estimada de llegada"
             >

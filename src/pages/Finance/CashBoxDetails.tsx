@@ -49,8 +49,8 @@ const OpenSessionCard = ({ sessionId }: { sessionId: string }) => {
             label: 'Abrió',
             value: names.nameOf(session.openedByUserId) ?? formatShortId(session.openedByUserId),
           },
-          { label: 'Monto inicial', value: formatCurrencyExact(session.openingAmount), mono: true },
-          { label: 'Saldo esperado', value: formatCurrencyExact(session.currentBalance), mono: true },
+          { label: 'Monto inicial', value: formatCurrencyExact(session.openingAmount) },
+          { label: 'Saldo esperado', value: formatCurrencyExact(session.currentBalance) },
         ]}
       />
     </Card>

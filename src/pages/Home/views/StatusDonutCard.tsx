@@ -56,7 +56,9 @@ export const StatusDonutCard = () => {
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
-          <strong className="font-mono text-2xl font-semibold leading-none text-ink">{formatNumber(total ?? 0)}</strong>
+          <strong className="tabular-nums text-2xl font-semibold leading-none text-ink">
+            {formatNumber(total ?? 0)}
+          </strong>
           <span className="mt-1 text-[11.5px] text-muted">pedidos</span>
         </div>
       </div>
@@ -71,7 +73,7 @@ export const StatusDonutCard = () => {
               />
               <span className="truncate">{row.name}</span>
             </span>
-            <span className="font-mono font-semibold text-ink">
+            <span className="tabular-nums font-semibold text-ink">
               {formatNumber(row.value)}
               {total ? (
                 <span className="ml-1.5 font-normal text-muted">{Math.round((row.value / total) * 100)} %</span>

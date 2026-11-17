@@ -1,6 +1,6 @@
 import type { GridPaginationModel } from '@mui/x-data-grid';
 import { useState } from 'react';
-import { Card, TableToolbar } from '../../../common/components/ui';
+import { TableToolbar } from '../../../common/components/ui';
 import { useDebounce } from '../../../hooks';
 import { useAudit } from '../../../services/queries/audit';
 import { auditQuery } from '../../../services/api/audit';
@@ -30,30 +30,28 @@ export const OperationsAuditTab = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <TableToolbar
-          filters={<AuditFilters value={filters} onChange={handleFiltersChange} />}
-          serverExport={{ resource: 'auditoria', params: auditQuery(listFilters) }}
-          chips={auditFilterChips(filters)}
-          onRemoveChip={(key) =>
-            handleFiltersChange({ ...filters, [key]: EMPTY_AUDIT_FILTERS[key as keyof AuditFiltersState] })
-          }
-          onClearChips={() => handleFiltersChange(EMPTY_AUDIT_FILTERS)}
-          resultCount={data?.total}
-          noun={['asiento', 'asientos']}
-        />
-        <AuditTable
-          rows={data?.rows ?? []}
-          total={data?.total ?? 0}
-          loading={isFetching}
-          pagination={pagination}
-          onPaginationChange={setPagination}
-          onViewDetail={setDetail}
-        />
-      </Card>
+    <>
+      <TableToolbar
+        filters={<AuditFilters value={filters} onChange={handleFiltersChange} />}
+        serverExport={{ resource: 'auditoria', params: auditQuery(listFilters) }}
+        chips={auditFilterChips(filters)}
+        onRemoveChip={(key) =>
+          handleFiltersChange({ ...filters, [key]: EMPTY_AUDIT_FILTERS[key as keyof AuditFiltersState] })
+        }
+        onClearChips={() => handleFiltersChange(EMPTY_AUDIT_FILTERS)}
+        resultCount={data?.total}
+        noun={['asiento', 'asientos']}
+      />
+      <AuditTable
+        rows={data?.rows ?? []}
+        total={data?.total ?? 0}
+        loading={isFetching}
+        pagination={pagination}
+        onPaginationChange={setPagination}
+        onViewDetail={setDetail}
+      />
 
       <AuditDetailDrawer entry={detail} onClose={() => setDetail(null)} />
-    </div>
+    </>
   );
 };

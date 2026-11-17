@@ -74,6 +74,11 @@ describe('StockSummary', () => {
     renderPage(<StockSummary />, { url: '/stock' });
     expect(screen.getAllByText('Vendible').length).toBeGreaterThan(0);
     expect(screen.getByText('8 llenas · 0 vacías · 0 defectuosas')).toBeInTheDocument();
+    // El resumen tiene una fila por tipo de garrafa: el conteo cuenta tipos, no garrafas.
+    const count = (pattern: RegExp) => (_: string, el: Element | null) =>
+      el?.tagName === 'P' && pattern.test(el.textContent ?? '');
+    expect(screen.getByText(count(/^\d+ tipos? de garrafa$/))).toBeInTheDocument();
+    expect(screen.queryByText(count(/^\d+ garrafas?$/))).toBeNull();
   });
 
   it('sin saldos lo dice y ofrece ir a los galpones', () => {

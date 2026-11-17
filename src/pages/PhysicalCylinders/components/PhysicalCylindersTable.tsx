@@ -89,7 +89,7 @@ export const PhysicalCylindersTable = ({
         headerName: 'Garantía',
         width: 120,
         renderCell: ({ row }) => (
-          <span className="font-mono text-ink">{row.deposit > 0 ? formatCurrency(row.deposit) : '—'}</span>
+          <span className="tabular-nums text-ink">{row.deposit > 0 ? formatCurrency(row.deposit) : '—'}</span>
         ),
       },
       {

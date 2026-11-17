@@ -94,7 +94,8 @@ describe('Customers: pestañas con contador', () => {
     expect(server).toHaveBeenLastCalledWith(expect.anything(), '', 'blocked', true);
     expect(screen.getByTestId('search')).toHaveTextContent('?status=blocked');
     expect(screen.getByText('Beto Gómez')).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: 'Filtros activos' })).toHaveTextContent('1 resultado');
+    expect(screen.getByRole('group', { name: 'Filtros activos' })).toBeInTheDocument();
+    expect(screen.getByText('1', { selector: 'b' }).parentElement).toHaveTextContent('1 cliente');
   });
 
   it('con más de 100 clientes sigue habiendo pestañas: el segmento lo resuelve la API', () => {

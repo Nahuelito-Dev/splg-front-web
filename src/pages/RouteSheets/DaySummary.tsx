@@ -1,5 +1,5 @@
 import { ClipboardList, PackageOpen, Route as RouteIcon, Waypoints } from 'lucide-react';
-import { KpiCard } from '../../common/components/ui';
+import { KpiCard, KpiGrid } from '../../common/components/ui';
 import type { RoutePlanDay } from '../../services/api/types';
 import { useCachedRouteSheetPaths } from '../../services/queries/routeSheets';
 import { formatKm } from './routeSheetLabels';
@@ -28,7 +28,7 @@ export const DaySummary = ({ day }: { day: RoutePlanDay }) => {
     : sheets.reduce((sum, s) => sum + s.totals.distanceKm, 0);
 
   return (
-    <section aria-label="Resumen del día" className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
+    <KpiGrid label="Resumen del día" className="min-[420px]:grid-cols-2 xl:grid-cols-4">
       <KpiCard
         title="Pedidos programados"
         icon={ClipboardList}
@@ -54,6 +54,6 @@ export const DaySummary = ({ day }: { day: RoutePlanDay }) => {
         value={String(day.emptiesExpected)}
         hint={`vacías del canje en ${plural(routed.length, 'hoja', 'hojas')}`}
       />
-    </section>
+    </KpiGrid>
   );
 };

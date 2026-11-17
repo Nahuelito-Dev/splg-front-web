@@ -30373,7 +30373,8 @@
                                 "route_sheet_watch",
                                 "support_session_expiry",
                                 "support_housekeeping",
-                                "assistant_ai_sweep"
+                                "assistant_ai_sweep",
+                                "chat_attachment_scan"
                             ]
                         }
                     },
@@ -44157,6 +44158,1086 @@
                 ]
             }
         },
+        "/api/v2/conversations/{id}/attachments": {
+            "post": {
+                "description": "Multipart: `file`, `clientMessageId` y `caption` opcional (≤ 500). Un adjunto por mensaje (`kind = attachment`, el epígrafe en `body`). El tipo se decide por el contenido; las fotos se guardan re-codificadas y sin EXIF (`scanStatus: clean`); PDF y documentos quedan `pending` hasta que los revisa el antivirus (llega `chat:message` con el estado nuevo). Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200) sin volver a subir. La respuesta trae `attachment` sin URL. Cuenta como respuesta de la empresa.",
+                "operationId": "InboxAttachmentsController_subir",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "clientMessageId": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    },
+                                    "caption": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                    }
+                                },
+                                "required": [
+                                    "file",
+                                    "clientMessageId"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reintento: ya estaba",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InboxMessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InboxMessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el archivo o está vacío (`ATTACHMENT_MISSING`); `clientMessageId` que no es uuid; epígrafe de más de 500 caracteres; demasiados campos en el formulario"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "El rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`) o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    },
+                    "404": {
+                        "description": "La conversación o el mensaje no existen, son de otra empresa o de un canal que quien pide no atiende; el mensaje no tiene adjunto, se redactó o su archivo se bloqueó por virus"
+                    },
+                    "409": {
+                        "description": "La conversación está cerrada (`CONVERSATION_CLOSED`) o la persona ya no es de la empresa (`CHAT_NOT_WRITABLE`)"
+                    },
+                    "413": {
+                        "description": "Supera el tope (`ATTACHMENT_TOO_LARGE`): fotos 5 MB y PDF 10 MB en la bandeja; 10 MB en el soporte; más de 24 megapíxeles"
+                    },
+                    "415": {
+                        "description": "Tipo no permitido en este chat, mirado por el contenido y no por la extensión (`ATTACHMENT_TYPE_NOT_ALLOWED`; acá se aceptan PDF, JPG, PNG o WEBP); una foto que no se puede leer (`ATTACHMENT_UNREADABLE`)"
+                    },
+                    "429": {
+                        "description": "30 archivos por persona y empresa en el día (`ATTACHMENT_DAILY_LIMIT`); más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`); el cupo de subidas de la sesión"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mandar una foto o un PDF",
+                "tags": [
+                    "Inbox (company)"
+                ]
+            }
+        },
+        "/api/v2/conversations/{id}/messages/{messageId}/attachment": {
+            "get": {
+                "description": "URL firmada de corta vida (la del mensaje no viaja en el listado).",
+                "operationId": "InboxAttachmentsController_enlace",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "messageId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL firmada de S3 (vence a los 300 s, `expiresAt`); fotos y PDF se ven en pantalla, el resto se baja",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DownloadLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "El rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`) o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    },
+                    "404": {
+                        "description": "La conversación o el mensaje no existen, son de otra empresa o de un canal que quien pide no atiende; el mensaje no tiene adjunto, se redactó o su archivo se bloqueó por virus"
+                    },
+                    "409": {
+                        "description": "El antivirus todavía lo está revisando (`ATTACHMENT_SCAN_PENDING`), o no lo pudo revisar todavía (`ATTACHMENT_SCAN_FAILED`: se reintenta solo; nadie lo baja mientras tanto)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "URL para ver o bajar el adjunto de un mensaje",
+                "tags": [
+                    "Inbox (company)"
+                ]
+            }
+        },
+        "/api/v2/me/conversations/{id}/attachments": {
+            "post": {
+                "description": "Multipart: `file`, `clientMessageId` y `caption` opcional (≤ 500). Un adjunto por mensaje (`kind = attachment`, el epígrafe en `body`). El tipo se decide por el contenido; las fotos se guardan re-codificadas y sin EXIF (`scanStatus: clean`); PDF y documentos quedan `pending` hasta que los revisa el antivirus (llega `chat:message` con el estado nuevo). Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200) sin volver a subir. La respuesta trae `attachment` sin URL.",
+                "operationId": "MyAttachmentsController_subir",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "clientMessageId": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    },
+                                    "caption": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                    }
+                                },
+                                "required": [
+                                    "file",
+                                    "clientMessageId"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reintento: ya estaba",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InboxMessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InboxMessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el archivo o está vacío (`ATTACHMENT_MISSING`); `clientMessageId` que no es uuid; epígrafe de más de 500 caracteres; demasiados campos en el formulario"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no es de un cliente o un chofer, o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`); la empresa apagó el chat con los clientes (`CUSTOMER_CHAT_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    },
+                    "404": {
+                        "description": "La conversación o el mensaje no existen, son de otra empresa o de otra persona (un chofer no ve las de los clientes); el mensaje no tiene adjunto, se redactó o su archivo se bloqueó por virus"
+                    },
+                    "409": {
+                        "description": "La conversación está cerrada (`CONVERSATION_CLOSED`) o ya no se puede escribir (`CHAT_NOT_WRITABLE`)"
+                    },
+                    "413": {
+                        "description": "Supera el tope (`ATTACHMENT_TOO_LARGE`): fotos 5 MB y PDF 10 MB en la bandeja; 10 MB en el soporte; más de 24 megapíxeles"
+                    },
+                    "415": {
+                        "description": "Tipo no permitido en este chat, mirado por el contenido y no por la extensión (`ATTACHMENT_TYPE_NOT_ALLOWED`; acá se aceptan PDF, JPG, PNG o WEBP); una foto que no se puede leer (`ATTACHMENT_UNREADABLE`)"
+                    },
+                    "429": {
+                        "description": "30 archivos por persona y empresa en el día (`ATTACHMENT_DAILY_LIMIT`); más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`); el cupo de subidas de la sesión"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mandar una foto o un PDF a la empresa",
+                "tags": [
+                    "Inbox (apps)"
+                ]
+            }
+        },
+        "/api/v2/me/conversations/{id}/messages/{messageId}/attachment": {
+            "get": {
+                "description": "URL firmada de corta vida. Leer sigue andando con el chat de clientes apagado.",
+                "operationId": "MyAttachmentsController_enlace",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "messageId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL firmada de S3 (vence a los 300 s, `expiresAt`); fotos y PDF se ven en pantalla, el resto se baja",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DownloadLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no es de un cliente o un chofer, o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    },
+                    "404": {
+                        "description": "La conversación o el mensaje no existen, son de otra empresa o de otra persona (un chofer no ve las de los clientes); el mensaje no tiene adjunto, se redactó o su archivo se bloqueó por virus"
+                    },
+                    "409": {
+                        "description": "El antivirus todavía lo está revisando (`ATTACHMENT_SCAN_PENDING`), o no lo pudo revisar todavía (`ATTACHMENT_SCAN_FAILED`: se reintenta solo; nadie lo baja mientras tanto)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "URL para ver o bajar el adjunto de un mensaje",
+                "tags": [
+                    "Inbox (apps)"
+                ]
+            }
+        },
+        "/api/v2/company/platform-chat/{conversationId}/attachments": {
+            "post": {
+                "description": "Multipart: `file`, `clientMessageId` y `caption` opcional (≤ 500). Un adjunto por mensaje (`kind = attachment`, el epígrafe en `body`). El tipo se decide por el contenido; las fotos se guardan re-codificadas y sin EXIF (`scanStatus: clean`); PDF y documentos quedan `pending` hasta que los revisa el antivirus (llega `chat:message` con el estado nuevo). Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200) sin volver a subir. La respuesta trae `attachment` sin URL. Va al chat indicado (el abierto): si se cerró, se escribe primero un texto, que abre otro.",
+                "operationId": "CompanySupportAttachmentsController_alChat",
+                "parameters": [
+                    {
+                        "name": "conversationId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "clientMessageId": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    },
+                                    "caption": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                    }
+                                },
+                                "required": [
+                                    "file",
+                                    "clientMessageId"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reintento: ya estaba",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el archivo o está vacío (`ATTACHMENT_MISSING`); `clientMessageId` que no es uuid; epígrafe de más de 500 caracteres; demasiados campos en el formulario"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los accesos de soporte (`soporte.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    },
+                    "404": {
+                        "description": "El chat no existe o es de otra empresa"
+                    },
+                    "409": {
+                        "description": "El chat está cerrado (`CONVERSATION_CLOSED`)"
+                    },
+                    "413": {
+                        "description": "Supera el tope (`ATTACHMENT_TOO_LARGE`): fotos 5 MB y PDF 10 MB en la bandeja; 10 MB en el soporte; más de 24 megapíxeles"
+                    },
+                    "415": {
+                        "description": "Tipo no permitido en este chat, mirado por el contenido y no por la extensión (`ATTACHMENT_TYPE_NOT_ALLOWED`; acá se aceptan PDF, JPG, PNG, WEBP, Word (.docx), Excel (.xlsx) o CSV); una foto que no se puede leer (`ATTACHMENT_UNREADABLE`)"
+                    },
+                    "429": {
+                        "description": "30 archivos por persona y empresa en el día (`ATTACHMENT_DAILY_LIMIT`); más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`); el cupo de subidas de la sesión"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mandar un archivo en el chat con la plataforma",
+                "tags": [
+                    "Support attachments (company)"
+                ]
+            }
+        },
+        "/api/v2/company/platform-chat/{conversationId}/messages/{messageId}/attachment": {
+            "get": {
+                "operationId": "CompanySupportAttachmentsController_enlaceDelChat",
+                "parameters": [
+                    {
+                        "name": "conversationId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "messageId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL firmada de S3 (vence a los 300 s, `expiresAt`); fotos y PDF se ven en pantalla, el resto se baja",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DownloadLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los accesos de soporte (`soporte.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    },
+                    "404": {
+                        "description": "El chat no existe o es de otra empresa; el mensaje no existe o es de otra conversación, no tiene adjunto, se redactó o su archivo se bloqueó por virus"
+                    },
+                    "409": {
+                        "description": "El antivirus todavía lo está revisando (`ATTACHMENT_SCAN_PENDING`), o no lo pudo revisar todavía (`ATTACHMENT_SCAN_FAILED`: se reintenta solo; nadie lo baja mientras tanto)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "URL para ver o bajar el adjunto de un mensaje del chat",
+                "tags": [
+                    "Support attachments (company)"
+                ]
+            }
+        },
+        "/api/v2/company/tickets/{id}/attachments": {
+            "post": {
+                "description": "Multipart: `file`, `clientMessageId` y `caption` opcional (≤ 500). Un adjunto por mensaje (`kind = attachment`, el epígrafe en `body`). El tipo se decide por el contenido; las fotos se guardan re-codificadas y sin EXIF (`scanStatus: clean`); PDF y documentos quedan `pending` hasta que los revisa el antivirus (llega `chat:message` con el estado nuevo). Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200) sin volver a subir. La respuesta trae `attachment` sin URL. Es una respuesta: si el ticket esperaba a la empresa o estaba resuelto, vuelve a `open`.",
+                "operationId": "CompanySupportAttachmentsController_alTicket",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "clientMessageId": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    },
+                                    "caption": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                    }
+                                },
+                                "required": [
+                                    "file",
+                                    "clientMessageId"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reintento: ya estaba",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el archivo o está vacío (`ATTACHMENT_MISSING`); `clientMessageId` que no es uuid; epígrafe de más de 500 caracteres; demasiados campos en el formulario"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los accesos de soporte (`soporte.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    },
+                    "404": {
+                        "description": "El ticket no existe o es de otra empresa"
+                    },
+                    "409": {
+                        "description": "El ticket está cerrado (`TICKET_CLOSED`)"
+                    },
+                    "413": {
+                        "description": "Supera el tope (`ATTACHMENT_TOO_LARGE`): fotos 5 MB y PDF 10 MB en la bandeja; 10 MB en el soporte; más de 24 megapíxeles"
+                    },
+                    "415": {
+                        "description": "Tipo no permitido en este chat, mirado por el contenido y no por la extensión (`ATTACHMENT_TYPE_NOT_ALLOWED`; acá se aceptan PDF, JPG, PNG, WEBP, Word (.docx), Excel (.xlsx) o CSV); una foto que no se puede leer (`ATTACHMENT_UNREADABLE`)"
+                    },
+                    "429": {
+                        "description": "30 archivos por persona y empresa en el día (`ATTACHMENT_DAILY_LIMIT`); más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`); el cupo de subidas de la sesión"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mandar un archivo en el ticket",
+                "tags": [
+                    "Support attachments (company)"
+                ]
+            }
+        },
+        "/api/v2/company/tickets/{id}/messages/{messageId}/attachment": {
+            "get": {
+                "description": "Una nota interna de la plataforma no se ve (404).",
+                "operationId": "CompanySupportAttachmentsController_enlaceDelTicket",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "messageId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL firmada de S3 (vence a los 300 s, `expiresAt`); fotos y PDF se ven en pantalla, el resto se baja",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DownloadLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los accesos de soporte (`soporte.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    },
+                    "404": {
+                        "description": "El ticket no existe o es de otra empresa; el mensaje no existe o es de otra conversación, no tiene adjunto, se redactó o su archivo se bloqueó por virus"
+                    },
+                    "409": {
+                        "description": "El antivirus todavía lo está revisando (`ATTACHMENT_SCAN_PENDING`), o no lo pudo revisar todavía (`ATTACHMENT_SCAN_FAILED`: se reintenta solo; nadie lo baja mientras tanto)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "URL para ver o bajar el adjunto de un mensaje del ticket",
+                "tags": [
+                    "Support attachments (company)"
+                ]
+            }
+        },
+        "/api/v2/platform/chats/{id}/attachments": {
+            "post": {
+                "description": "Multipart: `file`, `clientMessageId` y `caption` opcional (≤ 500). Un adjunto por mensaje (`kind = attachment`, el epígrafe en `body`). El tipo se decide por el contenido; las fotos se guardan re-codificadas y sin EXIF (`scanStatus: clean`); PDF y documentos quedan `pending` hasta que los revisa el antivirus (llega `chat:message` con el estado nuevo). Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200) sin volver a subir. La respuesta trae `attachment` sin URL. Cuenta como respuesta de la plataforma.",
+                "operationId": "PlatformSupportAttachmentsController_alChat",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "clientMessageId": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    },
+                                    "caption": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                    }
+                                },
+                                "required": [
+                                    "file",
+                                    "clientMessageId"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reintento: ya estaba",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el archivo o está vacío (`ATTACHMENT_MISSING`); `clientMessageId` que no es uuid; epígrafe de más de 500 caracteres; demasiados campos en el formulario"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "No existe ese chat"
+                    },
+                    "409": {
+                        "description": "El chat está cerrado (`CONVERSATION_CLOSED`)"
+                    },
+                    "413": {
+                        "description": "Supera el tope (`ATTACHMENT_TOO_LARGE`): fotos 5 MB y PDF 10 MB en la bandeja; 10 MB en el soporte; más de 24 megapíxeles"
+                    },
+                    "415": {
+                        "description": "Tipo no permitido en este chat, mirado por el contenido y no por la extensión (`ATTACHMENT_TYPE_NOT_ALLOWED`; acá se aceptan PDF, JPG, PNG, WEBP, Word (.docx), Excel (.xlsx) o CSV); una foto que no se puede leer (`ATTACHMENT_UNREADABLE`)"
+                    },
+                    "429": {
+                        "description": "30 archivos por persona y empresa en el día (`ATTACHMENT_DAILY_LIMIT`); más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`); el cupo de subidas de la sesión"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mandar un archivo en el chat de una empresa",
+                "tags": [
+                    "Support attachments (platform)"
+                ],
+                "x-permission": "plataforma.tickets.gestionar"
+            }
+        },
+        "/api/v2/platform/chats/{id}/messages/{messageId}/attachment": {
+            "get": {
+                "operationId": "PlatformSupportAttachmentsController_enlaceDelChat",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "messageId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL firmada de S3 (vence a los 300 s, `expiresAt`); fotos y PDF se ven en pantalla, el resto se baja",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DownloadLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "No existe ese chat; el mensaje no existe o es de otra conversación, no tiene adjunto, se redactó o su archivo se bloqueó por virus"
+                    },
+                    "409": {
+                        "description": "El antivirus todavía lo está revisando (`ATTACHMENT_SCAN_PENDING`), o no lo pudo revisar todavía (`ATTACHMENT_SCAN_FAILED`: se reintenta solo; nadie lo baja mientras tanto)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "URL para ver o bajar el adjunto de un mensaje del chat",
+                "tags": [
+                    "Support attachments (platform)"
+                ],
+                "x-permission": "plataforma.tickets.ver"
+            }
+        },
+        "/api/v2/platform/tickets/{id}/attachments": {
+            "post": {
+                "description": "Multipart: `file`, `clientMessageId` y `caption` opcional (≤ 500). Un adjunto por mensaje (`kind = attachment`, el epígrafe en `body`). El tipo se decide por el contenido; las fotos se guardan re-codificadas y sin EXIF (`scanStatus: clean`); PDF y documentos quedan `pending` hasta que los revisa el antivirus (llega `chat:message` con el estado nuevo). Reintentar con el mismo `clientMessageId` devuelve el mensaje ya guardado (200) sin volver a subir. La respuesta trae `attachment` sin URL. Es una respuesta (deja el ticket esperando a la empresa y le avisa); no hay adjuntos en notas internas.",
+                "operationId": "PlatformSupportAttachmentsController_alTicket",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "clientMessageId": {
+                                        "type": "string",
+                                        "format": "uuid"
+                                    },
+                                    "caption": {
+                                        "type": "string",
+                                        "maxLength": 500
+                                    }
+                                },
+                                "required": [
+                                    "file",
+                                    "clientMessageId"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reintento: ya estaba",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta el archivo o está vacío (`ATTACHMENT_MISSING`); `clientMessageId` que no es uuid; epígrafe de más de 500 caracteres; demasiados campos en el formulario"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "No existe ese ticket"
+                    },
+                    "409": {
+                        "description": "El ticket está cerrado (`TICKET_CLOSED`)"
+                    },
+                    "413": {
+                        "description": "Supera el tope (`ATTACHMENT_TOO_LARGE`): fotos 5 MB y PDF 10 MB en la bandeja; 10 MB en el soporte; más de 24 megapíxeles"
+                    },
+                    "415": {
+                        "description": "Tipo no permitido en este chat, mirado por el contenido y no por la extensión (`ATTACHMENT_TYPE_NOT_ALLOWED`; acá se aceptan PDF, JPG, PNG, WEBP, Word (.docx), Excel (.xlsx) o CSV); una foto que no se puede leer (`ATTACHMENT_UNREADABLE`)"
+                    },
+                    "429": {
+                        "description": "30 archivos por persona y empresa en el día (`ATTACHMENT_DAILY_LIMIT`); más de 30 mensajes por minuto (`CHAT_RATE_LIMITED`); el cupo de subidas de la sesión"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Mandar un archivo en el ticket",
+                "tags": [
+                    "Support attachments (platform)"
+                ],
+                "x-permission": "plataforma.tickets.gestionar"
+            }
+        },
+        "/api/v2/platform/tickets/{id}/messages/{messageId}/attachment": {
+            "get": {
+                "operationId": "PlatformSupportAttachmentsController_enlaceDelTicket",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "messageId",
+                        "required": true,
+                        "in": "path",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "URL firmada de S3 (vence a los 300 s, `expiresAt`); fotos y PDF se ven en pantalla, el resto se baja",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DownloadLinkResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: super_admin"
+                    },
+                    "404": {
+                        "description": "No existe ese ticket; el mensaje no existe o es de otra conversación, no tiene adjunto, se redactó o su archivo se bloqueó por virus"
+                    },
+                    "409": {
+                        "description": "El antivirus todavía lo está revisando (`ATTACHMENT_SCAN_PENDING`), o no lo pudo revisar todavía (`ATTACHMENT_SCAN_FAILED`: se reintenta solo; nadie lo baja mientras tanto)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "URL para ver o bajar el adjunto de un mensaje del ticket",
+                "tags": [
+                    "Support attachments (platform)"
+                ],
+                "x-permission": "plataforma.tickets.ver"
+            }
+        },
+        "/api/v2/chat/metrics": {
+            "get": {
+                "description": "De la empresa de quien pide, en el período (por la creación de cada conversación; sin fechas, los últimos 30 días): tiempo de primera respuesta (mediana y p90 en minutos hábiles de su horario de atención y feriados) y cumplimiento de su objetivo, por canal; tiempo de resolución; abiertas, sin asignar y sin respuesta en vivo; el asistente con IA si la empresa lo tiene (resueltas sin persona, derivaciones y motivos, respuestas); respuestas automáticas y rápidas por clave; la encuesta al cerrar y una serie diaria. Sin datos: ceros y `null`.",
+                "operationId": "CompanyChatMetricsController_metricasDeLaEmpresa",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde (día en hora argentina, AAAA-MM-DD, inclusive). Sin `from`: los 30 días que terminan en `to`.",
+                        "schema": {
+                            "example": "2026-10-18",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta (día en hora argentina, AAAA-MM-DD, inclusive). Sin `to`: hoy. El período abarca hasta 366 días.",
+                        "schema": {
+                            "example": "2026-11-16",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "channel",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo un canal: clientes (C3) o choferes (C2). Sin él, los dos.",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "staff_customer",
+                                "staff_driver"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatMetricsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha que no es AAAA-MM-DD o no existe, «desde» posterior a «hasta», período de más de 366 días o parámetro desconocido, o canal que no es `staff_customer` ni `staff_driver`"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para supervisar los mensajes (`mensajes.supervisar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Métricas de los mensajes con clientes y choferes",
+                "tags": [
+                    "Inbox (company)"
+                ]
+            }
+        },
+        "/api/v2/platform/chat/metrics": {
+            "get": {
+                "description": "En el período (sin fechas, los últimos 30 días; con `distributorId`, sólo esa empresa): chat con las empresas (esperando y su espera, primera respuesta en minutos hábiles del horario del soporte, % que terminó en ticket), tickets (abiertos, vencidos, primera respuesta contra su vencimiento, resolución, satisfacción), el asistente del soporte y, por empresa, conversaciones y mensajes (sólo conteos) y su asistente si lo usó. Nunca el texto de un mensaje.",
+                "operationId": "PlatformChatMetricsController_metricasDeLaPlataforma",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde (día en hora argentina, AAAA-MM-DD, inclusive). Sin `from`: los 30 días que terminan en `to`.",
+                        "schema": {
+                            "example": "2026-10-18",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta (día en hora argentina, AAAA-MM-DD, inclusive). Sin `to`: hoy. El período abarca hasta 366 días.",
+                        "schema": {
+                            "example": "2026-11-16",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "distributorId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Sólo una empresa (404 si no existe). Sin él, todas.",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlatformChatMetricsResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha que no es AAAA-MM-DD o no existe, «desde» posterior a «hasta», período de más de 366 días o parámetro desconocido, o `distributorId` que no es uuid"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Rol que no es administrador general"
+                    },
+                    "404": {
+                        "description": "No existe la empresa pedida"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Métricas del soporte y del chat por empresa",
+                "tags": [
+                    "Platform chat (platform)"
+                ],
+                "x-permission": "plataforma.tickets.ver"
+            }
+        },
         "/api/v2/platform": {
             "get": {
                 "description": "Público: no requiere sesión. Devuelve el nombre comercial, la razón social y el correo del soporte configurados.",
@@ -49079,7 +50160,8 @@
                     "insurance_installment",
                     "traffic_fine_payment",
                     "mp_reconciliation",
-                    "car_document"
+                    "car_document",
+                    "chat_message"
                 ]
             },
             "AttachmentResponseDto": {
@@ -69115,7 +70197,8 @@
                             "route_sheet_watch",
                             "support_session_expiry",
                             "support_housekeeping",
-                            "assistant_ai_sweep"
+                            "assistant_ai_sweep",
+                            "chat_attachment_scan"
                         ]
                     },
                     "title": {
@@ -69236,7 +70319,8 @@
                             "route_sheet_watch",
                             "support_session_expiry",
                             "support_housekeeping",
-                            "assistant_ai_sweep"
+                            "assistant_ai_sweep",
+                            "chat_attachment_scan"
                         ]
                     },
                     "title": {
@@ -69433,7 +70517,8 @@
                             "route_sheet_watch",
                             "support_session_expiry",
                             "support_housekeeping",
-                            "assistant_ai_sweep"
+                            "assistant_ai_sweep",
+                            "chat_attachment_scan"
                         ]
                     },
                     "title": {
@@ -77528,6 +78613,66 @@
                     "number"
                 ]
             },
+            "AttachmentScanStatus": {
+                "type": "string",
+                "enum": [
+                    "not_required",
+                    "pending",
+                    "clean",
+                    "infected",
+                    "failed"
+                ],
+                "description": "`clean` se puede ver; `pending` «Verificando archivo…» (la descarga da 409); `infected` bloqueado (oculto, la descarga da 404); `failed` no se pudo verificar todavía (se reintenta solo; la descarga da 409 para todos)."
+            },
+            "ChatAttachmentDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "fileName": {
+                        "type": "string",
+                        "example": "remito-octubre.pdf"
+                    },
+                    "mimeType": {
+                        "type": "string",
+                        "example": "application/pdf",
+                        "description": "El tipo que detectó el back por el contenido del archivo"
+                    },
+                    "sizeBytes": {
+                        "type": "number",
+                        "description": "Tamaño guardado (una foto, ya re-codificada sin EXIF)"
+                    },
+                    "scanStatus": {
+                        "description": "`clean` se puede ver; `pending` «Verificando archivo…» (la descarga da 409); `infected` bloqueado (oculto, la descarga da 404); `failed` no se pudo verificar todavía (se reintenta solo; la descarga da 409 para todos).",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AttachmentScanStatus"
+                            }
+                        ]
+                    },
+                    "width": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Ancho en píxeles (sólo fotos)"
+                    },
+                    "height": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Alto en píxeles (sólo fotos)"
+                    }
+                },
+                "required": [
+                    "id",
+                    "fileName",
+                    "mimeType",
+                    "sizeBytes",
+                    "scanStatus",
+                    "width",
+                    "height"
+                ]
+            },
             "MessageDto": {
                 "type": "object",
                 "properties": {
@@ -77575,7 +78720,8 @@
                             "text",
                             "system",
                             "auto_reply",
-                            "quoted_excerpt"
+                            "quoted_excerpt",
+                            "attachment"
                         ]
                     },
                     "payload": {
@@ -77595,6 +78741,15 @@
                         "type": "string",
                         "nullable": true,
                         "description": "Nulo si se redactó"
+                    },
+                    "attachment": {
+                        "nullable": true,
+                        "description": "Sólo `kind = attachment`: el archivo o la foto, sin URL (se pide con `GET …/messages/:messageId/attachment`). `body` es su epígrafe. Nulo si se redactó.",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ChatAttachmentDto"
+                            }
+                        ]
                     },
                     "bodyFiltered": {
                         "type": "boolean"
@@ -77650,6 +78805,7 @@
                     "payload",
                     "citedInTickets",
                     "body",
+                    "attachment",
                     "bodyFiltered",
                     "templateKey",
                     "systemCode",
@@ -79170,7 +80326,8 @@
                             "text",
                             "system",
                             "auto_reply",
-                            "quoted_excerpt"
+                            "quoted_excerpt",
+                            "attachment"
                         ]
                     },
                     "internal": {
@@ -79195,6 +80352,15 @@
                         "type": "string",
                         "nullable": true,
                         "description": "Nulo si se redactó o si lo borró su autor"
+                    },
+                    "attachment": {
+                        "nullable": true,
+                        "description": "Sólo `kind = attachment`: el archivo o la foto, sin URL (se pide con `GET …/messages/:messageId/attachment`). `body` es su epígrafe. Nulo si se redactó.",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ChatAttachmentDto"
+                            }
+                        ]
                     },
                     "templateKey": {
                         "type": "string",
@@ -79279,6 +80445,7 @@
                     "kind",
                     "internal",
                     "body",
+                    "attachment",
                     "templateKey",
                     "systemCode",
                     "automated",
@@ -80362,6 +81529,789 @@
                     "conversationId"
                 ]
             },
+            "TargetComplianceDto": {
+                "type": "object",
+                "properties": {
+                    "met": {
+                        "type": "number",
+                        "description": "Respondidas dentro del objetivo"
+                    },
+                    "missed": {
+                        "type": "number",
+                        "description": "Respondidas fuera del objetivo, más las que siguen sin respuesta y ya lo pasaron"
+                    },
+                    "rate": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 0.85,
+                        "description": "`met / (met + missed)`, de 0 a 1; `null` si no hay ninguna"
+                    }
+                },
+                "required": [
+                    "met",
+                    "missed",
+                    "rate"
+                ]
+            },
+            "FirstResponseStatsDto": {
+                "type": "object",
+                "properties": {
+                    "responded": {
+                        "type": "number",
+                        "description": "Con primera respuesta"
+                    },
+                    "unanswered": {
+                        "type": "number",
+                        "description": "Abiertas que todavía esperan la primera respuesta de una persona (las creadas en el período; coherente con `live.unanswered`, que cuenta todas las abiertas)"
+                    },
+                    "closedWithoutHumanReply": {
+                        "type": "number",
+                        "description": "Cerradas sin respuesta de una persona (las resolvió el asistente, se cerraron por inactividad o el ticket se resolvió sin escribir): no entran en el TPR ni en el objetivo. Tampoco entra una cuya respuesta es anterior al inicio de la espera (ticket abierto desde un chat ya respondido)."
+                    },
+                    "medianMinutes": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 12,
+                        "description": "Mediana del tiempo de primera respuesta, en minutos hábiles (dentro del horario de atención); `null` sin respuestas"
+                    },
+                    "p90Minutes": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 45,
+                        "description": "Percentil 90, en minutos hábiles; `null` sin respuestas"
+                    },
+                    "target": {
+                        "nullable": true,
+                        "description": "Contra el objetivo (`firstResponseTargetMinutes` de la empresa; el vencimiento de cada ticket). `null` donde no hay objetivo (chat con la plataforma).",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TargetComplianceDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "responded",
+                    "unanswered",
+                    "closedWithoutHumanReply",
+                    "medianMinutes",
+                    "p90Minutes",
+                    "target"
+                ]
+            },
+            "ChatResolutionDto": {
+                "type": "object",
+                "properties": {
+                    "closed": {
+                        "type": "number",
+                        "description": "Cerradas (creadas en el período). No cuentan las cerradas porque el pedido pasó a otro chofer."
+                    },
+                    "medianMinutes": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Mediana de cierre − creación, en minutos de reloj corrido (no hábiles: cuenta noches, fines de semana y feriados); `null` sin cerradas"
+                    }
+                },
+                "required": [
+                    "closed",
+                    "medianMinutes"
+                ]
+            },
+            "ChatLiveDto": {
+                "type": "object",
+                "properties": {
+                    "open": {
+                        "type": "number",
+                        "description": "Abiertas ahora"
+                    },
+                    "unassigned": {
+                        "type": "number",
+                        "description": "Abiertas sin nadie asignado"
+                    },
+                    "unanswered": {
+                        "type": "number",
+                        "description": "Abiertas en las que el cliente o el chofer escribió y nadie del equipo respondió todavía"
+                    },
+                    "awaitingHuman": {
+                        "type": "number",
+                        "description": "Abiertas que el asistente pasó a una persona y nadie tomó"
+                    }
+                },
+                "required": [
+                    "open",
+                    "unassigned",
+                    "unanswered",
+                    "awaitingHuman"
+                ]
+            },
+            "ChatChannelMetricsDto": {
+                "type": "object",
+                "properties": {
+                    "channel": {
+                        "type": "string",
+                        "enum": [
+                            "staff_customer",
+                            "staff_driver"
+                        ]
+                    },
+                    "conversations": {
+                        "type": "number",
+                        "description": "Creadas en el período"
+                    },
+                    "firstResponse": {
+                        "$ref": "#/components/schemas/FirstResponseStatsDto"
+                    },
+                    "resolution": {
+                        "$ref": "#/components/schemas/ChatResolutionDto"
+                    },
+                    "live": {
+                        "description": "En vivo (no depende del período)",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ChatLiveDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "channel",
+                    "conversations",
+                    "firstResponse",
+                    "resolution",
+                    "live"
+                ]
+            },
+            "HandoffReasonDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "example": "requested"
+                    },
+                    "label": {
+                        "type": "string",
+                        "example": "El asistente no pudo resolverlo o la persona pidió hablar con alguien"
+                    },
+                    "count": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "reason",
+                    "label",
+                    "count"
+                ]
+            },
+            "CompanyAssistantMetricsDto": {
+                "type": "object",
+                "properties": {
+                    "aiReplies": {
+                        "type": "number",
+                        "description": "Respuestas que publicó el asistente con IA"
+                    },
+                    "handoffs": {
+                        "type": "number",
+                        "description": "Veces que pasó la conversación a una persona"
+                    },
+                    "handoffReasons": {
+                        "description": "Derivaciones por motivo, la más frecuente primero",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/HandoffReasonDto"
+                        }
+                    },
+                    "conversationsAttended": {
+                        "type": "number",
+                        "description": "Conversaciones en las que respondió o derivó"
+                    },
+                    "closedWithAssistant": {
+                        "type": "number",
+                        "description": "Cerradas (creadas en el período) en las que el asistente respondió al menos una vez"
+                    },
+                    "resolvedWithoutHuman": {
+                        "type": "number",
+                        "description": "De ésas, las que no derivó y en las que nadie del equipo escribió"
+                    },
+                    "resolvedWithoutHumanRate": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 0.6,
+                        "description": "`resolvedWithoutHuman / closedWithAssistant`; `null` si no hay"
+                    },
+                    "enabled": {
+                        "type": "boolean",
+                        "description": "Si la empresa tiene prendido el asistente con IA ahora"
+                    }
+                },
+                "required": [
+                    "aiReplies",
+                    "handoffs",
+                    "handoffReasons",
+                    "conversationsAttended",
+                    "closedWithAssistant",
+                    "resolvedWithoutHuman",
+                    "resolvedWithoutHumanRate",
+                    "enabled"
+                ]
+            },
+            "KeyCountDto": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "example": "fuera_de_horario"
+                    },
+                    "count": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "key",
+                    "count"
+                ]
+            },
+            "KeyCountSummaryDto": {
+                "type": "object",
+                "properties": {
+                    "total": {
+                        "type": "number"
+                    },
+                    "byKey": {
+                        "description": "La más usada primero",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/KeyCountDto"
+                        }
+                    }
+                },
+                "required": [
+                    "total",
+                    "byKey"
+                ]
+            },
+            "ScoreCountDto": {
+                "type": "object",
+                "properties": {
+                    "score": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 5
+                    },
+                    "count": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "score",
+                    "count"
+                ]
+            },
+            "ChatSatisfactionDto": {
+                "type": "object",
+                "properties": {
+                    "requested": {
+                        "type": "number",
+                        "description": "Encuestas pedidas al cerrar, sin las anuladas"
+                    },
+                    "answered": {
+                        "type": "number"
+                    },
+                    "expired": {
+                        "type": "number",
+                        "description": "Vencidas sin responder"
+                    },
+                    "responseRate": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Tasa de respuesta: `answered / requested`; `null` sin pedidas"
+                    },
+                    "average": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Promedio de 1 a 5"
+                    },
+                    "csat": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Proporción de 4 y 5 sobre las respondidas"
+                    },
+                    "byScore": {
+                        "description": "Distribución: siempre los cinco puntajes",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ScoreCountDto"
+                        }
+                    },
+                    "assistant": {
+                        "description": "Atendidas sólo por el asistente",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CsatGroupDto"
+                            }
+                        ]
+                    },
+                    "team": {
+                        "description": "Atendidas por el equipo",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CsatGroupDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "requested",
+                    "answered",
+                    "expired",
+                    "responseRate",
+                    "average",
+                    "csat",
+                    "byScore",
+                    "assistant",
+                    "team"
+                ]
+            },
+            "ChatDailyPointDto": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "example": "2026-11-16"
+                    },
+                    "newConversations": {
+                        "type": "number"
+                    },
+                    "firstResponseMedianMinutes": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Mediana del TPR (minutos hábiles) de las creadas ese día que ya tienen respuesta"
+                    }
+                },
+                "required": [
+                    "date",
+                    "newConversations",
+                    "firstResponseMedianMinutes"
+                ]
+            },
+            "ChatMetricsResponseDto": {
+                "type": "object",
+                "properties": {
+                    "from": {
+                        "type": "string",
+                        "example": "2026-10-18"
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "2026-11-16"
+                    },
+                    "channel": {
+                        "type": "string",
+                        "enum": [
+                            "staff_customer",
+                            "staff_driver"
+                        ],
+                        "nullable": true,
+                        "description": "El canal pedido; `null`: los dos"
+                    },
+                    "targetMinutes": {
+                        "type": "number",
+                        "example": 30,
+                        "description": "El objetivo de primera respuesta de la empresa, en minutos"
+                    },
+                    "conversations": {
+                        "type": "number",
+                        "description": "Creadas en el período"
+                    },
+                    "firstResponse": {
+                        "$ref": "#/components/schemas/FirstResponseStatsDto"
+                    },
+                    "resolution": {
+                        "$ref": "#/components/schemas/ChatResolutionDto"
+                    },
+                    "live": {
+                        "description": "En vivo (no depende del período)",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ChatLiveDto"
+                            }
+                        ]
+                    },
+                    "byChannel": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ChatChannelMetricsDto"
+                        }
+                    },
+                    "assistant": {
+                        "nullable": true,
+                        "description": "Sólo con el asistente con IA disponible para la empresa y con el canal de clientes en la consulta",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CompanyAssistantMetricsDto"
+                            }
+                        ]
+                    },
+                    "automaticReplies": {
+                        "description": "Respuestas automáticas (fuera de horario, aviso de recibido, asistente) por clave",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/KeyCountSummaryDto"
+                            }
+                        ]
+                    },
+                    "quickReplies": {
+                        "description": "Respuestas rápidas del equipo por `template_key`",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/KeyCountSummaryDto"
+                            }
+                        ]
+                    },
+                    "satisfaction": {
+                        "nullable": true,
+                        "description": "Encuesta al cerrar (sólo con clientes): `null` si la consulta es sólo de choferes",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ChatSatisfactionDto"
+                            }
+                        ]
+                    },
+                    "daily": {
+                        "description": "Un punto por día del período, también los vacíos",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ChatDailyPointDto"
+                        }
+                    }
+                },
+                "required": [
+                    "from",
+                    "to",
+                    "channel",
+                    "targetMinutes",
+                    "conversations",
+                    "firstResponse",
+                    "resolution",
+                    "live",
+                    "byChannel",
+                    "assistant",
+                    "automaticReplies",
+                    "quickReplies",
+                    "satisfaction",
+                    "daily"
+                ]
+            },
+            "SupportChatMetricsDto": {
+                "type": "object",
+                "properties": {
+                    "chats": {
+                        "type": "number",
+                        "description": "Chats creados en el período"
+                    },
+                    "waiting": {
+                        "type": "number",
+                        "description": "Abiertos con un mensaje de la empresa sin respuesta de la plataforma (en vivo)"
+                    },
+                    "longestWaitMinutes": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "La espera más larga de ésos, en minutos hábiles del soporte"
+                    },
+                    "medianWaitMinutes": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "firstResponse": {
+                        "description": "Desde el primer mensaje de la empresa hasta la primera respuesta de la plataforma; `target` es `null`",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/FirstResponseStatsDto"
+                            }
+                        ]
+                    },
+                    "endedInTicket": {
+                        "type": "number",
+                        "description": "Chats con al menos un ticket abierto desde ellos"
+                    },
+                    "endedInTicketRate": {
+                        "type": "number",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "chats",
+                    "waiting",
+                    "longestWaitMinutes",
+                    "medianWaitMinutes",
+                    "firstResponse",
+                    "endedInTicket",
+                    "endedInTicketRate"
+                ]
+            },
+            "TicketFirstResponseStatsDto": {
+                "type": "object",
+                "properties": {
+                    "responded": {
+                        "type": "number",
+                        "description": "Con primera respuesta"
+                    },
+                    "unanswered": {
+                        "type": "number",
+                        "description": "Abiertas que todavía esperan la primera respuesta de una persona (las creadas en el período; coherente con `live.unanswered`, que cuenta todas las abiertas)"
+                    },
+                    "closedWithoutHumanReply": {
+                        "type": "number",
+                        "description": "Cerradas sin respuesta de una persona (las resolvió el asistente, se cerraron por inactividad o el ticket se resolvió sin escribir): no entran en el TPR ni en el objetivo. Tampoco entra una cuya respuesta es anterior al inicio de la espera (ticket abierto desde un chat ya respondido)."
+                    },
+                    "medianMinutes": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 12,
+                        "description": "Mediana del tiempo de primera respuesta, en minutos hábiles (dentro del horario de atención); `null` sin respuestas"
+                    },
+                    "p90Minutes": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 45,
+                        "description": "Percentil 90, en minutos hábiles; `null` sin respuestas"
+                    },
+                    "target": {
+                        "nullable": true,
+                        "description": "Contra el vencimiento de primera respuesta de cada ticket",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TargetComplianceDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "responded",
+                    "unanswered",
+                    "closedWithoutHumanReply",
+                    "medianMinutes",
+                    "p90Minutes",
+                    "target"
+                ]
+            },
+            "TicketResolutionDto": {
+                "type": "object",
+                "properties": {
+                    "resolved": {
+                        "type": "number"
+                    },
+                    "medianMinutes": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Mediana de resolución − apertura, en minutos de reloj corrido (no hábiles); `null` sin resueltos"
+                    }
+                },
+                "required": [
+                    "resolved",
+                    "medianMinutes"
+                ]
+            },
+            "TicketSatisfactionDto": {
+                "type": "object",
+                "properties": {
+                    "rated": {
+                        "type": "number",
+                        "description": "Tickets calificados"
+                    },
+                    "responseRate": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Calificados sobre cerrados (se califica al confirmar, y confirmar lo cierra)"
+                    },
+                    "average": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "byScore": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ScoreCountDto"
+                        }
+                    }
+                },
+                "required": [
+                    "rated",
+                    "responseRate",
+                    "average",
+                    "byScore"
+                ]
+            },
+            "SupportTicketMetricsDto": {
+                "type": "object",
+                "properties": {
+                    "created": {
+                        "type": "number",
+                        "description": "Creados en el período"
+                    },
+                    "open": {
+                        "type": "number",
+                        "description": "Sin resolver ni cerrar (en vivo)"
+                    },
+                    "overdue": {
+                        "type": "number",
+                        "description": "Sin primera respuesta y con el plazo vencido, sin cerrar (en vivo)"
+                    },
+                    "firstResponse": {
+                        "description": "De los abiertos por la empresa, en minutos hábiles del soporte",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/TicketFirstResponseStatsDto"
+                            }
+                        ]
+                    },
+                    "resolution": {
+                        "$ref": "#/components/schemas/TicketResolutionDto"
+                    },
+                    "satisfaction": {
+                        "$ref": "#/components/schemas/TicketSatisfactionDto"
+                    }
+                },
+                "required": [
+                    "created",
+                    "open",
+                    "overdue",
+                    "firstResponse",
+                    "resolution",
+                    "satisfaction"
+                ]
+            },
+            "AssistantMetricsDto": {
+                "type": "object",
+                "properties": {
+                    "aiReplies": {
+                        "type": "number",
+                        "description": "Respuestas que publicó el asistente con IA"
+                    },
+                    "handoffs": {
+                        "type": "number",
+                        "description": "Veces que pasó la conversación a una persona"
+                    },
+                    "handoffReasons": {
+                        "description": "Derivaciones por motivo, la más frecuente primero",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/HandoffReasonDto"
+                        }
+                    },
+                    "conversationsAttended": {
+                        "type": "number",
+                        "description": "Conversaciones en las que respondió o derivó"
+                    },
+                    "closedWithAssistant": {
+                        "type": "number",
+                        "description": "Cerradas (creadas en el período) en las que el asistente respondió al menos una vez"
+                    },
+                    "resolvedWithoutHuman": {
+                        "type": "number",
+                        "description": "De ésas, las que no derivó y en las que nadie del equipo escribió"
+                    },
+                    "resolvedWithoutHumanRate": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 0.6,
+                        "description": "`resolvedWithoutHuman / closedWithAssistant`; `null` si no hay"
+                    }
+                },
+                "required": [
+                    "aiReplies",
+                    "handoffs",
+                    "handoffReasons",
+                    "conversationsAttended",
+                    "closedWithAssistant",
+                    "resolvedWithoutHuman",
+                    "resolvedWithoutHumanRate"
+                ]
+            },
+            "CompanyChatUsageDto": {
+                "type": "object",
+                "properties": {
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Gas del Sur"
+                    },
+                    "conversations": {
+                        "type": "number",
+                        "description": "Conversaciones con clientes y choferes creadas en el período"
+                    },
+                    "messages": {
+                        "type": "number",
+                        "description": "Mensajes visibles de personas en esas conversaciones (sólo el conteo)"
+                    },
+                    "assistant": {
+                        "nullable": true,
+                        "description": "Sólo si la empresa usó el asistente con IA en el período",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AssistantMetricsDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "distributorId",
+                    "name",
+                    "conversations",
+                    "messages",
+                    "assistant"
+                ]
+            },
+            "PlatformChatMetricsResponseDto": {
+                "type": "object",
+                "properties": {
+                    "from": {
+                        "type": "string",
+                        "example": "2026-10-18"
+                    },
+                    "to": {
+                        "type": "string",
+                        "example": "2026-11-16"
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "chat": {
+                        "$ref": "#/components/schemas/SupportChatMetricsDto"
+                    },
+                    "tickets": {
+                        "$ref": "#/components/schemas/SupportTicketMetricsDto"
+                    },
+                    "assistant": {
+                        "description": "El asistente del soporte de la plataforma",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/AssistantMetricsDto"
+                            }
+                        ]
+                    },
+                    "companies": {
+                        "description": "Las empresas con conversaciones o mensajes en el período, la de más mensajes primero",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CompanyChatUsageDto"
+                        }
+                    }
+                },
+                "required": [
+                    "from",
+                    "to",
+                    "distributorId",
+                    "chat",
+                    "tickets",
+                    "assistant",
+                    "companies"
+                ]
+            },
             "PlatformResponseDto": {
                 "type": "object",
                 "properties": {
@@ -80829,7 +82779,8 @@
                             "route_sheet_watch",
                             "support_session_expiry",
                             "support_housekeeping",
-                            "assistant_ai_sweep"
+                            "assistant_ai_sweep",
+                            "chat_attachment_scan"
                         ]
                     },
                     "title": {
@@ -81121,7 +83072,8 @@
                             "route_sheet_watch",
                             "support_session_expiry",
                             "support_housekeeping",
-                            "assistant_ai_sweep"
+                            "assistant_ai_sweep",
+                            "chat_attachment_scan"
                         ]
                     },
                     "title": {

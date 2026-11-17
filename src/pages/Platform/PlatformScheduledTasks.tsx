@@ -124,7 +124,7 @@ const IntervalsForm = ({ companyId, config }: FormProps) => {
           subtitle="La hora la elige la distribuidora desde su configuración: acá sólo se ve."
           className=""
         />
-        <p className="mt-2 font-mono text-sm text-ink">{pad(config.fleetAlertHour)}:00 (hora de Argentina)</p>
+        <p className="mt-2 tabular-nums text-sm text-ink">{pad(config.fleetAlertHour)}:00 (hora de Argentina)</p>
       </Card>
 
       {serverError && (

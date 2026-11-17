@@ -162,7 +162,7 @@ export const SheetView = ({ day, sheetId, canWrite, onPick }: Props) => {
             <Card className="h-fit overflow-hidden lg:sticky lg:top-[76px]">
               <div className="flex items-center justify-between gap-2 border-b border-outline-soft px-4 py-3 text-sm">
                 <b className="font-semibold text-ink">{sheetTitle(sheet)}</b>
-                <span className="font-mono text-xs text-muted" data-testid="sheet-workday">
+                <span className="tabular-nums text-xs text-muted" data-testid="sheet-workday">
                   Jornada {hhmm(sheet.plannedStartAt)}–{hhmm(returnAtOf(sheet))}
                 </span>
               </div>

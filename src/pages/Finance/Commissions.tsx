@@ -1,4 +1,3 @@
-import type { GridColDef } from '@mui/x-data-grid';
 import { HandCoins } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
@@ -13,6 +12,7 @@ import {
   TableToolbar,
   DateRangeFilter,
   PersonAvatar,
+  type TableColumn,
 } from '../../common/components/ui';
 import { useClampPage, useUrlPagedParams } from '../../hooks';
 import type { CommissionEntry } from '../../services/api/types';
@@ -45,9 +45,10 @@ export const Commissions = () => {
   });
   const filtered = Boolean(filters.employeeId || filters.liquidated || filters.from || filters.to);
 
-  const columns: GridColDef<CommissionEntry>[] = [
+  const columns: TableColumn<CommissionEntry>[] = [
     {
       field: 'occurredAt',
+      kind: 'date',
       headerName: 'Fecha',
       width: 170,
       sortable: false,
@@ -107,7 +108,7 @@ export const Commissions = () => {
       align: 'right',
       headerAlign: 'right',
       renderCell: ({ row }) => (
-        <span className={`font-mono ${row.amount < 0 ? 'text-danger' : ''}`}>{formatCurrency(row.amount)}</span>
+        <span className={`tabular-nums ${row.amount < 0 ? 'text-danger' : ''}`}>{formatCurrency(row.amount)}</span>
       ),
     },
   ];
@@ -175,7 +176,7 @@ export const Commissions = () => {
           {data && (
             <p className="text-sm text-muted">
               Total de los asientos que cumplen el filtro:{' '}
-              <b className="font-mono text-ink">{formatCurrency(data.totalAmount)}</b>
+              <b className="tabular-nums text-ink">{formatCurrency(data.totalAmount)}</b>
             </p>
           )}
         </TableToolbar>
@@ -204,7 +205,7 @@ export const Commissions = () => {
               <>
                 <div className="flex items-center justify-between gap-3">
                   <Badge label={labelOf(COMMISSION_ENTRY_TYPE, row.type)} />
-                  <span className="font-mono">{formatCurrency(row.amount)}</span>
+                  <span className="tabular-nums">{formatCurrency(row.amount)}</span>
                 </div>
                 <div className="text-xs text-muted">
                   {row.employeeName} · {formatDateTime(row.occurredAt)}

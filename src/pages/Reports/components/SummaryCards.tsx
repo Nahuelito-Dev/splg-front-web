@@ -1,5 +1,5 @@
 import { PackageCheck, Receipt, ShoppingBag, Wallet } from 'lucide-react';
-import { ErrorState, KpiCard } from '../../../common/components/ui';
+import { ErrorState, KpiCard, KpiGrid } from '../../../common/components/ui';
 import { useOrders } from '../../../services/queries/orders';
 import { useSalesSummary } from '../../../services/queries/reports';
 import { previousRange, type DayRange } from '../../../utils/dateRange';
@@ -53,7 +53,7 @@ export const SummaryCards = ({ range }: { range: DayRange }) => {
   const pill = (current: number, previous: number) => (compare ? variationPill(current, previous) : undefined);
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <KpiGrid className="sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard
         title="Ventas cobradas"
         icon={Wallet}
@@ -86,6 +86,6 @@ export const SummaryCards = ({ range }: { range: DayRange }) => {
         pill={pill(now.delivered, before.delivered)}
         hint={hint}
       />
-    </div>
+    </KpiGrid>
   );
 };

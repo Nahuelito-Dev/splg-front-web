@@ -212,7 +212,8 @@ describe.each([
 
   it('dar de baja pide confirmación; los avisos los da la mutación', async () => {
     draw(c.url);
-    fireEvent.click(screen.getByRole('button', { name: `Dar de baja la pregunta «${c.rowQuestion}»` }));
+    fireEvent.click(screen.getByRole('button', { name: `Más acciones de la pregunta «${c.rowQuestion}»` }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Dar de baja' }));
     await waitFor(() => expect(muts().remove.mutate).toHaveBeenCalledWith(c.rowId));
     expect(state.confirm).toHaveBeenCalledWith(expect.objectContaining({ danger: true }));
     c.notices()?.onSuccess();

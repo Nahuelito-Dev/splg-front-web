@@ -131,7 +131,7 @@ export const OrdersTable = ({
         align: 'right',
         headerAlign: 'right',
         renderCell: ({ row }) => (
-          <span className="font-mono font-semibold text-ink">{formatCurrency(row.total_amount)}</span>
+          <span className="tabular-nums font-semibold text-ink">{formatCurrency(row.total_amount)}</span>
         ),
       },
       {

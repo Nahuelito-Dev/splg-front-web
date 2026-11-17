@@ -7,6 +7,7 @@ import {
   EmptyState,
   ErrorState,
   KpiCard,
+  KpiGrid,
   LoadingState,
   PageContainer,
   PageHeader,
@@ -70,7 +71,7 @@ const CategoryList = ({
                   {row.count === 1 ? '1 movimiento' : `${row.count} movimientos`} · {sharePercent(row.amount, total)}
                 </span>
               </span>
-              <strong className="font-mono">{formatCurrency(row.amount)}</strong>
+              <strong className="tabular-nums">{formatCurrency(row.amount)}</strong>
             </Link>
           </li>
         ))}
@@ -178,7 +179,7 @@ export const IncomeStatement = () => {
         <ErrorState error={error} resource="Ingresos y egresos" onRetry={() => void refetch()} />
       ) : (
         <div className="grid gap-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <KpiGrid className="sm:grid-cols-3">
             <KpiCard title="Ingresos" icon={ArrowDownCircle} value={formatCurrency(data.totals.income)} />
             <KpiCard title="Egresos" icon={ArrowUpCircle} value={formatCurrency(data.totals.expense)} />
             <KpiCard
@@ -190,7 +191,7 @@ export const IncomeStatement = () => {
                 trend: data.totals.net >= 0 ? 'up' : 'down',
               }}
             />
-          </div>
+          </KpiGrid>
           {empty ? (
             <Card>
               <EmptyState
@@ -233,7 +234,7 @@ export const IncomeStatement = () => {
                         <span className="block truncate font-semibold">{box.name}</span>
                         <span className="text-xs text-muted">{labelOf(CASH_BOX_KIND, box.kind).text}</span>
                       </span>
-                      <span className="flex gap-4 font-mono text-sm">
+                      <span className="flex gap-4 tabular-nums text-sm">
                         <span className="text-success">+ {formatCurrency(box.income)}</span>
                         <span className="text-danger">− {formatCurrency(box.expense)}</span>
                       </span>

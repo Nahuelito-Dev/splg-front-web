@@ -25,7 +25,7 @@ export const CarTiresTab = ({ carId }: { carId: string }) => {
               <span className="font-medium text-ink">
                 {t.position ?? '—'} · {t.serialNumber}
               </span>
-              <span className="font-mono text-ink-2">
+              <span className="tabular-nums text-ink-2">
                 {t.brand} {t.size} · {formatNumber(t.kmTraveled)} km
               </span>
               <Badge label={labelOf(TIRE_STATUS, t.status)} />

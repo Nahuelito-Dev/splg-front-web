@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import { Banknote, CircleDollarSign, Clock, HandCoins, Landmark, Percent, Wallet } from 'lucide-react';
-import { KpiCard } from '../../../common/components/ui';
+import { KpiCard, KpiGrid } from '../../../common/components/ui';
 import { useFinanceDashboard } from '../../../services/queries/finance';
 import { formatCurrency, formatDay, formatNumber } from '../../../utils/format';
 
@@ -80,7 +80,7 @@ export const FinanceSummary = ({ date, kind }: Props) => {
               ];
 
   return (
-    <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <KpiGrid className="mb-4 sm:grid-cols-2 lg:grid-cols-3">
       {kpis.map((kpi, i) => (
         <KpiCard
           key={data ? kpi.title : `cargando-${i}`}
@@ -92,6 +92,6 @@ export const FinanceSummary = ({ date, kind }: Props) => {
           pill={kpi.warn ? { text: kpi.warn, trend: 'warn' } : undefined}
         />
       ))}
-    </div>
+    </KpiGrid>
   );
 };

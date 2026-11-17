@@ -107,7 +107,7 @@ export const PurchaseOrders = () => {
       headerName: 'Total',
       width: 130,
       sortable: false,
-      renderCell: ({ row }) => <span className="font-mono font-semibold">{formatCurrency(row.totalAmount)}</span>,
+      renderCell: ({ row }) => <span className="tabular-nums font-semibold">{formatCurrency(row.totalAmount)}</span>,
     },
     {
       field: 'actions',
@@ -205,7 +205,7 @@ export const PurchaseOrders = () => {
                   />
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <Badge label={labelOf(PURCHASE_ORDER_STATUS, row.status)} />
-                    <span className="font-mono font-semibold">{formatCurrency(row.totalAmount)}</span>
+                    <span className="tabular-nums font-semibold">{formatCurrency(row.totalAmount)}</span>
                   </div>
                   <p className="text-sm text-muted">{progress(row)}</p>
                   {row.expectedDate && <p className="text-xs text-muted">Esperada el {formatDay(row.expectedDate)}</p>}

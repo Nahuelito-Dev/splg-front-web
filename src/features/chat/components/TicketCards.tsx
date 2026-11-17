@@ -8,7 +8,7 @@ export const TicketBadges = ({ ticket }: { ticket: Pick<TicketSummary, 'status' 
   <span className="inline-flex flex-wrap items-center gap-1.5">
     <Badge label={labelOf(TICKET_STATUS, ticket.status)} />
     {(ticket.priority === 'high' || ticket.priority === 'urgent') && (
-      <Badge label={labelOf(TICKET_PRIORITY, ticket.priority)} variant="critical" />
+      <Badge label={labelOf(TICKET_PRIORITY, ticket.priority)} />
     )}
   </span>
 );

@@ -28,7 +28,12 @@ const api = vi.hoisted(() => ({
   listConversationAssignees: vi.fn(),
 }));
 const confirmMock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
+/** Permisos que quien mira NO tiene (por código); el resto, sí. */
+const denied = vi.hoisted(() => ({ codes: new Set<string>() }));
 
+vi.mock('../../hooks/usePermiso', () => ({
+  usePermiso: (code: string) => ({ allowed: !denied.codes.has(code), known: true }),
+}));
 vi.mock('../../features/chat/useInboxAccess', () => ({ useInboxAccess: () => access.value }));
 vi.mock('../../services/api/inbox', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -85,6 +90,7 @@ const SETTINGS = {
 
 beforeEach(() => {
   confirmMock.mockClear();
+  denied.codes = new Set();
   access.value = { customers: true, drivers: true, configure: true, claims: true, any: true };
   Object.values(api).forEach((fn) => fn.mockClear());
   api.listConversations.mockResolvedValue(list([inboxConversation()]));
@@ -120,6 +126,24 @@ const show = (url = '/messages') =>
   );
 
 describe('Mensajes: la bandeja', () => {
+  it('«Métricas» lleva a las métricas, sólo con el permiso de supervisar', async () => {
+    render(
+      <ChatProviders client={newQueryClient()} socket={fakeSocket().value} url="/messages">
+        <Routes>
+          <Route path="/messages" element={<Messages />} />
+          <Route path="/messages/metrics" element={<p>Pantalla de métricas</p>} />
+        </Routes>
+      </ChatProviders>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Métricas' }));
+    expect(screen.getByText('Pantalla de métricas')).toBeInTheDocument();
+    cleanup();
+    denied.codes = new Set(['mensajes.supervisar']);
+    show();
+    await screen.findByRole('link', { name: /Lucía Benítez/ });
+    expect(screen.queryByRole('button', { name: 'Métricas' })).not.toBeInTheDocument();
+  });
+
   it('pestañas con contadores; «Sin asignar» pide las abiertas sin asignar', async () => {
     show();
     expect(await screen.findByRole('tab', { name: /Sin asignar.*2/ })).toHaveAttribute('aria-selected', 'true');
@@ -539,6 +563,25 @@ describe('Mensajes: sugerencias de respuesta', () => {
     showLive();
     expect(await screen.findByText(/La conversación está cerrada/)).toBeInTheDocument();
     expect(api.getConversationSuggestions).not.toHaveBeenCalled();
+  });
+});
+
+describe('Mensajes: la vista previa de un adjunto', () => {
+  it('en la lista se ve la que arma el back («📎 Foto» / «📎 Archivo»), con la firma del equipo si es propio', async () => {
+    api.listConversations.mockResolvedValue(
+      list([
+        inboxConversation({
+          lastMessage: { seq: 2, preview: '📎 Foto', at: '2026-11-15T13:02:00.000Z', party: 'customer' },
+        }),
+        inboxConversation({
+          id: 'conv-2',
+          lastMessage: { seq: 3, preview: '📎 Archivo', at: '2026-11-15T13:03:00.000Z', party: 'company' },
+        }),
+      ]),
+    );
+    show();
+    expect(await screen.findByText('📎 Foto')).toBeInTheDocument();
+    expect(screen.getByText('Equipo: 📎 Archivo')).toBeInTheDocument();
   });
 });
 

@@ -4,7 +4,7 @@ import { cx } from './cx';
 export interface DetailItem {
   label: string;
   value: ReactNode;
-  /** Ids, montos, patentes: cifras en mono. */
+  /** Identificadores técnicos (ids, patentes, CUIT, códigos) en mono. Las cifras, la plata y las fechas no: van en la sans con `tabular-nums`, que la lista ya pone. */
   mono?: boolean;
   /** Ocupa las dos columnas (textos largos). */
   wide?: boolean;
@@ -16,7 +16,9 @@ export const DetailList = ({ items, className }: { items: DetailItem[]; classNam
     {items.map((item) => (
       <div key={item.label} className={item.wide ? 'sm:col-span-2' : undefined}>
         <dt className="text-xs font-medium text-muted">{item.label}</dt>
-        <dd className={cx('mt-0.5 text-[13.5px] text-ink', item.mono && 'font-mono')}>{item.value ?? '—'}</dd>
+        <dd className={cx('mt-0.5 text-[13.5px] tabular-nums text-ink', item.mono && 'font-mono')}>
+          {item.value ?? '—'}
+        </dd>
       </div>
     ))}
   </dl>

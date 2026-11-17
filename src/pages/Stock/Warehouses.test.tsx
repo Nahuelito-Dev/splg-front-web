@@ -49,6 +49,27 @@ describe('Warehouses', () => {
     expect(screen.getByText('GC-01')).toBeInTheDocument();
   });
 
+  it('un estado por celda: «Activo» como etiqueta y «Predeterminado» como texto secundario', () => {
+    state.list.mockReturnValue(ok([{ ...GALPON, isDefault: true }]));
+    state.update.mockReturnValue(mutation());
+    state.remove.mockReturnValue(mutation());
+    renderPage(<Warehouses />);
+    expect(screen.getByText('Activo')).toHaveClass('rounded-full');
+    expect(screen.getByText('Predeterminado')).not.toHaveClass('rounded-full');
+    expect(screen.getByText('Predeterminado')).toHaveClass('text-muted');
+  });
+
+  it('«dados de baja» es un chip de la barra del listado', () => {
+    state.list.mockReturnValue(ok([GALPON]));
+    state.update.mockReturnValue(mutation());
+    state.remove.mockReturnValue(mutation());
+    renderPage(<Warehouses />);
+    const box = screen.getByRole('checkbox', { name: 'Mostrar galpones dados de baja' });
+    expect(box.closest('label')).toHaveClass('h-10', 'rounded-[10px]');
+    fireEvent.click(box);
+    expect(state.list).toHaveBeenLastCalledWith(true);
+  });
+
   it('dice qué galpón está ubicado y cuál no', () => {
     state.list.mockReturnValue(
       ok([

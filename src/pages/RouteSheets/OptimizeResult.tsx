@@ -12,8 +12,8 @@ interface Props {
 const Row = ({ label, before, after }: { label: string; before: string; after: string }) => (
   <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-3 text-[13px]">
     <dt className="text-muted">{label}</dt>
-    <dd className="font-mono text-ink-2 line-through decoration-outline">{before}</dd>
-    <dd className="font-mono font-semibold text-ink">{after}</dd>
+    <dd className="tabular-nums text-ink-2 line-through decoration-outline">{before}</dd>
+    <dd className="tabular-nums font-semibold text-ink">{after}</dd>
   </div>
 );
 

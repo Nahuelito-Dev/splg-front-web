@@ -46,7 +46,7 @@ export const CylinderQuickDrawer = ({ open, onClose, cylinder: listed }: Props) 
             value: cylinder.current_order_id ? formatShortId(cylinder.current_order_id) : '—',
             mono: true,
           },
-          { label: 'Garantía', value: cylinder.deposit > 0 ? formatCurrency(cylinder.deposit) : '—', mono: true },
+          { label: 'Garantía', value: cylinder.deposit > 0 ? formatCurrency(cylinder.deposit) : '—' },
           {
             label: 'Último movimiento',
             value: cylinder.lastMovementAt ? formatDateTime(cylinder.lastMovementAt) : '—',

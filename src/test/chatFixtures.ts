@@ -21,6 +21,7 @@ export const msg = (seq: number, over: Partial<MessageDto> = {}): MessageDto => 
   systemCode: null,
   visibility: 'all',
   redacted: false,
+  attachment: null,
   createdAt: new Date(Date.UTC(2026, 10, 14, 15, seq)).toISOString(),
   ...over,
 });

@@ -85,6 +85,7 @@ export const Cars = () => {
 
       <Card>
         <TableToolbar
+          resultCount={loading ? undefined : rows.length}
           search={{
             label: 'Buscar por patente',
             placeholder: 'Patente (ej. AB104EJ)',

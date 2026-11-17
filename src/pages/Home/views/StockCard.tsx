@@ -27,7 +27,9 @@ export const StockCard = () => {
             {!complete && data && ` · los ${formatNumber(products.length)} primeros`}
           </p>
         </div>
-        {units !== null && <span className="font-mono text-sm font-semibold text-ink">{formatNumber(units)} u.</span>}
+        {units !== null && (
+          <span className="tabular-nums text-sm font-semibold text-ink">{formatNumber(units)} u.</span>
+        )}
       </div>
       {isLoading ? (
         <div className="m-[18px] h-40 animate-pulse rounded-lg bg-surface-hover" />
@@ -47,7 +49,7 @@ export const StockCard = () => {
               <span className="text-right">
                 <b
                   className={
-                    product.stock === 0 ? 'font-mono text-[13px] text-danger' : 'font-mono text-[13px] text-ink'
+                    product.stock === 0 ? 'tabular-nums text-[13px] text-danger' : 'tabular-nums text-[13px] text-ink'
                   }
                 >
                   {product.stock === 0 ? 'Sin stock' : `${formatNumber(product.stock)} u.`}

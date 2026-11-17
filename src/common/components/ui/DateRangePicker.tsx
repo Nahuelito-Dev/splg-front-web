@@ -15,6 +15,7 @@ import {
 import { formatDay } from '../../../utils/format';
 import { Button } from './Button';
 import { cx } from './cx';
+import { useInToolbar } from './toolbarContext';
 
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 const monthFormat = new Intl.DateTimeFormat('es-AR', { month: 'long' });
@@ -90,6 +91,8 @@ export const DateRangePicker = ({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
+  // En la barra de un listado las fechas van después del buscador y antes del menú «Más».
+  const inToolbar = useInToolbar();
   const shown = preset === undefined ? matchPreset(range) : preset;
   const activePreset = !effective
     ? null
@@ -174,7 +177,7 @@ export const DateRangePicker = ({
   const shiftMonth = (delta: number) => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + delta, 1));
 
   return (
-    <div ref={rootRef} className="relative w-full sm:w-auto">
+    <div ref={rootRef} className={cx('relative w-full sm:w-auto', inToolbar && 'md:order-2')}>
       <button
         type="button"
         aria-haspopup="dialog"
@@ -184,7 +187,7 @@ export const DateRangePicker = ({
         ref={triggerRef}
         disabled={disabled}
         onClick={() => (open ? setOpen(false) : openPanel())}
-        className="flex h-[38px] w-full items-center gap-2 rounded-[10px] border border-outline bg-surface px-3 text-[13px] font-medium text-ink shadow-control transition-colors hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-auto"
+        className="flex h-10 w-full items-center gap-2 rounded-[10px] border border-outline bg-surface px-3 text-[13px] font-medium text-ink shadow-control transition-colors hover:bg-surface-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:w-auto"
       >
         <CalendarDays aria-hidden="true" className="h-4 w-4 shrink-0 text-muted" strokeWidth={1.8} />
         <span className="truncate">{triggerText}</span>
@@ -213,7 +216,7 @@ export const DateRangePicker = ({
                     className={cx(
                       'w-full rounded-lg px-2.5 py-1.5 text-left text-[12.5px] font-medium transition-colors',
                       activePreset === preset.id
-                        ? 'bg-primary-soft text-primary-strong'
+                        ? 'bg-primary-soft text-on-primary-soft'
                         : 'text-ink-2 hover:bg-surface-muted hover:text-ink',
                     )}
                   >
@@ -270,7 +273,7 @@ export const DateRangePicker = ({
                     onClick={() => pickDay(day)}
                     className={cx(
                       'h-8 text-[12.5px] tabular-nums transition-colors disabled:cursor-not-allowed disabled:opacity-30',
-                      inRange && 'bg-primary-soft text-primary-strong',
+                      inRange && 'bg-primary-soft text-on-primary-soft',
                       (isStart || isEnd) && 'bg-primary font-semibold text-on-primary',
                       isStart && 'rounded-l-lg',
                       isEnd && 'rounded-r-lg',

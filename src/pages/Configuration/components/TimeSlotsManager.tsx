@@ -70,7 +70,7 @@ export const TimeSlotsManager = () => {
               <div>
                 <p className="font-medium text-ink">{slot.name}</p>
                 <p className="mt-1 text-xs text-muted">
-                  <span className="rounded border border-outline bg-surface-hover px-1.5 py-0.5 font-mono">
+                  <span className="rounded border border-outline bg-surface-hover px-1.5 py-0.5 tabular-nums">
                     {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
                   </span>{' '}
                   · cupo {slot.capacity}

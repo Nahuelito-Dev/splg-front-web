@@ -1,6 +1,14 @@
 import { useState } from 'react';
 import { CircleDollarSign } from 'lucide-react';
-import { Card, DateRangePicker, DetailList, ErrorState, KpiCard, LoadingState } from '../../../common/components/ui';
+import {
+  Card,
+  DateRangePicker,
+  DetailList,
+  ErrorState,
+  KpiCard,
+  KpiGrid,
+  LoadingState,
+} from '../../../common/components/ui';
 import { useCarCosts } from '../../../services/queries/fleetExpense';
 import { presetRange, type DayRange, type RangePresetId } from '../../../utils/dateRange';
 import { formatCurrency, formatNumber } from '../../../utils/format';
@@ -30,7 +38,7 @@ export const CarCostsTab = ({ carId }: { carId: string }) => {
         <ErrorState error={error} resource="Los costos del vehículo" onRetry={() => void refetch()} />
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <KpiGrid className="sm:grid-cols-3">
             <KpiCard title="Costo total" icon={CircleDollarSign} value={formatCurrency(data.total)} />
             <KpiCard
               title="Kilómetros"
@@ -43,11 +51,9 @@ export const CarCostsTab = ({ carId }: { carId: string }) => {
               icon={CircleDollarSign}
               value={data.costPerKm === null ? '—' : formatCurrency(data.costPerKm)}
             />
-          </div>
+          </KpiGrid>
           <Card className="p-6">
-            <DetailList
-              items={COST_RUBROS.map(({ key, label }) => ({ label, value: formatCurrency(data[key]), mono: true }))}
-            />
+            <DetailList items={COST_RUBROS.map(({ key, label }) => ({ label, value: formatCurrency(data[key]) }))} />
             {data.insuranceEstimated && (
               <p className="mt-4 text-xs text-muted">
                 Una póliza no tiene fecha de inicio: se prorrateó con un año hacia atrás desde su vencimiento
@@ -69,7 +75,7 @@ export const CarCostsTab = ({ carId }: { carId: string }) => {
                   <th className="py-1.5 text-right font-medium">Total</th>
                 </tr>
               </thead>
-              <tbody className="font-mono">
+              <tbody className="tabular-nums">
                 {data.monthly.map((m) => (
                   <tr key={m.month} className="border-t border-outline">
                     <td className="py-1.5 pr-3">{m.month}</td>

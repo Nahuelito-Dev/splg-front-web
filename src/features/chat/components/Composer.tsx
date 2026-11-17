@@ -121,6 +121,11 @@ interface Props {
   variables?: Readonly<Record<string, string | null>>;
   /** Arriba del campo, debajo de la cita: las sugerencias de respuesta (bandeja). Sin nada, no ocupa lugar. */
   suggestions?: ReactNode;
+  /**
+   * El clip para adjuntar (al lado del campo). Nunca en una nota interna ni editando: el back no admite adjuntos en
+   * una nota y un mensaje editado sigue siendo texto.
+   */
+  attach?: ReactNode;
 }
 
 /**
@@ -145,6 +150,7 @@ export const Composer = ({
   rescue,
   variables,
   suggestions,
+  attach,
 }: Props) => {
   const [text, setTextState] = useState(() => readDraft(draftKey));
   const editing = banner?.kind === 'edit';
@@ -637,6 +643,7 @@ export const Composer = ({
         </p>
       )}
       <div className="flex items-end gap-2">
+        {!editing && !noteMode && attach}
         <textarea
           ref={area}
           value={text}

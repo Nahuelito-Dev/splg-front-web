@@ -33,7 +33,7 @@ export const ShareDonutChart = ({ data, formatValue, totalLabel }: Props) => {
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
-          <span className="font-mono text-[15px] font-semibold text-ink">{formatValue(total)}</span>
+          <span className="tabular-nums text-[15px] font-semibold text-ink">{formatValue(total)}</span>
           <span className="text-[11.5px] text-muted">{totalLabel}</span>
         </div>
       </div>

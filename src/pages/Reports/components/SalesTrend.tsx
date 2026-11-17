@@ -1,4 +1,11 @@
-import { Card, ErrorState, Skeleton, TrendAreaChart, CardHeader } from '../../../common/components/ui';
+import {
+  CalendarKanbanViewToggle,
+  Card,
+  ErrorState,
+  Skeleton,
+  TrendAreaChart,
+  CardHeader,
+} from '../../../common/components/ui';
 import { useSalesEvolution } from '../../../services/queries/reports';
 import type { DayRange } from '../../../utils/dateRange';
 import { formatCurrency } from '../../../utils/format';
@@ -32,21 +39,12 @@ export const SalesTrend = ({ range, granularity, onGranularityChange }: Props) =
           subtitle="Facturación del período contra el período anterior."
           className=""
         />
-        <div role="group" aria-label="Agrupar por" className="flex gap-1 rounded-lg bg-surface-muted p-1">
-          {OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              aria-pressed={granularity === option.id}
-              onClick={() => onGranularityChange(option.id)}
-              className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
-                granularity === option.id ? 'bg-surface text-primary-strong shadow-sm' : 'text-muted hover:text-ink'
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <CalendarKanbanViewToggle
+          label="Agrupar por"
+          options={OPTIONS}
+          value={granularity}
+          onChange={(id) => onGranularityChange(OPTIONS.find((o) => o.id === id)?.id ?? granularity)}
+        />
       </div>
       <div className="px-3 pb-4 pt-2 sm:px-5">
         {loading ? (

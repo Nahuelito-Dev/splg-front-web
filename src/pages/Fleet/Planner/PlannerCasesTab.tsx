@@ -80,7 +80,7 @@ export const PlannerCasesTab = () => {
         field: 'status',
         headerName: 'Estado',
         width: 150,
-        renderCell: ({ row }) => <Badge label={PLANNING_CASE_STATUS[row.status]} variant="critical" />,
+        renderCell: ({ row }) => <Badge label={PLANNING_CASE_STATUS[row.status]} />,
       },
       {
         field: 'window',
@@ -148,7 +148,7 @@ export const PlannerCasesTab = () => {
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-mono text-sm uppercase text-ink">{row.patent ?? 'Sin patente'}</span>
-                  <Badge label={PLANNING_CASE_STATUS[row.status]} variant="critical" />
+                  <Badge label={PLANNING_CASE_STATUS[row.status]} />
                 </div>
                 <p className="mt-1 text-sm text-ink">{row.taskName}</p>
                 <p className="text-xs text-muted">{windowOf(row)}</p>

@@ -1,6 +1,13 @@
-import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
+import type { GridPaginationModel } from '@mui/x-data-grid';
 import { useMemo } from 'react';
-import { Badge, DataTable, EmptyState, IdentityCell, RowActions } from '../../../common/components/ui';
+import {
+  Badge,
+  DataTable,
+  EmptyState,
+  IdentityCell,
+  RowActions,
+  type TableColumn,
+} from '../../../common/components/ui';
 import type { AuditEntryV2 } from '../../../services/api/types';
 import { auditActionLabel, auditAuthorName, auditEntityLabel, auditOriginLabel } from '../../../utils/auditLabels';
 import { formatDateTime, formatShortId } from '../../../utils/format';
@@ -20,7 +27,7 @@ interface Props {
 }
 
 export const DataAuditTable = ({ rows, total, loading, filtered, pagination, onPaginationChange, onView }: Props) => {
-  const columns = useMemo<GridColDef<AuditEntryV2>[]>(
+  const columns = useMemo<TableColumn<AuditEntryV2>[]>(
     () => [
       {
         field: 'entity',
@@ -41,6 +48,8 @@ export const DataAuditTable = ({ rows, total, loading, filtered, pagination, onP
       },
       {
         field: 'fields',
+        // En el celular la tarjeta muestra acción, autor y fecha; los campos, en el detalle.
+        card: false,
         headerName: 'Campos',
         flex: 1,
         minWidth: 180,

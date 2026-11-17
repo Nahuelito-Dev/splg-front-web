@@ -41,7 +41,7 @@ export const ReservationsTable = ({ rows, loading, onView }: Props) => {
         width: 150,
         renderCell: ({ row }) => (
           <div className="leading-tight">
-            <span className="block font-mono font-semibold text-ink">{formatCurrency(row.total)}</span>
+            <span className="block tabular-nums font-semibold text-ink">{formatCurrency(row.total)}</span>
             <span className="block text-[11.5px] text-muted">seña {formatCurrency(row.depositAmount)}</span>
           </div>
         ),

@@ -31,6 +31,10 @@ describe('reconciliación por seq (P2)', () => {
     const thread = { messages: [msg(1), msg(2)] };
     expect(decideIncoming(thread, 3)).toBe('append');
     expect(decideIncoming(thread, 2)).toBe('ignore');
+    // Viejo y fuera de lo cargado (anterior al primero o en un hueco): tampoco se agrega.
+    expect(decideIncoming({ messages: [msg(5), msg(6)] }, 2)).toBe('ignore');
+    // Faltante dentro de lo cargado (llegó después de la respuesta HTTP de uno posterior): se agrega.
+    expect(decideIncoming({ messages: [msg(1), msg(2), msg(4)] }, 3)).toBe('append');
     expect(decideIncoming(thread, 5)).toBe('catch-up');
     expect(decideIncoming({ messages: [] }, 1)).toBe('append');
     expect(decideIncoming({ messages: [] }, 7)).toBe('catch-up');
@@ -70,6 +74,7 @@ describe('mensajes de la bandeja en el núcleo del hilo', () => {
     deleted: false,
     deletedAt: null,
     redacted: false,
+    attachment: null,
     createdAt: '2026-11-15T13:00:00.000Z',
   });
 

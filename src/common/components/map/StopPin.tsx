@@ -24,7 +24,7 @@ export const StopPin = ({
 }) => (
   <span
     className={cx(
-      'flex items-center justify-center rounded-full border-2 border-surface font-mono text-xs font-semibold shadow-control',
+      'flex items-center justify-center rounded-full border-2 border-surface tabular-nums text-xs font-semibold shadow-control',
       selected ? 'h-9 w-9 ring-4 ring-primary/40' : 'h-7 w-7',
       STOP_TONE[tone],
     )}

@@ -69,7 +69,7 @@ export const CustomersTable = ({
         headerName: 'Direcciones',
         width: 120,
         valueGetter: ({ row }) => row.user?.addresses?.length ?? 0,
-        cellClassName: 'font-mono',
+        cellClassName: 'tabular-nums',
       },
       {
         field: 'createdAt',

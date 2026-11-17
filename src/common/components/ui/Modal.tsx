@@ -37,11 +37,12 @@ export const Modal = ({
   return (
     <Dialog open={open} onClose={close} fullWidth maxWidth={size} aria-labelledby={titleId}>
       <div className="flex items-start justify-between gap-4 border-b border-outline px-6 py-4">
-        <div>
-          <h2 id={titleId} className="text-base font-semibold tracking-[-0.01em] text-ink">
+        {/* `min-w-0` + `break-words`: un título sin espacios (el nombre de un archivo) se corta en vez de desbordar. */}
+        <div className="min-w-0">
+          <h2 id={titleId} className="break-words text-base font-semibold tracking-[-0.01em] text-ink">
             {title}
           </h2>
-          {description && <p className="mt-0.5 text-sm text-muted">{description}</p>}
+          {description && <p className="mt-0.5 break-words text-sm text-muted">{description}</p>}
         </div>
         <IconButton label="Cerrar" icon={<CloseIcon />} onClick={close} disabled={closeBlocked} />
       </div>
