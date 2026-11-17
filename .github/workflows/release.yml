@@ -19,6 +19,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   publicar:
@@ -81,3 +82,12 @@ jobs:
             --title "SPLG Panel Admin v${{ steps.calculo.outputs.version }}" \
             --notes-file NOTES.md \
             --verify-tag
+
+      # Lanzado por el Release nocturno (con GITHUB_TOKEN), su fin no dispara el Deploy
+      # por workflow_run: se lo despacha a mano. Un push o un dispatch de una persona sí
+      # lo dispara solo, así que ahí no se repite.
+      - name: Despachar el Deploy
+        if: steps.calculo.outputs.hay == 'si' && github.actor == 'github-actions[bot]'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy.yml -R "${{ github.repository }}" --ref main
