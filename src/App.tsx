@@ -4,6 +4,7 @@ import { CompanyThemeSync } from './common/components/CompanyThemeSync';
 import { ConfirmDialogHost } from './common/components/ui/ConfirmDialog';
 import { SocketProvider } from './context/SocketContext';
 import { Navigation } from './router/Navigation';
+import { SentryScopeSync } from './observability/SentryScopeSync';
 import { queryClient } from './services/queries/queryClient';
 import { ThemeProvider } from './theme';
 
@@ -11,6 +12,7 @@ export const App = () => (
   <ThemeProvider>
     <QueryClientProvider client={queryClient}>
       <CompanyThemeSync />
+      <SentryScopeSync />
       <SocketProvider>
         <SnackbarProvider
           maxSnack={3}

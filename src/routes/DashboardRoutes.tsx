@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route } from 'react-router-dom';
+import { SentryRoutes } from '../observability/routing';
 import { DashboardLayout } from '../common/layout';
 import { RouteProgressBar } from '../common/layout/RouteProgressBar';
 import { LoadingState } from '../common/components/ui';
@@ -193,7 +194,7 @@ export const DashboardRoutes = () => {
           </>
         }
       >
-        <Routes>
+        <SentryRoutes>
           {/* «Ambos» (§2 del diseño del modo soporte): el admin de empresa y el administrador general, cada uno con lo suyo */}
           <Route path="home" element={<Home />} />
           <Route path="account" element={<Account />} />
@@ -367,7 +368,7 @@ export const DashboardRoutes = () => {
 
           {/* Ruta por defecto */}
           <Route path="/*" element={<Navigate to="/home" />} />
-        </Routes>
+        </SentryRoutes>
       </Suspense>
     </DashboardLayout>
   );

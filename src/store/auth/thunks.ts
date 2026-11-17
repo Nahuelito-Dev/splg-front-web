@@ -28,7 +28,7 @@ export const startLoginWithEmailAndPassword = ({ email, password }: ICredentials
     ownedCompany.syncIdentity(result.uid);
 
     try {
-      const { fullName, role, blocked } = await getAdmin(email);
+      const { userId, fullName, role, blocked } = await getAdmin(email);
 
       if (blocked) {
         localStorage.clear();
@@ -44,6 +44,7 @@ export const startLoginWithEmailAndPassword = ({ email, password }: ICredentials
 
       const payload: LoginPayload = {
         uid: result.uid,
+        userId,
         email,
         displayName: result.displayName,
         photoUrl: result.photoURL,

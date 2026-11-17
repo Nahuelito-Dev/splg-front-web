@@ -1,3 +1,4 @@
+import './observability/instrument';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -8,6 +9,8 @@ import { store } from './store/store';
 import './styles/index.css';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { installNewVersionReload } from './utils/newVersionReload';
+import { ReportingBoundary } from './observability/ReportingBoundary';
+import { wrapBrowserRouter } from './observability/sentry';
 
 const safeStorage = (): Storage | null => {
   try {
@@ -25,13 +28,15 @@ installNewVersionReload({
 });
 
 /** Router de datos (hace falta para `useBlocker`); todas las rutas siguen declaradas en `router/Navigation`. */
-const router = createBrowserRouter([
+const router = wrapBrowserRouter(createBrowserRouter)([
   {
     path: '*',
     element: (
-      <Provider store={store}>
-        <App />
-      </Provider>
+      <ReportingBoundary>
+        <Provider store={store}>
+          <App />
+        </Provider>
+      </ReportingBoundary>
     ),
   },
 ]);

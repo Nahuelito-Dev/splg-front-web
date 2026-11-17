@@ -23,6 +23,8 @@ vi.mock('../../utils/notifications', () => ({
     info: vi.fn(),
   },
 }));
+const captureException = vi.hoisted(() => vi.fn<[unknown, unknown?], void>());
+vi.mock('@sentry/react', () => ({ captureException }));
 const invalidateQueries = vi.fn();
 vi.mock('../queries/queryClient', () => ({
   queryClient: { clear: () => void clearCache(), invalidateQueries: (arg: unknown) => void invalidateQueries(arg) },
@@ -543,5 +545,42 @@ describe('403 MODULE_DISABLED: un módulo que la plataforma no le habilitó a la
       http.get('/orders', { adapter: fail(403, { code: 'PERMISSION_DENIED', message: 'Sin permiso' }) }),
     ).rejects.toThrow('403');
     expect(invalidateQueries).not.toHaveBeenCalled();
+  });
+});
+
+describe('Sentry: qué fallas de la API se reportan', () => {
+  const failWith =
+    (status: number | undefined, headers: Record<string, string> = {}) =>
+    (cfg: InternalAxiosRequestConfig) =>
+      Promise.reject(
+        Object.assign(new Error(status ? String(status) : 'Network Error'), {
+          isAxiosError: true,
+          config: cfg,
+          response: status === undefined ? undefined : { status, data: {}, headers, config: cfg },
+        }),
+      );
+
+  beforeEach(() => {
+    localStorage.setItem('token', 'token-vigente');
+    getCurrentIdToken.mockResolvedValue('token-vigente');
+    captureException.mockReset();
+  });
+
+  it('un 5xx se manda con el X-Request-Id', async () => {
+    await expect(http.get('/orders', { adapter: failWith(502, { 'x-request-id': 'req-9' }) })).rejects.toThrow('502');
+    expect(captureException).toHaveBeenCalledTimes(1);
+    expect(captureException.mock.calls[0]?.[1]).toMatchObject({ tags: { request_id: 'req-9', 'api.status': '502' } });
+  });
+
+  it('sin respuesta (red caída) se manda', async () => {
+    await expect(http.get('/orders', { adapter: failWith(undefined) })).rejects.toThrow('Network Error');
+    expect(captureException).toHaveBeenCalledTimes(1);
+  });
+
+  it('un 4xx nunca se manda', async () => {
+    for (const status of [400, 403, 404, 409, 422]) {
+      await expect(http.get('/orders', { adapter: failWith(status) })).rejects.toThrow(String(status));
+    }
+    expect(captureException).not.toHaveBeenCalled();
   });
 });

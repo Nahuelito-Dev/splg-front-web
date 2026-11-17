@@ -6,6 +6,8 @@ type AuthStatus = 'checking' | 'authenticated' | 'not-authenticated';
 interface AuthState {
   status: AuthStatus;
   uid: string | null;
+  /** Id interno del usuario en la API (`user_id`), distinto del uid de Firebase. */
+  userId: string | null;
   email: string | null;
   displayName: string | null;
   fullName: string | null;
@@ -17,6 +19,7 @@ interface AuthState {
 
 export interface LoginPayload {
   uid: string | null;
+  userId?: string | null;
   email: string | null;
   fullName: string | null;
   role: string | null;
@@ -31,6 +34,7 @@ export interface LogoutPayload {
 const initialState: AuthState = {
   status: 'checking',
   uid: null,
+  userId: null,
   email: null,
   displayName: null,
   fullName: null,
@@ -46,6 +50,7 @@ export const authSlice = createSlice({
     login: (state, { payload }: PayloadAction<LoginPayload>) => {
       state.status = 'authenticated';
       state.uid = payload.uid;
+      state.userId = payload.userId ?? null;
       state.email = payload.email;
       state.role = payload.role;
       state.fullName = payload.fullName;
@@ -56,6 +61,7 @@ export const authSlice = createSlice({
     logOut: (state, { payload }: PayloadAction<LogoutPayload | undefined>) => {
       state.status = 'not-authenticated';
       state.uid = null;
+      state.userId = null;
       state.email = null;
       state.role = null;
       state.displayName = null;

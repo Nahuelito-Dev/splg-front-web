@@ -1,11 +1,12 @@
-import { Route, Routes } from 'react-router-dom';
+import { Route } from 'react-router-dom';
+import { SentryRoutes } from '../observability/routing';
 import { LoginPage } from '../pages/Auth/LoginPage';
 
 export const AuthRoutes = () => {
   return (
-    <Routes>
+    <SentryRoutes>
       <Route path="login" element={<LoginPage />} />
       <Route path="*" element={<LoginPage />} />
-    </Routes>
+    </SentryRoutes>
   );
 };

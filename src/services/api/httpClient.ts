@@ -9,6 +9,7 @@ import { esErrorDeSesion, SESSION_EXPIRED_MESSAGE } from '../../firebase/session
 import { queryClient } from '../queries/queryClient';
 import { queryKeys } from '../queries/queryKeys';
 import { MODULE_DISABLED_CODE, toApiError } from './errors';
+import { reportApiError } from '../../observability/apiErrors';
 
 // Axios no trae estas opciones: las agregan `skipSupportSession` y `public` (ver `attachAuthHeaders`).
 declare module 'axios' {
@@ -121,6 +122,8 @@ interface BodyWithCode {
 }
 
 http.interceptors.response.use(undefined, async (error: unknown) => {
+  // Sólo 5xx y fallas de red/timeout van a Sentry; un 4xx lo resuelve la pantalla.
+  reportApiError(error);
   if (axios.isAxiosError(error)) {
     const status = error.response?.status;
     const code = (error.response?.data as BodyWithCode | undefined)?.code;
