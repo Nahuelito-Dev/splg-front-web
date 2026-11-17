@@ -25,8 +25,11 @@ export const findAdminByTerm = async (term: string): Promise<AdminVista> => {
 
 export type AdminRole = 'admin' | 'super_admin';
 
-/** Los datos de cuenta de un admin nuevo. La empresa sólo la elige un administrador general. */
-export type AdminAccountFields = AccountFields & { distributorId?: string };
+/**
+ * Los datos de cuenta de un admin nuevo. La empresa sólo la elige un administrador general; el rol del personal
+ * (`staffRoleId`), quien da de alta un admin de empresa (sin él nace con el de sistema, si quien lo da tiene todos).
+ */
+export type AdminAccountFields = AccountFields & { distributorId?: string; staffRoleId?: string };
 
 /** Alta de un admin: POST /users con rol admin o super_admin. */
 export const createAdmin = (role: AdminRole, account: AdminAccountFields): Promise<User> => registerUser(role, account);

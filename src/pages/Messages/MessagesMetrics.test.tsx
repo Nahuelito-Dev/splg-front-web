@@ -307,3 +307,79 @@ describe('Métricas de mensajes', () => {
     expect(screen.getByRole('button', { name: 'Ir a la bandeja' })).toBeInTheDocument();
   });
 });
+
+describe('Métricas de mensajes: por etiqueta (7c)', () => {
+  const firstResponse = (medianMinutes: number | null, rate: number | null) => ({
+    responded: 4,
+    unanswered: 0,
+    closedWithoutHumanReply: 0,
+    medianMinutes,
+    p90Minutes: null,
+    target: { met: 3, missed: 1, rate },
+  });
+  const section = () => {
+    const card = screen.getByRole('heading', { name: 'Por etiqueta' }).closest('.flex-col');
+    if (!(card instanceof HTMLElement)) throw new Error('Sin el bloque por etiqueta');
+    return card;
+  };
+
+  it('cada etiqueta con sus conversaciones y su primera respuesta, de la que más tiene a la que menos', () => {
+    state.metrics = ok(
+      chatMetrics({
+        byLabel: [
+          {
+            label: { id: 'l-1', name: 'Factura', color: 'blue' },
+            conversations: 2,
+            firstResponse: firstResponse(8, 1),
+          },
+          {
+            label: { id: 'l-2', name: 'Reclamo de envío', color: 'red' },
+            conversations: 7,
+            firstResponse: firstResponse(95, 0.75),
+          },
+          {
+            label: { id: 'l-3', name: 'VIP', color: 'teal' },
+            conversations: 0,
+            firstResponse: firstResponse(null, null),
+          },
+        ],
+      }),
+    );
+    render();
+    const rows = within(section())
+      .getAllByRole('listitem')
+      .map((li) => li.textContent);
+    expect(rows).toEqual([
+      expect.stringMatching(/^Reclamo de envío.*7.*1 h 35 min.*75 %/),
+      expect.stringMatching(/^Factura.*2.*8 min.*100 %/),
+      expect.stringMatching(/^VIP.*0.*—.*—/),
+    ]);
+    expect(within(section()).getByRole('link', { name: 'Administrar las etiquetas' })).toBeInTheDocument();
+    // En angosto (tarjetas) cada métrica va en su propio renglón: nombre y valor, sin columnas que se pisen.
+    const metrics = within(section()).getByLabelText('Métricas de «Reclamo de envío»');
+    expect(metrics.className).not.toMatch(/grid-cols-/);
+    const pairs = [...metrics.children].map((pair) => [
+      pair.querySelector('dt')?.textContent,
+      pair.querySelector('dd')?.textContent,
+    ]);
+    expect(pairs).toEqual([
+      ['Conversaciones', '7'],
+      ['Primera respuesta', '1 h 35 min'],
+      ['Dentro del objetivo', '75 %'],
+    ]);
+    [...metrics.children].forEach((pair) => expect(pair).toHaveClass('flex', 'justify-between'));
+  });
+
+  it('sin etiquetas, el vacío lo dice (y a quien configura le dice dónde crearlas)', () => {
+    state.metrics = ok(chatMetrics({ byLabel: [] }));
+    render();
+    expect(within(section()).getByText('Sin etiquetas')).toBeInTheDocument();
+    expect(
+      within(section()).getByText('Creá etiquetas en la configuración de los mensajes para ver este corte.'),
+    ).toBeInTheDocument();
+    cleanup();
+    state.granted = new Set(['mensajes.supervisar']);
+    render();
+    expect(within(section()).getByText('Cuando la empresa tenga etiquetas, acá se ve cada una.')).toBeInTheDocument();
+  });
+});

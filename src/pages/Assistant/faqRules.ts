@@ -186,3 +186,23 @@ export const copyBlockedReason = ({ items, error, isFetching, count, limit }: Co
 /** El rótulo del botón: con el número sólo cuando el catálogo está al día y hay algo para sumar (nunca «Sumar 0»). */
 export const copyButtonLabel = (toAdd: number, upToDate: boolean): string =>
   !upToDate || toAdd === 0 ? 'Sumar preguntas' : toAdd === 1 ? 'Sumar 1 pregunta' : `Sumar ${toAdd} preguntas`;
+
+/** El filtro de la base por estado: todas, sólo las publicadas o sólo los borradores (sin respuesta todavía). */
+export type DraftFilter = '' | 'published' | 'draft';
+
+export const DRAFT_FILTER_OPTIONS: Array<{ value: DraftFilter; label: string }> = [
+  { value: '', label: 'Todas' },
+  { value: 'published', label: 'Publicadas' },
+  { value: 'draft', label: 'Borradores' },
+];
+
+/** El valor de la URL si es uno conocido; cualquier otro es «todas». */
+export const draftFilterParam = (value: string): DraftFilter =>
+  DRAFT_FILTER_OPTIONS.find((option) => option.value === value)?.value ?? '';
+
+export const filterByDraft = <T extends { isDraft?: boolean }>(items: readonly T[], filter: DraftFilter): T[] =>
+  filter === '' ? [...items] : items.filter((faq) => Boolean(faq.isDraft) === (filter === 'draft'));
+
+/** Cuántos borradores hay: el aviso de la base los cuenta aparte, porque el asistente no los usa. */
+export const draftCount = (items: ReadonlyArray<{ isDraft?: boolean }>): number =>
+  items.filter((faq) => faq.isDraft).length;

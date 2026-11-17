@@ -1,5 +1,5 @@
 import type { ChatParty, TicketPriority, TicketStatus } from '../../services/api/supportChat';
-import type { Conversation, InboxConversation, InboxMessage, MessageDto } from '../../services/api/types';
+import type { ChatAgent, Conversation, InboxConversation, InboxMessage, MessageDto } from '../../services/api/types';
 
 /**
  * Eventos del socket del panel para el chat con la plataforma y los tickets (`splg-docs/sistema/back/TIEMPO-REAL.md`).
@@ -15,6 +15,10 @@ export const CHAT_EVENTS = {
   TICKET_UPDATED: 'ticket:updated',
   MESSAGE_EDITED: 'chat:message-edited',
   MESSAGE_DELETED: 'chat:message-deleted',
+  /** Cambió el estado o la carga de alguien del equipo de la bandeja (8b). */
+  TEAM: 'chat:team',
+  /** Otra persona del equipo está escribiendo en la conversación (8b). */
+  STAFF_TYPING: 'chat:staff-typing',
 } as const;
 
 export interface ChatMessageEvent {
@@ -80,4 +84,22 @@ export interface InboxListEvent {
   change: string;
   assignedToUserId: string | null;
   lastMessage: { seq: number; at: string; party: string; kind: string; preview: string | null } | null;
+}
+
+/**
+ * Cambió el estado de alguien del equipo (a las salas de lista de la bandeja, una vez por cambio): el tope no viaja,
+ * sólo lo que se mueve solo.
+ */
+export type ChatTeamEvent = Pick<ChatAgent, 'userId' | 'status' | 'connected' | 'available' | 'openAssigned'>;
+
+/**
+ * Otra persona del equipo escribe en la conversación (a la sala de la empresa, menos a quien escribe). `internal`: es
+ * una nota interna. Dura hasta `until`.
+ */
+export interface StaffTypingEvent {
+  conversationId: string;
+  userId: string;
+  name: string;
+  internal: boolean;
+  until: string;
 }

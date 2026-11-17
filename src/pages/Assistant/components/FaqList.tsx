@@ -1,11 +1,13 @@
 import type { ReactNode } from 'react';
-import { RowActions } from '../../../common/components/ui';
+import { Badge, RowActions } from '../../../common/components/ui';
+import { FAQ_DRAFT } from '../../../utils/statusLabels';
 
 interface Item {
   id: string;
   position: number;
   question: string;
   answer: string;
+  isDraft?: boolean;
 }
 
 interface Props<T extends Item> {
@@ -43,8 +45,19 @@ export const FaqList = <T extends Item>({ items, renderMeta, onEdit, onDelete }:
               />
             )}
           </div>
-          <p className="mt-1 whitespace-pre-line break-words text-[13px] leading-relaxed text-muted">{faq.answer}</p>
-          {renderMeta && <div className="mt-2 flex flex-wrap items-center gap-2">{renderMeta(faq)}</div>}
+          {faq.isDraft ? (
+            <p className="mt-1 text-[13px] italic text-muted">
+              Sin respuesta todavía: el asistente no la usa hasta que la completes.
+            </p>
+          ) : (
+            <p className="mt-1 whitespace-pre-line break-words text-[13px] leading-relaxed text-muted">{faq.answer}</p>
+          )}
+          {(faq.isDraft || renderMeta) && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {faq.isDraft && <Badge label={FAQ_DRAFT} />}
+              {renderMeta?.(faq)}
+            </div>
+          )}
         </div>
       </li>
     ))}

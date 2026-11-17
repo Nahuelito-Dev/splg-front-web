@@ -53,6 +53,11 @@ export const TEMPLATE_KEY_MAX = 60;
 export const TEMPLATE_TITLE_MIN = 2;
 export const TEMPLATE_TITLE_MAX = 60;
 export const TEMPLATE_BODY_MAX = 1000;
+/** Cierre por inactividad (`UpdateChatSettingsDto`): el plazo de 30 min a 7 días y el aviso de 5 min a 24 h antes. */
+export const INACTIVITY_CLOSE_MIN = 30;
+export const INACTIVITY_CLOSE_MAX = 10080;
+export const INACTIVITY_WARNING_MIN = 5;
+export const INACTIVITY_WARNING_MAX = 1440;
 /** Textos de las respuestas automáticas (`UpdateChatSettingsDto`). */
 export const AUTO_MESSAGE_MAX = 500;
 export const FIRST_RESPONSE_MIN = 5;
@@ -98,6 +103,8 @@ export interface InboxQuery {
   /** «Me mencionaron»: `me`, con alguna nota que menciona a quien pide; `unread`, con alguna mención sin leer. */
   mentioned?: 'me' | 'unread';
   q?: string;
+  /** Sólo las que tienen esa etiqueta vigente. */
+  labelId?: string;
   limit?: number;
   offset?: number;
 }

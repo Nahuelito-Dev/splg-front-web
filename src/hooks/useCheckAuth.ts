@@ -57,9 +57,9 @@ export const useCheckAuth = () => {
           const { uid, email, displayName } = user;
           // Lo elegido por otra cuenta en este navegador se borra antes de la primera request de esta.
           ownedCompany.syncIdentity(uid);
-          const { fullName, role } = await getAdmin(email ?? '');
+          const { userId, fullName, role } = await getAdmin(email ?? '');
 
-          const payload: LoginPayload = { uid, email, displayName, fullName, role };
+          const payload: LoginPayload = { uid, userId, email, displayName, fullName, role };
           dispatch(login(payload));
         } catch (error) {
           ownedCompany.syncIdentity(null);

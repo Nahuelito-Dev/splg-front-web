@@ -1,12 +1,12 @@
 name: Release nocturno
 
-# Todas las noches a las 23:00 (hora argentina) pasa develop a main si hay cambios nuevos y los
+# Todas las noches a las 23:17 (hora argentina) pasa develop a main si hay cambios nuevos y los
 # Checks de develop están en verde. Después lanza el Release automático, y al terminar éste
 # arranca el Deploy. Avisa por Telegram si pasó, si no había nada o si lo frenó.
 # También se puede correr a mano: Actions > Release nocturno > Run workflow.
 on:
   schedule:
-    - cron: '0 2 * * *' # 02:00 UTC = 23:00 en Argentina
+    - cron: '17 2 * * *' # 02:17 UTC = 23:17 en Argentina (fuera de la hora en punto, que GitHub demora)
   workflow_dispatch:
 
 concurrency:

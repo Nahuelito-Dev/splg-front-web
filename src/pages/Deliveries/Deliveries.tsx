@@ -15,7 +15,7 @@ import {
   PageContainer,
   TableToolbar,
 } from '../../common/components/ui';
-import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
+import { missingPermisoHint, useDebounce, usePermiso, usePermissions, useUrlParams } from '../../hooks';
 import { deliveryQuery } from '../../services/api/deliveries';
 import type { Delivery } from '../../services/api/types';
 import {
@@ -39,6 +39,9 @@ import { asText } from '../../utils/csv';
 export const Deliveries = () => {
   // Editar, dar de baja y validar piden la distribuidora (X-Distributor): sin «Ver como» la API contesta 400.
   const { canOperate, canWrite, writeHint } = usePermissions();
+  // El alta pide `personal.gestionar` en la API.
+  const manageStaff = usePermiso('personal.gestionar');
+  const createHint = (canWrite ? undefined : writeHint) ?? missingPermisoHint(manageStaff, 'Gestionar el personal');
   // El grupo y la búsqueda viven en la URL: al volver de una ficha o recargar, la lista queda como estaba.
   const [{ status: statusParam, q: search, page: pageParam }, setFilters] = useUrlParams({
     status: 'all',
@@ -171,11 +174,7 @@ export const Deliveries = () => {
             <Button variant="secondary" icon={<SearchCheck />} onClick={() => setFindingByUser(true)}>
               Buscar por usuario
             </Button>
-            <Button
-              icon={<PersonAddAlt1Icon />}
-              onClick={() => openForm('/deliveries/new')}
-              blockedReason={canWrite ? undefined : writeHint}
-            >
+            <Button icon={<PersonAddAlt1Icon />} onClick={() => openForm('/deliveries/new')} blockedReason={createHint}>
               Nuevo chofer
             </Button>
           </div>

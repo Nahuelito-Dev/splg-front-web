@@ -18,6 +18,18 @@ const state = vi.hoisted(() => ({
   confirm: vi.fn(() => Promise.resolve(true)),
   success: vi.fn(),
   error: vi.fn(),
+  permisos: { 'plataforma.tickets.configurar': true, 'plataforma.tickets.ver': true } as Record<string, boolean>,
+}));
+
+vi.mock('../../../hooks', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  usePermiso: (code: string) => ({ allowed: state.permisos[code] ?? false, known: true }),
+}));
+vi.mock('./PlatformPreviewTab', () => ({ PlatformPreviewTab: () => <p>Probador de OrixTech</p> }));
+vi.mock('./PlatformUnansweredTab', () => ({
+  PlatformUnansweredTab: ({ canManage }: { canManage: boolean }) => (
+    <p>{`Sin respuesta de OrixTech${canManage ? ' (con acciones)' : ''}`}</p>
+  ),
 }));
 
 vi.mock('../../../services/queries/assistant', () => ({
@@ -79,6 +91,7 @@ const callbacks = (m: unknown) =>
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  state.permisos = { 'plataforma.tickets.configurar': true, 'plataforma.tickets.ver': true };
 });
 
 describeListStates({
@@ -316,5 +329,64 @@ describe('PlatformAssistantFaqs: la clave', () => {
       body: { question: '¿Qué medios de pago aceptan?', answer: 'Efectivo y transferencia.' },
     });
     expect(key).not.toHaveAttribute('aria-invalid');
+  });
+});
+
+describe('PlatformAssistantFaqs: probador, sin respuesta y borradores', () => {
+  it('con permiso de configurar, las pestañas «Probar» y «Sin respuesta» (con acciones)', () => {
+    draw('/platform/assistant?tab=test');
+    expect(screen.getByRole('tab', { name: 'Probar' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText('Probador de OrixTech')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('tab', { name: 'Sin respuesta' }));
+    expect(screen.getByText('Sin respuesta de OrixTech (con acciones)')).toBeInTheDocument();
+  });
+
+  it('sólo con permiso de ver: «Sin respuesta» sin acciones y sin «Probar» (la URL cae a la base)', () => {
+    state.permisos = { 'plataforma.tickets.configurar': false, 'plataforma.tickets.ver': true };
+    draw('/platform/assistant?tab=test');
+    expect(screen.queryByRole('tab', { name: 'Probar' })).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Preguntas de OrixTech' })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(screen.getByRole('tab', { name: 'Sin respuesta' }));
+    expect(screen.getByText('Sin respuesta de OrixTech')).toBeInTheDocument();
+  });
+
+  it('sin permisos de tickets no aparecen las pestañas nuevas', () => {
+    state.permisos = {};
+    draw();
+    expect(screen.queryByRole('tab', { name: 'Probar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Sin respuesta' })).not.toBeInTheDocument();
+  });
+
+  it('un borrador se marca, no muestra respuesta, se filtra y se completa con «Publicar»', async () => {
+    draw('/platform/assistant', {
+      faqs: faqs([
+        faq(),
+        faq({
+          id: 'p-2',
+          key: 'sin_respuesta_0a1b2c3d4e5f',
+          question: '¿Cómo doy de alta un chofer?',
+          answer: '',
+          isDraft: true,
+          position: 2,
+        }),
+      ]),
+    });
+    expect(screen.getByRole('region', { name: 'Sobre esta base de conocimiento' })).toHaveTextContent(
+      '1 está en borrador',
+    );
+    expect(screen.getAllByText('Borrador')).toHaveLength(1);
+    fireEvent.change(screen.getByLabelText('Estado'), { target: { value: 'draft' } });
+    expect(screen.queryByText('¿Qué medios de pago aceptan?')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Editar la pregunta «¿Cómo doy de alta un chofer?»' }));
+    const dialog = screen.getByRole('dialog', { name: 'Completar el borrador' });
+    fireEvent.change(within(dialog).getByLabelText(/^Respuesta/), { target: { value: 'Desde Personal.' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Publicar' }));
+    await waitFor(() => expect((state.faqMut.update as Mut).mutate).toHaveBeenCalledTimes(1));
+    expect((state.faqMut.update as Mut).mutate.mock.calls[0][0]).toEqual({
+      id: 'p-2',
+      body: { question: '¿Cómo doy de alta un chofer?', answer: 'Desde Personal.' },
+    });
+    callbacks(state.faqMut.update).onSuccess?.();
+    expect(state.success).toHaveBeenCalledWith('Pregunta publicada');
   });
 });

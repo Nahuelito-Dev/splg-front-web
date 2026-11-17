@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({ confirm: vi.fn(), mutate: vi.fn() }));
 vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   usePermissions: () => ({ canManageCustomerAccounts: true, operateHint: undefined }),
+  usePermiso: () => ({ allowed: true, known: true }),
 }));
 vi.mock('../../utils/notifications', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),

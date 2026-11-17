@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Admin } from '../../services/api/types';
-import { manageStateOf } from './adminAccess';
+import { manageStateOf, offersStaffRoleChange } from './adminAccess';
 
 const admin = (role: string, email = 'otro@splg.com'): Admin =>
   ({ admin_id: 'a1', user_id: 'u1', user: { email, role: { type: role } } }) as unknown as Admin;
@@ -51,5 +51,22 @@ describe('manageStateOf', () => {
 
   it('sin empresa elegida, otro super admin se gestiona', () => {
     expect(manageStateOf(admin('super_admin'), general(true))).toEqual({ edit: 'allowed', remove: 'allowed' });
+  });
+});
+
+describe('offersStaffRoleChange', () => {
+  const ofCompany = { ...admin('admin'), distributor_id: 'd1' } as Admin;
+
+  it('se ofrece sobre un admin de empresa que la sesión puede editar', () => {
+    expect(offersStaffRoleChange(ofCompany, { edit: 'allowed', remove: 'allowed' })).toBe(true);
+  });
+
+  it('no sobre uno que no se edita (el propio) ni sin empresa elegida', () => {
+    expect(offersStaffRoleChange(ofCompany, { edit: 'hidden', remove: 'hidden' })).toBe(false);
+    expect(offersStaffRoleChange(ofCompany, { edit: 'needs-distributor', remove: 'needs-distributor' })).toBe(false);
+  });
+
+  it('no sobre un super admin, que no es de ninguna empresa', () => {
+    expect(offersStaffRoleChange(admin('super_admin'), { edit: 'allowed', remove: 'allowed' })).toBe(false);
   });
 });

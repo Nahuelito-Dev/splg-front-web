@@ -17,6 +17,8 @@ export const MESSAGES_PATH = '/messages';
 export const MESSAGES_SETTINGS_PATH = '/messages/settings';
 /** Las métricas de la bandeja (`mensajes.supervisar`). */
 export const MESSAGES_METRICS_PATH = '/messages/metrics';
+/** El equipo de la bandeja: quién está en línea, su carga y su tope (`mensajes.supervisar` o `mensajes.configurar`). */
+export const MESSAGES_TEAM_PATH = '/messages/team';
 export const messageHref = (conversationId: string) => `${MESSAGES_PATH}/${encodeURIComponent(conversationId)}`;
 export const claimHref = (claimId: string) => `/claims?claim=${encodeURIComponent(claimId)}`;
 /** Las preguntas frecuentes con las que responde el asistente de la empresa («Asistente del chat»). */

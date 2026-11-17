@@ -51,6 +51,11 @@ import type {
   TruckLoad,
   VehicleAccident,
   Warehouse,
+  AssistantPreview,
+  AssistantSource,
+  RegressionCase,
+  RegressionCaseResult,
+  RegressionRun,
 } from '../services/api/types';
 
 /** Tono visual de una etiqueta (lo interpreta <Badge>). */
@@ -283,6 +288,12 @@ export const INCIDENT_STATUS: LabelMap<Incident['status']> = {
 export const DISTRIBUTOR_STATUS: LabelMap<Distributor['status']> = {
   active: { text: 'Activa', tone: 'success' },
   suspended: { text: 'Suspendida', tone: 'danger' },
+};
+
+/** Tipo de un rol del personal (F37): el de sistema viene con la empresa y tiene todos los permisos. */
+export const STAFF_ROLE_KIND: LabelMap<'system' | 'custom'> = {
+  system: { text: 'Sistema', tone: 'info' },
+  custom: { text: 'Personalizado', tone: 'neutral' },
 };
 
 /** Estado de un pedido o sesión de soporte (`support_session.status`). */
@@ -745,3 +756,54 @@ export const LIQUIDATION_STATUS: LabelMap<DriverLiquidation['status']> = {
   paid: { text: 'Pagada', tone: 'success' },
   voided: { text: 'Anulada', tone: 'neutral' },
 };
+
+/** Quién armó la respuesta del probador: la capa con IA o las respuestas fijas (la IA no corrió). */
+export const ASSISTANT_LAYER: LabelMap<AssistantPreview['layer']> = {
+  ai: { text: 'Con IA', tone: 'info' },
+  fixed: { text: 'Respuestas fijas', tone: 'warn' },
+};
+
+/** De dónde sacó el asistente lo que contesta. */
+export const ASSISTANT_SOURCE_TYPE: LabelMap<AssistantSource['type']> = {
+  faq: { text: 'Pregunta frecuente', tone: 'primary' },
+  order: { text: 'Pedidos del cliente', tone: 'neutral' },
+  catalog: { text: 'Precios', tone: 'neutral' },
+  schedule: { text: 'Horarios y zonas', tone: 'neutral' },
+  payment_methods: { text: 'Medios de pago', tone: 'neutral' },
+  tool: { text: 'Consulta del sistema', tone: 'neutral' },
+};
+
+/** Qué se espera de un caso del lote de pruebas. */
+export const REGRESSION_EXPECTED: LabelMap<RegressionCase['expected']> = {
+  answer: { text: 'Que responda', tone: 'success' },
+  handoff: { text: 'Que pase a una persona', tone: 'info' },
+};
+
+export const REGRESSION_RUN_STATUS: LabelMap<RegressionRun['status']> = {
+  running: { text: 'En curso', tone: 'info' },
+  finished: { text: 'Terminada', tone: 'success' },
+  failed: { text: 'Se cortó', tone: 'danger' },
+};
+
+export const REGRESSION_OUTCOME: LabelMap<RegressionCaseResult['outcome']> = {
+  passed: { text: 'Pasó', tone: 'success' },
+  failed: { text: 'No pasó', tone: 'danger' },
+  error: { text: 'Sin juzgar', tone: 'warn' },
+};
+
+/** Una pregunta frecuente sin respuesta todavía: no la usa el asistente hasta completarla. */
+export const FAQ_DRAFT: Label = { text: 'Borrador', tone: 'warn' };
+
+/**
+ * Cómo está alguien del equipo de la bandeja para la asignación automática (8b), deducido de `status`, `connected` y
+ * `available` (`features/chat/assignment/presence`).
+ */
+export const CHAT_AGENT_PRESENCE: LabelMap<'online' | 'away' | 'disconnected' | 'out_of_hours'> = {
+  online: { text: 'En línea', tone: 'success' },
+  away: { text: 'Ausente', tone: 'neutral' },
+  disconnected: { text: 'Desconectada', tone: 'warn' },
+  out_of_hours: { text: 'Fuera de horario', tone: 'info' },
+};
+
+/** La conversación se la dio la asignación automática y nadie la cambió desde entonces (8b). */
+export const AUTO_ASSIGNED: Label = { text: 'Asignada automáticamente', tone: 'info' };

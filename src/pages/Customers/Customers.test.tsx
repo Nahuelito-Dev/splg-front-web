@@ -11,10 +11,12 @@ const perms = vi.hoisted(() => ({
   value: { canManageCustomerAccounts: false } as Record<string, unknown>,
 }));
 const restore = vi.hoisted(() => ({ confirm: vi.fn(), mutate: vi.fn() }));
+const manageCustomers = vi.hoisted(() => ({ allowed: true }));
 
 vi.mock('../../hooks', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   usePermissions: () => perms.value,
+  usePermiso: (code: string) => ({ allowed: code !== 'clientes.gestionar' || manageCustomers.allowed, known: true }),
 }));
 vi.mock('../../services/queries/customers', () => ({
   useCustomers: (...args: unknown[]) => server(...args) as unknown,
@@ -184,6 +186,17 @@ describe('Customers: modo soporte (sólo lectura)', () => {
     const button = screen.getByRole('button', { name: /Nuevo cliente/ });
     expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(button).toHaveAttribute('title', 'Modo soporte: sólo lectura');
+    perms.value = { canManageCustomerAccounts: false };
+  });
+
+  it('sin «Gestionar los clientes», «Nuevo cliente» queda apagado con el permiso que falta', () => {
+    manageCustomers.allowed = false;
+    perms.value = { canManageCustomerAccounts: false, canWrite: true };
+    renderPage();
+    const button = screen.getByRole('button', { name: /Nuevo cliente/ });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('title', 'Hace falta el permiso «Gestionar los clientes»');
+    manageCustomers.allowed = true;
     perms.value = { canManageCustomerAccounts: false };
   });
 });

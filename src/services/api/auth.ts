@@ -3,6 +3,8 @@ import { http } from './httpClient';
 import type { User } from './types';
 
 export interface AdminInfo {
+  /** Id interno (`user_id`): el que se manda a Sentry, nunca el correo. */
+  userId: string;
   fullName: string | null;
   role: 'admin' | 'super_admin';
   blocked: boolean;
@@ -19,5 +21,5 @@ export const getAdmin = async (email: string): Promise<AdminInfo> => {
   if (roleType !== 'admin' && roleType !== 'super_admin') {
     throw new ApiError(403, ['No tenés permisos de administrador']);
   }
-  return { fullName: data.full_name, role: roleType, blocked: data.blocked };
+  return { userId: data.user_id, fullName: data.full_name, role: roleType, blocked: data.blocked };
 };

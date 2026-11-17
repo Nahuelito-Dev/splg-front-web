@@ -25,6 +25,7 @@ import { formatDay } from '../../utils/format';
 import { isInboxFilter, type InboxFilter } from './inboxTabs';
 import { AttentionSection, LiveSummary } from './metrics/AttentionSection';
 import { CompanyAssistantSection } from './metrics/CompanyAssistantSection';
+import { LabelsSection } from './metrics/LabelsSection';
 import { RepliesSection } from './metrics/RepliesSection';
 import { SatisfactionSection } from './metrics/SatisfactionSection';
 
@@ -166,6 +167,7 @@ export const MessagesMetrics = () => {
             </TableroWidget>
             {data.assistant && <CompanyAssistantSection assistant={data.assistant} canConfigure={configure} />}
             {data.satisfaction && <SatisfactionSection satisfaction={data.satisfaction} />}
+            <LabelsSection byLabel={data.byLabel} canConfigure={configure} />
             <RepliesSection automaticReplies={data.automaticReplies} quickReplies={data.quickReplies} />
           </div>
         </>

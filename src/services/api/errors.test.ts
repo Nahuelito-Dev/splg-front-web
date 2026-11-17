@@ -23,6 +23,13 @@ describe('toApiError', () => {
     expect(toApiError(axiosError(403, { message: 'no' })).forbidden).toBe(true);
   });
 
+  it('el 403 STAFF_ROLE_TARGET_OUTRANKS se muestra con el mensaje del back, tal cual', () => {
+    const message = 'No podés cambiarle el rol: tiene permisos que vos no tenés («stock.gestionar»)';
+    const error = toApiError(axiosError(403, { message, code: 'STAFF_ROLE_TARGET_OUTRANKS' }));
+    expect(error.code).toBe('STAFF_ROLE_TARGET_OUTRANKS');
+    expect(errorMessage(error)).toBe(message);
+  });
+
   it('el 403 por alcance del modo soporte explica qué falta pedir (también en descargas)', () => {
     const error = toApiError(axiosError(403, { message: 'Forbidden', code: 'SUPPORT_SCOPE_REQUIRED' }));
     expect(error.code).toBe('SUPPORT_SCOPE_REQUIRED');

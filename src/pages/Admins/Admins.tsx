@@ -12,14 +12,16 @@ import {
   SearchInput,
   PageContainer,
 } from '../../common/components/ui';
-import { useDebounce, usePermissions } from '../../hooks';
+import { missingPermisoHint, useDebounce, usePermiso, usePermissions } from '../../hooks';
 import { useAdmins, useFindAdminByTerm } from '../../services/queries/admins';
 import type { Admin } from '../../services/api/types';
 import { roleLabel } from '../Users/roleLabel';
 import { AdminsTable } from './components/AdminsTable';
 import { CreateAdminModal } from './components/CreateAdminModal';
 import { EditAdminModal } from './components/EditAdminModal';
+import { AssignStaffRoleModal } from './components/AssignStaffRoleModal';
 import { useAdminManagement } from './useAdminManagement';
+import { useStaffRoleChange } from './useStaffRoleChange';
 
 /** CU-088: resultado puntual de `GET /admin/term/:term` (id o correo), distinto a la fila de la tabla. */
 const SearchResult = ({ term }: { term: string }) => {
@@ -43,8 +45,12 @@ const SearchResult = ({ term }: { term: string }) => {
 
 export const Admins = () => {
   const { isSuperAdmin, readOnly, writeHint } = usePermissions();
+  const staffRoleChange = useStaffRoleChange();
+  // El alta pide `administradores.gestionar` en la API.
+  const manageAdmins = usePermiso('administradores.gestionar');
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Admin | null>(null);
+  const [changingStaffRole, setChangingStaffRole] = useState<Admin | null>(null);
   const { stateOf, remove, blockedReason } = useAdminManagement();
   const handleDelete = useCallback((admin: Admin) => void remove(admin), [remove]);
   const [search, setSearch] = useState('');
@@ -60,7 +66,7 @@ export const Admins = () => {
           <Button
             icon={<PersonAddAlt1Icon />}
             onClick={() => setCreateOpen(true)}
-            blockedReason={readOnly ? writeHint : undefined}
+            blockedReason={readOnly ? writeHint : missingPermisoHint(manageAdmins, 'Gestionar los administradores')}
           >
             Nuevo admin
           </Button>
@@ -90,11 +96,14 @@ export const Admins = () => {
             blockedReason={blockedReason}
             onEdit={setEditing}
             onDelete={handleDelete}
+            onChangeStaffRole={staffRoleChange.allowed ? setChangingStaffRole : undefined}
+            changeStaffRoleBlockedReason={staffRoleChange.blockedReasonFor}
           />
         )}
       </Card>
 
       <EditAdminModal admin={editing} onClose={() => setEditing(null)} />
+      <AssignStaffRoleModal admin={changingStaffRole} onClose={() => setChangingStaffRole(null)} />
       <CreateAdminModal open={createOpen} onClose={() => setCreateOpen(false)} isSuperAdmin={isSuperAdmin} />
     </PageContainer>
   );

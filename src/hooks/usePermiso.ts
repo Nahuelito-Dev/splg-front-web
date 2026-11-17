@@ -24,3 +24,10 @@ export const usePermiso = (code: string): Permiso => {
   if (data) return { allowed: allows(data, code), known: true };
   return { allowed: Boolean(error), known: Boolean(error) };
 };
+
+/**
+ * El motivo de una acción apagada por falta de un permiso del rol del personal («Gestionar los clientes»). Mientras no
+ * se sabe, nada: la API igual rechaza con 403 lo que no corresponde.
+ */
+export const missingPermisoHint = (permiso: Permiso, label: string): string | undefined =>
+  permiso.known && !permiso.allowed ? `Hace falta el permiso «${label}»` : undefined;

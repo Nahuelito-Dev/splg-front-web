@@ -144,6 +144,8 @@ Input.displayName = 'Input';
 export interface SelectOption {
   value: string;
   label: string;
+  /** Se ve en la lista pero no se puede elegir (el porqué va en el `label`). */
+  disabled?: boolean;
 }
 
 type SelectProps = FieldProps & SelectHTMLAttributes<HTMLSelectElement> & { options: SelectOption[] };
@@ -278,7 +280,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             {...rest}
           >
             {options.map((o) => (
-              <option key={o.value} value={o.value}>
+              <option key={o.value} value={o.value} disabled={o.disabled}>
                 {o.label}
               </option>
             ))}

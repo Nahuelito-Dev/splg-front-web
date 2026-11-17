@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Delivery } from '../../services/api/types';
 
 const deliveriesQuery = vi.hoisted(() => vi.fn());
-const permissions = vi.hoisted(() => ({ canOperate: true }));
+const permissions = vi.hoisted(() => ({ canOperate: true, manageStaff: true }));
 const tableProps = vi.hoisted(() => ({ current: {} as Record<string, unknown> }));
 
 vi.mock('../../hooks', async (importOriginal) => ({
@@ -13,6 +13,10 @@ vi.mock('../../hooks', async (importOriginal) => ({
     canWrite: permissions.canOperate,
     canOperate: permissions.canOperate,
     writeHint: permissions.canOperate ? undefined : 'Modo soporte: sólo lectura',
+  }),
+  usePermiso: (code: string) => ({
+    allowed: code !== 'personal.gestionar' || permissions.manageStaff,
+    known: true,
   }),
 }));
 vi.mock('../../services/queries/deliveries', () => ({
@@ -155,5 +159,19 @@ describe('Deliveries: modo soporte (sólo lectura)', () => {
     expect(button).toHaveAttribute('aria-disabled', 'true');
     expect(button).toHaveAttribute('title', 'Modo soporte: sólo lectura');
     permissions.canOperate = true;
+  });
+
+  it('sin «Gestionar el personal», «Nuevo chofer» queda apagado con el permiso que falta', () => {
+    permissions.manageStaff = false;
+    deliveriesQuery.mockReturnValue({ data: { rows: [] as Delivery[], total: 0 }, isFetching: false });
+    render(
+      <MemoryRouter>
+        <Deliveries />
+      </MemoryRouter>,
+    );
+    const button = screen.getByRole('button', { name: /Nuevo chofer/ });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('title', 'Hace falta el permiso «Gestionar el personal»');
+    permissions.manageStaff = true;
   });
 });

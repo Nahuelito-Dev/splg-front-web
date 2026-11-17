@@ -58,6 +58,7 @@ export const chatMetrics = (over: Partial<ChatMetrics> = {}): ChatMetrics => ({
   resolution: { closed: 60, medianMinutes: 95 },
   live,
   byChannel: [],
+  byLabel: [],
   assistant: { ...assistantMetrics(), enabled: true },
   automaticReplies: {
     total: 23,

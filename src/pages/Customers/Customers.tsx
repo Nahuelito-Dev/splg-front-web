@@ -17,7 +17,7 @@ import {
   PageContainer,
   EmptyState,
 } from '../../common/components/ui';
-import { useDebounce, usePermissions, useUrlParams } from '../../hooks';
+import { missingPermisoHint, useDebounce, usePermiso, usePermissions, useUrlParams } from '../../hooks';
 import { customerQuery } from '../../services/api/customers';
 import type { Customer } from '../../services/api/types';
 import {
@@ -45,6 +45,10 @@ const CSV_HEADERS = ['Cliente', 'Email', 'Teléfono', 'Alta'];
 
 export const Customers = () => {
   const { canManageCustomerAccounts, needsDistributor, operateHint, canWrite, writeHint } = usePermissions();
+  // El alta pide `clientes.gestionar` en la API.
+  const manageCustomers = usePermiso('clientes.gestionar');
+  const createHint =
+    (canWrite ? undefined : writeHint) ?? missingPermisoHint(manageCustomers, 'Gestionar los clientes');
   // La búsqueda, el segmento y la página viven en la URL: al volver de una ficha se conservan.
   const [{ q: search, status: statusParam, page: pageParam }, setFilters] = useUrlParams({
     q: '',
@@ -151,7 +155,7 @@ export const Customers = () => {
             <Button
               icon={<PersonAddAlt1Icon />}
               onClick={() => setForm({ open: true, customer: null })}
-              blockedReason={canWrite ? undefined : writeHint}
+              blockedReason={createHint}
             >
               Nuevo cliente
             </Button>

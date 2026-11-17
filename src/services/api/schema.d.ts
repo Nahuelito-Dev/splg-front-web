@@ -658,7 +658,7 @@ export interface paths {
     put?: never;
     /**
      * Dar de alta un usuario de cualquier rol (CU-003, CU-031, CU-086)
-     * @description Un admin crea clientes, choferes y admins de su distribuidora; un super admin, cualquier rol en cualquier distribuidora.
+     * @description Un admin crea clientes (`clientes.gestionar`), choferes (`personal.gestionar`) y admins (`administradores.gestionar`, con `staffRoleId`: ver el campo) de su distribuidora; un super admin, cualquier rol en cualquier distribuidora.
      */
     post: operations['RegistroController_registrar'];
     delete?: never;
@@ -10764,7 +10764,10 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Una conversación de la bandeja */
+    /**
+     * Una conversación de la bandeja
+     * @description Con sus etiquetas y el tiempo de respuesta esperado que ve hoy el cliente o el chofer de ese canal (`expectedReply`).
+     */
     get: operations['CompanyInboxController_una'];
     put?: never;
     post?: never;
@@ -10978,6 +10981,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/conversations/{id}/labels': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Poner o sacar etiquetas
+     * @description Deja en la conversación exactamente las etiquetas de `labelIds` (hasta 5; vacía: le saca todas). También en una cerrada. Con los permisos del canal. Mandar las mismas no cambia nada. Queda en la auditoría y la bandeja recibe `chat:inbox` con `change: labels` y las etiquetas (sólo el panel: el cliente y el chofer no se enteran).
+     */
+    put: operations['CompanyInboxController_etiquetar'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/conversations/{id}/claim': {
     parameters: {
       query?: never;
@@ -11012,7 +11035,7 @@ export interface paths {
     get: operations['CompanyChatConfigController_leer'];
     /**
      * Cambiar los parámetros de la bandeja
-     * @description Lo que no viene queda como estaba; `null` en un texto o en el nombre del asistente vuelve al de omisión. `assistantAiEnabled` prende o apaga el asistente con IA. Queda en la auditoría.
+     * @description Lo que no viene queda como estaba; `null` en un texto o en el nombre del asistente vuelve al de omisión. `assistantAiEnabled` prende o apaga el asistente con IA. `inactivityCloseMinutes` y `inactivityWarningMinutes` prenden el cierre por inactividad (`null` lo apaga, y apagar el cierre apaga el aviso); `expectedReplyEnabled` muestra u oculta el tiempo de respuesta esperado a los clientes y choferes. `autoAssignEnabled` y `autoAssignMaxOpen` prenden la asignación automática y fijan el tope por persona (prenderla o cambiar el tope reparte enseguida lo que espera). Queda en la auditoría.
      */
     put: operations['CompanyChatConfigController_actualizar'];
     post?: never;
@@ -11083,6 +11106,138 @@ export interface paths {
     head?: never;
     /** Cambiar una respuesta guardada */
     patch: operations['CompanyChatConfigController_actualizarPlantilla'];
+    trace?: never;
+  };
+  '/api/v2/chat/labels': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Etiquetas de la bandeja
+     * @description Las vigentes de la empresa, por nombre.
+     */
+    get: operations['CompanyChatLabelsController_listar'];
+    put?: never;
+    /**
+     * Nueva etiqueta
+     * @description Nombre de 1 a 30 caracteres y un color de la paleta. Hasta 50 vigentes por empresa. Queda en la auditoría.
+     */
+    post: operations['CompanyChatLabelsController_crear'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/chat/labels/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Dar de baja una etiqueta
+     * @description Baja lógica: deja de ofrecerse y sale de las conversaciones que la tenían (también queda fuera de las métricas). El nombre queda libre para otra. Queda en la auditoría.
+     */
+    delete: operations['CompanyChatLabelsController_baja'];
+    options?: never;
+    head?: never;
+    /**
+     * Cambiar una etiqueta
+     * @description Nombre o color; lo que no viene queda como estaba. Las conversaciones que la tienen la muestran cambiada. Queda en la auditoría.
+     */
+    patch: operations['CompanyChatLabelsController_actualizar'];
+    trace?: never;
+  };
+  '/api/v2/me/chat-status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mi estado en la bandeja
+     * @description `available` = `online`, conectada al panel (o desconectada hace menos de 2 minutos: se conserva el estado elegido) y dentro del horario de atención de la empresa. `maxOpen` es el tope que rige (el propio o el de la empresa); `openAssigned`, las abiertas asignadas de los dos canales.
+     */
+    get: operations['MyChatStatusController_leer'];
+    /**
+     * Ponerme en línea o ausente
+     * @description Ponerse `online` dispara el reparto de lo que espera a una persona (si la asignación automática está prendida) sin esperarlo: lo que reciba llega por el socket (`chat:conversation`, `chat:inbox`, `chat:team`) y lo cuenta el próximo `GET`. Avisa `chat:team` al equipo. Queda en la auditoría.
+     */
+    put: operations['MyChatStatusController_cambiar'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/chat/agents': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * El equipo de la bandeja
+     * @description Las personas del personal de la empresa que atienden algún canal (`mensajes.clientes` o `mensajes.choferes`), por nombre, con su estado, conexión, disponibilidad, tope, abiertas asignadas, canales y la última vez que recibieron una sola. Sin email ni teléfono. En vivo: `chat:team` por el socket.
+     */
+    get: operations['CompanyChatAgentsController_listar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/chat/agents/{userId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * El tope propio de una persona del equipo
+     * @description `maxOpenOverride` de 1 a 50, o `null` para volver al de la empresa. Cambiarlo dispara el reparto de lo que espera a una persona (no lo espera: lo asignado llega por el socket). Avisa `chat:team`. Queda en la auditoría.
+     */
+    put: operations['CompanyChatAgentsController_cambiarTope'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/me/conversations/expected-reply': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Tiempo de respuesta esperado
+     * @description Para mostrar antes de escribir: «Solemos responder en ~N min» con la mediana de la primera respuesta (en horario de atención) de los últimos 14 días del canal (el cliente, el de clientes de la empresa del `X-Distributor`; el chofer, el de choferes de la suya), o el objetivo de la empresa si hubo menos de 10 respondidas. Fuera de horario: «Ahora estamos fuera de horario. Te respondemos …» con `nextOpenAt`. Si la empresa lo apagó (o, para el cliente, no atiende por chat), `enabled: false` y el resto vacío. Se recalcula cada 10 minutos.
+     */
+    get: operations['MyExpectedReplyController_tiempoEsperado'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/v2/me/conversations': {
@@ -11494,7 +11649,7 @@ export interface paths {
     };
     /**
      * Métricas de los mensajes con clientes y choferes
-     * @description De la empresa de quien pide, en el período (por la creación de cada conversación; sin fechas, los últimos 30 días): tiempo de primera respuesta (mediana y p90 en minutos hábiles de su horario de atención y feriados) y cumplimiento de su objetivo, por canal; tiempo de resolución; abiertas, sin asignar y sin respuesta en vivo; el asistente con IA si la empresa lo tiene (resueltas sin persona, derivaciones y motivos, respuestas); respuestas automáticas y rápidas por clave; la encuesta al cerrar y una serie diaria. Sin datos: ceros y `null`.
+     * @description De la empresa de quien pide, en el período (por la creación de cada conversación; sin fechas, los últimos 30 días): tiempo de primera respuesta (mediana y p90 en minutos hábiles de su horario de atención y feriados) y cumplimiento de su objetivo, por canal; tiempo de resolución; abiertas, sin asignar y sin respuesta en vivo; el asistente con IA si la empresa lo tiene (resueltas sin persona, derivaciones y motivos, respuestas); respuestas automáticas y rápidas por clave; la encuesta al cerrar; el corte por etiqueta (`byLabel`: conversaciones y primera respuesta de cada etiqueta vigente) y una serie diaria. Sin datos: ceros y `null`.
      */
     get: operations['CompanyChatMetricsController_metricasDeLaEmpresa'];
     put?: never;
@@ -12031,6 +12186,254 @@ export interface paths {
      * @description Lo que no viene queda como estaba; la clave no cambia. Lo ya copiado a las distribuidoras no se toca: cada una ajusta la suya.
      */
     patch: operations['PlatformAssistantTemplateController_actualizar'];
+    trace?: never;
+  };
+  '/api/v2/company/assistant/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Probar una pregunta
+     * @description Contesta como lo haría el asistente en una conversación real con un cliente, por el mismo camino (base de conocimiento sin borradores, herramientas de sólo lectura, derivación y topes), sin crear conversación ni mensaje, sin avisar a nadie y sin contar en las métricas. Con `customerId`, «estado de mi pedido» lee los pedidos de ese cliente. Un solo tope mensual para la empresa: suma sus conversaciones y sus pruebas (probador y lote) y nunca se pasa del 100 % (si se llegó, deriva igual que una conversación, `monthly_limit`). Además, las pruebas no pueden pasar el 10 % de ese tope, contado sólo sobre ellas (429 `ASSISTANT_TEST_QUOTA_REACHED`). Corre aunque el asistente esté apagado (`assistantEnabled` dice si hoy contestaría). Hasta 20 por minuto por sesión. Además: sin el permiso que pide (`PERMISSION_DENIED`) o la distribuidora no tiene el asistente del chat (`MODULE_DISABLED`).
+     */
+    post: operations['CompanyAssistantLabController_probar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/assistant/unanswered': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Preguntas sin respuesta
+     * @description Lo que el asistente no supo contestar a los clientes de la distribuidora en conversaciones reales, agrupado por texto parecido (sin tildes, mayúsculas, saludos ni palabras vacías, y en cualquier orden), con cuántas veces y cuándo. Cuenta cuando pasó a una persona con la IA corriendo porque no tenía la información o no estaba segura (`pasar_a_persona` con causa `no_info` o `low_confidence`) o porque no llegó a una respuesta que sirva (`refusal`, `max_tokens`, `no_text`, `invalid_text`, `tool_rounds`, `unverified_amount`). No cuentan que la persona pida hablar con alguien, los reclamos ni las derivaciones sin IA (tope, falla). Sólo de sus clientes; sin los mensajes retirados o anonimizados. Un grupo resuelto o descartado vuelve si se pregunta de nuevo. Sin fechas, los últimos 30 días. Lleva texto de los clientes: sólo el personal de la empresa, nunca el administrador general (ni en modo soporte). Además: sin el permiso que pide (`PERMISSION_DENIED`) o la distribuidora no tiene el asistente del chat (`MODULE_DISABLED`).
+     */
+    get: operations['CompanyAssistantLabController_sinResponder'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/assistant/unanswered/{id}/faq': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Crear una pregunta frecuente desde una pregunta sin respuesta
+     * @description Crea en la base de la distribuidora una pregunta frecuente en borrador (`isDraft`, sin respuesta: el asistente no la usa hasta que se le cargue con `PATCH /company/assistant/faqs/:id`) con la pregunta que confirmó o editó la persona (obligatoria: el back no copia solo el texto del cliente), y marca el grupo como resuelto, todo junto (201). Si el grupo volvió a aparecer y ya tenía su pregunta creada y vigente, devuelve esa (200) y lo vuelve a marcar resuelto, sin crear otra. Máximo 200 preguntas. Además: sin el permiso que pide (`PERMISSION_DENIED`) o la distribuidora no tiene el asistente del chat (`MODULE_DISABLED`).
+     */
+    post: operations['CompanyAssistantLabController_crearPregunta'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/assistant/unanswered/{id}/dismiss': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Descartar una pregunta sin respuesta
+     * @description Deja de mostrar lo que hay hasta ahora en el grupo; si se vuelve a preguntar, aparece de nuevo. Además: sin el permiso que pide (`PERMISSION_DENIED`) o la distribuidora no tiene el asistente del chat (`MODULE_DISABLED`).
+     */
+    post: operations['CompanyAssistantLabController_descartar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/assistant/regression/cases': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Casos del lote de regresión
+     * @description Los vigentes, en el orden en que se cargaron, con el tope (100). Además: sin el permiso que pide (`PERMISSION_DENIED`) o la distribuidora no tiene el asistente del chat (`MODULE_DISABLED`).
+     */
+    get: operations['CompanyAssistantLabController_listarCasos'];
+    put?: never;
+    /**
+     * Nuevo caso del lote de regresión
+     * @description Una pregunta y lo que se espera: que responda (y qué tiene que mencionar) o que pase a una persona. Máximo 100. Queda en la auditoría. Además: sin el permiso que pide (`PERMISSION_DENIED`) o la distribuidora no tiene el asistente del chat (`MODULE_DISABLED`).
+     */
+    post: operations['CompanyAssistantLabController_crearCaso'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/assistant/regression/cases/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Dar de baja un caso del lote de regresión
+     * @description Baja lógica: deja de correrse y la pregunta queda libre. Las corridas anteriores lo conservan. Además: sin el permiso que pide (`PERMISSION_DENIED`) o la distribuidora no tiene el asistente del chat (`MODULE_DISABLED`).
+     */
+    delete: operations['CompanyAssistantLabController_darDeBajaCaso'];
+    options?: never;
+    head?: never;
+    /**
+     * Editar un caso del lote de regresión
+     * @description Lo que no viene queda como estaba; pasar a `handoff` sin mandar menciones las vacía. Además: sin el permiso que pide (`PERMISSION_DENIED`) o la distribuidora no tiene el asistente del chat (`MODULE_DISABLED`).
+     */
+    patch: operations['CompanyAssistantLabController_actualizarCaso'];
+    trace?: never;
+  };
+  '/api/v2/company/assistant/regression/run': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Correr el lote de regresión
+     * @description Corre todos los casos vigentes con el probador (mismo camino que una conversación real) y responde enseguida con la corrida `running`, sin esperarla: los casos se corren de a uno y cada resultado se guarda al terminarlo (`GET /company/assistant/regression/runs/last` muestra el avance). Cada caso gasta como una prueba: suma al tope mensual único de la empresa y al sub-tope de pruebas (el 10 % del mensual); pasado el sub-tope, ese caso y los que siguen quedan `error` (`test_quota_reached`), y pasado el tope único quedan `error` (`assistant_not_run`, la IA no corre), y un caso que falla queda `error` (`case_error`) sin cortar la corrida. Una corrida en curso por distribuidora y una cada 10 minutos; cada caso terminado deja un latido y una corrida sin latido por 120 s se da por perdida. Además: sin el permiso que pide (`PERMISSION_DENIED`) o la distribuidora no tiene el asistente del chat (`MODULE_DISABLED`).
+     */
+    post: operations['CompanyAssistantLabController_correr'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/company/assistant/regression/runs/last': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Última corrida del lote de regresión
+     * @description La más reciente (en curso o terminada), con el resultado de cada caso y por qué pasó o no, y el resumen. Una «en curso» sin latido hace más de 120 s sale `failed` (con `finishedAt` en su último latido). Además: sin el permiso que pide (`PERMISSION_DENIED`) o la distribuidora no tiene el asistente del chat (`MODULE_DISABLED`).
+     */
+    get: operations['CompanyAssistantLabController_ultimaCorrida'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/assistant/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Probar una pregunta en el asistente del soporte
+     * @description Contesta como el asistente del soporte a una distribuidora (base de la plataforma), por el mismo camino que una conversación real, sin crear nada, sin avisar a nadie y sin contar en las métricas. Un solo tope mensual para el soporte: suma las conversaciones de todas las empresas y las pruebas de la plataforma, y nunca se pasa del 100 % (si se llegó, deriva igual que una conversación). Además, las pruebas de la plataforma no pueden pasar el 10 % de ese tope, contado sólo sobre ellas (429 `ASSISTANT_TEST_QUOTA_REACHED`). Hasta 20 por minuto por sesión.
+     */
+    post: operations['PlatformAssistantLabController_probar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/assistant/unanswered': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Preguntas sin respuesta del soporte
+     * @description Lo que el asistente del soporte no supo contestar a las distribuidoras (C1), agrupado por texto parecido, con cuántas veces y cuándo: pasó a una persona porque no tenía la información o no estaba seguro (causa `no_info` o `low_confidence`) o no llegó a una respuesta que sirva (`refusal`, `max_tokens`, `no_text`, `invalid_text`, `tool_rounds`, `unverified_amount`). No cuentan los pedidos de hablar con alguien, los reclamos ni las derivaciones sin IA. Nunca lo que preguntan los clientes de una distribuidora. Sin fechas, los últimos 30 días.
+     */
+    get: operations['PlatformAssistantLabController_sinResponder'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/assistant/unanswered/{id}/faq': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Crear una pregunta frecuente del soporte desde una pregunta sin respuesta
+     * @description Crea en la base de la plataforma una pregunta en borrador (sin respuesta, con la clave `sin_respuesta_…`: el asistente no la usa hasta cargarle la respuesta con `PATCH /platform/assistant/faqs/:id`) con la pregunta que confirmó o editó la persona (obligatoria), y marca el grupo como resuelto, todo junto (201). Si el grupo volvió y ya tenía su pregunta vigente, devuelve esa (200) y lo vuelve a marcar resuelto. Máximo 200 preguntas.
+     */
+    post: operations['PlatformAssistantLabController_crearPregunta'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/platform/assistant/unanswered/{id}/dismiss': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Descartar una pregunta sin respuesta del soporte
+     * @description Deja de mostrar lo que hay hasta ahora en el grupo; si se vuelve a preguntar, aparece de nuevo.
+     */
+    post: operations['PlatformAssistantLabController_descartar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
 }
@@ -18400,6 +18803,11 @@ export interface components {
        * @description Chofer o admin: legajo existente (sin cuenta) al que se vincula el usuario en vez de crear otro. El puesto tiene que admitir el rol. Excluye a `legajo`
        */
       employeeId?: string;
+      /**
+       * Format: uuid
+       * @description Sólo para un admin de distribuidora: el rol del personal con que nace. Quien da de alta tiene que poder darlo (`STAFF_ROLE_PERMISSION_NOT_HELD`). Sin él, el admin nace con el rol de sistema, y eso sólo lo puede hacer quien tiene todos los permisos (si no, 400 `STAFF_ROLE_REQUIRED`). Dar de alta un admin pide `administradores.gestionar`
+       */
+      staffRoleId?: string;
       /** @description Chofer: datos del legajo que se crea con la cuenta, en la misma transacción */
       legajo?: components['schemas']['LegajoDeChoferDto'];
     };
@@ -21779,7 +22187,9 @@ export interface components {
         | 'support_session_expiry'
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
-        | 'chat_attachment_scan';
+        | 'chat_attachment_scan'
+        | 'chat_inactivity_close'
+        | 'chat_auto_assign';
       /** @example Recompra: invitaciones anticipadas */
       title: string;
       /**
@@ -21855,7 +22265,9 @@ export interface components {
         | 'support_session_expiry'
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
-        | 'chat_attachment_scan';
+        | 'chat_attachment_scan'
+        | 'chat_inactivity_close'
+        | 'chat_auto_assign';
       /** @example Recompra: invitaciones anticipadas */
       title: string;
       /**
@@ -21960,7 +22372,9 @@ export interface components {
         | 'support_session_expiry'
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
-        | 'chat_attachment_scan';
+        | 'chat_attachment_scan'
+        | 'chat_inactivity_close'
+        | 'chat_auto_assign';
       /** @example Recompra: invitaciones anticipadas */
       title: string;
       /**
@@ -25030,6 +25444,7 @@ export interface components {
         | 'claim_created'
         | 'handoff_note'
         | 'csat_request'
+        | 'inactivity_warning'
         | null;
       /**
        * @description `internal` sólo llega a la plataforma
@@ -25370,6 +25785,43 @@ export interface components {
       userId: string;
       fullName: string;
     };
+    InboxLabelDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example Reclamo de envío */
+      name: string;
+      /**
+       * @example orange
+       * @enum {string}
+       */
+      color: 'gray' | 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'blue' | 'indigo' | 'purple' | 'pink';
+    };
+    ExpectedReplyResponseDto: {
+      /** @description La empresa lo muestra (si no, los demás campos vienen vacíos y la app no muestra nada) */
+      enabled: boolean;
+      /** @description La empresa atiende ahora */
+      openNow: boolean;
+      /**
+       * @description Minutos que se prometen, redondeados para mostrar (en horario); `null` fuera de horario o apagado
+       * @example 15
+       */
+      minutes: number | null;
+      /**
+       * @description `history`: mediana, en minutos hábiles, de la primera respuesta de las conversaciones del canal de los últimos 14 días junto con lo que llevan esperando las que esperan ahora (con 10 o más entre las dos); `target`: el objetivo de la empresa (con menos); `waiting`: con menos, pero las que esperan ya llevan más que el objetivo (se muestra lo que llevan)
+       * @enum {string|null}
+       */
+      basis: 'history' | 'target' | 'waiting' | null;
+      /**
+       * Format: date-time
+       * @description Fuera de horario: cuándo vuelve a atender
+       */
+      nextOpenAt: string | null;
+      /**
+       * @description Listo para mostrar: «Solemos responder en ~N min» (o «~N h») en horario, «Ahora estamos fuera de horario. Te respondemos mañana a las 08:00.» fuera; `null` si está apagado
+       * @example Solemos responder en ~15 min
+       */
+      text: string | null;
+    };
     InboxCsatDto: {
       /** Format: uuid */
       ratingId: string;
@@ -25421,6 +25873,8 @@ export interface components {
       canWrite: boolean;
       /** @description Sólo para el personal: quién la atiende; `null`, en la cola */
       assignedTo?: components['schemas']['InboxAssigneeDto'] | null;
+      /** @description Sólo para el personal: la asignó la asignación automática (8b) y nadie la cambió desde entonces; una asignación a mano o devolverla a la cola la vuelve a `false` */
+      assignedAutomatically?: boolean;
       /**
        * Format: uuid
        * @description Sólo para el personal: el reclamo creado desde el hilo
@@ -25433,13 +25887,17 @@ export interface components {
       firstResponseAt?: string | null;
       /**
        * Format: date-time
-       * @description Sólo para el personal: desde cuándo espera a una persona porque el asistente con IA se la pasó (C3); `null` si no espera. Se limpia cuando alguien la toma.
+       * @description Sólo para el personal: desde cuándo espera a una persona (el asistente con IA se la pasó, el cliente pidió una persona o, con la asignación automática prendida, el cliente o el chofer escribió y nadie la atiende); `null` si no espera. Se limpia cuando alguien la toma.
        */
       awaitingHumanSince?: string | null;
       /** @description Sólo para el personal: minutos hábiles (horario de atención, sin días sin atención) entre el primer mensaje del cliente o del chofer y la primera respuesta; `null` si todavía no hubo las dos cosas */
       firstResponseBusinessMinutes?: number | null;
       /** @description Sólo para el personal: menciones sin leer a quien pide en las notas internas de esta conversación («Me mencionaron») */
       unreadMentions?: number;
+      /** @description Sólo para el personal: las etiquetas de la conversación (hasta 5, por nombre). Al cliente y al chofer nunca les llegan. */
+      labels?: components['schemas']['InboxLabelDto'][];
+      /** @description Sólo en el detalle de la bandeja (`GET /v2/conversations/:id`): el tiempo de respuesta esperado que ve hoy el cliente o el chofer en ese canal */
+      expectedReply?: components['schemas']['ExpectedReplyResponseDto'];
       /** @description Sólo en las conversaciones con un cliente (C3), para el personal y para el cliente: la encuesta del último cierre; `null` si no hubo */
       csat?: components['schemas']['InboxCsatDto'] | null;
       /** @description El último mensaje visible para las dos puntas (nunca una nota interna) */
@@ -25596,6 +26054,7 @@ export interface components {
         | 'claim_created'
         | 'handoff_note'
         | 'csat_request'
+        | 'inactivity_warning'
         | null;
       /** @description Lo mandó el asistente (fuera de horario, aviso de recibido): mostrarlo con la marca «Respuesta automática» */
       automated: boolean;
@@ -25790,6 +26249,10 @@ export interface components {
        */
       userId: string | null;
     };
+    SetConversationLabelsDto: {
+      /** @description Las etiquetas vigentes de la empresa que quedan puestas, sin repetir (hasta 5). Vacía: le saca todas. */
+      labelIds: string[];
+    };
     CreateClaimFromConversationDto: {
       /**
        * Format: uuid
@@ -25837,6 +26300,21 @@ export interface components {
       effectiveCsatMessage: string;
       /** @description Los botones de acción que ve el cliente en el chat */
       customerActions: ('where_is_my_order' | 'repeat_last_order' | 'payment_methods' | 'talk_to_person')[];
+      /** @description Se muestra al cliente y al chofer el tiempo de respuesta esperado */
+      expectedReplyEnabled: boolean;
+      /** @description Minutos sin respuesta del cliente o del chofer para cerrar sola la conversación; `null`: no se cierra sola */
+      inactivityCloseMinutes: number | null;
+      /** @description Minutos antes del cierre en que se avisa; `null`: cierra sin avisar */
+      inactivityWarningMinutes: number | null;
+      /**
+       * Format: date-time
+       * @description Desde cuándo rigen los plazos de inactividad (se prendió o se cambió el cierre o el aviso): lo anterior no cuenta; `null` si está apagado
+       */
+      inactivityEnabledAt: string | null;
+      /** @description Asignación automática (8b): la conversación que queda esperando a una persona se le da sola a alguien del equipo en línea con lugar (apagada por omisión) */
+      autoAssignEnabled: boolean;
+      /** @description Tope de conversaciones abiertas por persona para la asignación automática (5 por omisión); cada persona puede tener el suyo */
+      autoAssignMaxOpen: number;
       /** @description Si la empresa atiende ahora (horario y días sin atención) */
       openNow: boolean;
       /**
@@ -25873,6 +26351,16 @@ export interface components {
       customerActions?: ('where_is_my_order' | 'repeat_last_order' | 'payment_methods' | 'talk_to_person')[];
       /** @description Objetivo propio de primera respuesta, en minutos hábiles */
       firstResponseTargetMinutes?: number;
+      /** @description Mostrar al cliente y al chofer el tiempo de respuesta esperado («Solemos responder en ~N min»; prendido por omisión) */
+      expectedReplyEnabled?: boolean;
+      /** @description Cerrar sola la conversación si la última respuesta es del equipo o del asistente y el cliente o el chofer no contesta en estos minutos (30 a 10080). `null`: no se cierra sola (por omisión). Apagarlo apaga también el aviso. */
+      inactivityCloseMinutes?: number | null;
+      /** @description Minutos antes del cierre en que se avisa «Si no tenés más consultas, cerramos la conversación en N min» (5 a 1440 y menos que `inactivityCloseMinutes`). `null`: cierra sin avisar. */
+      inactivityWarningMinutes?: number | null;
+      /** @description Asignación automática (8b): la conversación que queda esperando a una persona se le da sola a alguien del equipo en línea con lugar. Prenderla reparte enseguida lo que esté esperando. */
+      autoAssignEnabled?: boolean;
+      /** @description Tope de conversaciones abiertas por persona para la asignación automática (1 a 50); cada persona puede tener el suyo. Subirlo reparte enseguida lo que esté esperando. */
+      autoAssignMaxOpen?: number;
     };
     ChatHolidayResponseDto: {
       /** @example 2026-12-25 */
@@ -25953,6 +26441,107 @@ export interface components {
        */
       body?: string;
       active?: boolean;
+    };
+    ChatLabelResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example Reclamo de envío */
+      name: string;
+      /**
+       * @example orange
+       * @enum {string}
+       */
+      color: 'gray' | 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'blue' | 'indigo' | 'purple' | 'pink';
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    ChatLabelListResponseDto: {
+      /** @description Las vigentes, por nombre (hasta 50) */
+      items: components['schemas']['ChatLabelResponseDto'][];
+    };
+    CreateChatLabelDto: {
+      /**
+       * @description De 1 a 30 caracteres en una sola línea (los espacios de más se recortan). Único entre las vigentes de la empresa sin distinguir mayúsculas ni tildes.
+       * @example Reclamo de envío
+       */
+      name: string;
+      /**
+       * @example orange
+       * @enum {string}
+       */
+      color: 'gray' | 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'blue' | 'indigo' | 'purple' | 'pink';
+    };
+    UpdateChatLabelDto: {
+      /** @example Reclamo de envío */
+      name?: string;
+      /**
+       * @example orange
+       * @enum {string}
+       */
+      color?: 'gray' | 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'blue' | 'indigo' | 'purple' | 'pink';
+    };
+    ChatStatusResponseDto: {
+      /**
+       * @description Lo que eligió la persona: `online` (recibe conversaciones) o `away`. Sin elegir nunca, `away`.
+       * @enum {string}
+       */
+      status: 'online' | 'away';
+      /** @description Tiene el panel abierto ahora (alguna pestaña conectada al tiempo real) */
+      connected: boolean;
+      /** @description Puede recibir conversaciones ahora: `online`, conectada al panel (o desconectada hace menos de 2 minutos) y dentro del horario de atención de la empresa */
+      available: boolean;
+      /** @description El tope que le rige: el propio o, si no tiene, el de la empresa */
+      maxOpen: number;
+      /** @description El tope propio; `null`: el de la empresa */
+      maxOpenOverride: number | null;
+      /** @description Conversaciones abiertas asignadas a la persona, de los dos canales (a mano o solas) */
+      openAssigned: number;
+      /** @description Los canales que atiende (por los permisos de su rol) */
+      channels: ('staff_customer' | 'staff_driver')[];
+    };
+    UpdateMyChatStatusDto: {
+      /**
+       * @description `online`: recibe conversaciones por asignación automática (si está conectada al panel y la empresa atiende); `away`: no recibe.
+       * @enum {string}
+       */
+      status: 'online' | 'away';
+    };
+    ChatAgentDto: {
+      /**
+       * @description Lo que eligió la persona: `online` (recibe conversaciones) o `away`. Sin elegir nunca, `away`.
+       * @enum {string}
+       */
+      status: 'online' | 'away';
+      /** @description Tiene el panel abierto ahora (alguna pestaña conectada al tiempo real) */
+      connected: boolean;
+      /** @description Puede recibir conversaciones ahora: `online`, conectada al panel (o desconectada hace menos de 2 minutos) y dentro del horario de atención de la empresa */
+      available: boolean;
+      /** @description El tope que le rige: el propio o, si no tiene, el de la empresa */
+      maxOpen: number;
+      /** @description El tope propio; `null`: el de la empresa */
+      maxOpenOverride: number | null;
+      /** @description Conversaciones abiertas asignadas a la persona, de los dos canales (a mano o solas) */
+      openAssigned: number;
+      /** @description Los canales que atiende (por los permisos de su rol) */
+      channels: ('staff_customer' | 'staff_driver')[];
+      /** Format: uuid */
+      userId: string;
+      /** @example Ana Pérez */
+      name: string;
+      /**
+       * Format: date-time
+       * @description La última vez que recibió una conversación por asignación automática; `null` si nunca
+       */
+      lastAssignedAt: string | null;
+    };
+    ChatAgentListResponseDto: {
+      items: components['schemas']['ChatAgentDto'][];
+    };
+    UpdateChatAgentDto: {
+      /** @description Tope propio de conversaciones abiertas (1 a 50); `null` vuelve al de la empresa. Es obligatorio mandarlo. */
+      maxOpenOverride: number | null;
     };
     MyConversationListResponseDto: {
       items: components['schemas']['InboxConversationDto'][];
@@ -26090,6 +26679,21 @@ export interface components {
       /** @description En vivo (no depende del período) */
       live: components['schemas']['ChatLiveDto'];
     };
+    ChatLabelRefDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example Reclamo de envío */
+      name: string;
+      /** @example orange */
+      color: string;
+    };
+    ChatLabelMetricsDto: {
+      label: components['schemas']['ChatLabelRefDto'];
+      /** @description Conversaciones creadas en el período (de los canales consultados) con la etiqueta puesta hoy */
+      conversations: number;
+      /** @description Su tiempo de primera respuesta (mediana en minutos hábiles) */
+      firstResponse: components['schemas']['FirstResponseStatsDto'];
+    };
     HandoffReasonDto: {
       /** @example requested */
       reason: string;
@@ -26180,6 +26784,8 @@ export interface components {
       /** @description En vivo (no depende del período) */
       live: components['schemas']['ChatLiveDto'];
       byChannel: components['schemas']['ChatChannelMetricsDto'][];
+      /** @description Corte por etiqueta: cada etiqueta vigente de la empresa (también las que no tienen conversaciones en el período), por nombre */
+      byLabel: components['schemas']['ChatLabelMetricsDto'][];
       /** @description Sólo con el asistente con IA disponible para la empresa y con el canal de clientes en la consulta */
       assistant: components['schemas']['CompanyAssistantMetricsDto'] | null;
       /** @description Respuestas automáticas (fuera de horario, aviso de recibido, asistente) por clave */
@@ -26553,7 +27159,9 @@ export interface components {
         | 'support_session_expiry'
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
-        | 'chat_attachment_scan';
+        | 'chat_attachment_scan'
+        | 'chat_inactivity_close'
+        | 'chat_auto_assign';
       /** @example Recupero de envases */
       title: string;
       /** @enum {string} */
@@ -26689,7 +27297,9 @@ export interface components {
         | 'support_session_expiry'
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
-        | 'chat_attachment_scan';
+        | 'chat_attachment_scan'
+        | 'chat_inactivity_close'
+        | 'chat_auto_assign';
       /** @example Recupero de envases */
       title: string;
       /** @example M5 */
@@ -27010,7 +27620,13 @@ export interface components {
        */
       key: string | null;
       question: string;
+      /** @description Vacía en un borrador (creado desde las preguntas sin respuesta): la persona la escribe con `PATCH`. */
       answer: string;
+      /**
+       * @description Borrador: todavía no tiene respuesta y el asistente no la usa. Deja de serlo al cargarle la respuesta.
+       * @example false
+       */
+      isDraft: boolean;
       /**
        * @description Orden en la base (1 es la primera); la lista sale ordenada por él
        * @example 1
@@ -27099,7 +27715,13 @@ export interface components {
       /** Format: uuid */
       id: string;
       question: string;
+      /** @description Vacía en un borrador (creado desde las preguntas sin respuesta): la persona la escribe con `PATCH`. */
       answer: string;
+      /**
+       * @description Borrador: todavía no tiene respuesta y el asistente no la usa. Deja de serlo al cargarle la respuesta.
+       * @example false
+       */
+      isDraft: boolean;
       /**
        * @description Orden en la base (1 es la primera); la lista sale ordenada por él
        * @example 1
@@ -27208,6 +27830,270 @@ export interface components {
        * @example De lunes a sábado, de 8 a 20. Los pedidos fuera de horario se entregan al día siguiente.
        */
       answer?: string;
+    };
+    AssistantPreviewDto: {
+      /**
+       * @description Lo que escribiría la persona, como un mensaje del chat (texto plano).
+       * @example ¿Cómo cargo un chofer nuevo?
+       */
+      question: string;
+      /**
+       * Format: uuid
+       * @description Un cliente de la distribuidora (`customer_id`, el de `/customers/:id`) como el que pregunta: «estado de mi pedido» lee SUS pedidos. Sin él, contesta como a un cliente anónimo (sin pedidos). 404 si no es de la distribuidora.
+       */
+      customerId?: string;
+    };
+    AssistantSourceDto: {
+      /**
+       * @description `faq`: una pregunta frecuente de la base; `order`: pedidos del cliente; `catalog`: precios vigentes; `schedule`: horarios y zonas; `payment_methods`: medios de pago.
+       * @enum {string}
+       */
+      type: 'faq' | 'order' | 'catalog' | 'schedule' | 'payment_methods' | 'tool';
+      /** @description El id de la pregunta frecuente o el número corto del pedido; nulo en el resto. */
+      id: string | null;
+      /** @example ¿Hasta qué hora abren? */
+      title: string;
+    };
+    AssistantPreviewResponseDto: {
+      /**
+       * @description Lo que contestaría (texto plano). Nulo si pasaría la conversación a una persona.
+       * @example Abrimos de lunes a sábado de 8 a 20.
+       */
+      answer: string | null;
+      /** @description Si pasaría la conversación a una persona del equipo */
+      wouldHandOff: boolean;
+      /**
+       * @description Por qué pasaría a una persona (el mismo código que las métricas); nulo si responde.
+       * @enum {string|null}
+       */
+      handOffReason:
+        | 'requested'
+        | 'refusal'
+        | 'max_tokens'
+        | 'no_text'
+        | 'invalid_text'
+        | 'tool_rounds'
+        | 'timeout'
+        | 'rate_limited'
+        | 'api_error'
+        | 'unavailable'
+        | 'reply_limit'
+        | 'monthly_limit'
+        | 'unverified_amount'
+        | 'not_processed'
+        | null;
+      /** @example El asistente no pudo resolverlo o la persona pidió hablar con alguien */
+      handOffReasonLabel: string | null;
+      /**
+       * @description Con `requested` (llamó a pasar a una persona), la causa que dio: `no_info` (no tenía la información), `low_confidence` (no estaba seguro), `customer_asked` (la persona lo pidió), `complaint` (reclamo o hay que hacer algo), `other`. Nula en el resto.
+       * @enum {string|null}
+       */
+      handOffCause: 'no_info' | 'low_confidence' | 'customer_asked' | 'complaint' | 'other' | null;
+      /** @example No tenía la información */
+      handOffCauseLabel: string | null;
+      sources: components['schemas']['AssistantSourceDto'][];
+      /**
+       * @description `ai`: contestó o derivó la capa inteligente; `fixed`: la IA no corrió (tope mensual, sin clave del servicio o falla) y en una conversación real saldrían las respuestas fijas.
+       * @enum {string}
+       */
+      layer: 'fixed' | 'ai';
+      /** @description Si hoy contestaría en una conversación real (función, interruptor del asistente y chat de clientes; en la plataforma, el del soporte). El probador contesta igual, para probarlo antes de prenderlo. */
+      assistantEnabled: boolean;
+    };
+    UnansweredQuestionDto: {
+      /**
+       * @description Id del grupo (32 hexadecimales): sale del texto normalizado, así que es el mismo entre consultas
+       * @example 3f2a9c0d1b7e4a5f8c6d2e1f0a9b8c7d
+       */
+      id: string;
+      /**
+       * @description La pregunta más reciente del grupo, como la escribió la persona
+       * @example ¿Hacen envíos a Garupá?
+       */
+      question: string;
+      /**
+       * @description Cuántas veces se preguntó en el período (después de la última vez que se resolvió o descartó)
+       * @example 4
+       */
+      count: number;
+      /** Format: date-time */
+      firstSeenAt: string;
+      /** Format: date-time */
+      lastSeenAt: string;
+    };
+    UnansweredListResponseDto: {
+      /** @example 2026-10-18 */
+      from: string;
+      /** @example 2026-11-16 */
+      to: string;
+      /** @description Hasta 100 grupos, los más repetidos primero */
+      items: components['schemas']['UnansweredQuestionDto'][];
+      /** @description Se agruparon sólo los 2.000 mensajes más nuevos del período: acortalo para ver el resto */
+      truncated: boolean;
+    };
+    CreateFaqFromUnansweredDto: {
+      /**
+       * @description La pregunta para la base, confirmada o editada por la persona a partir de la del grupo (el back no la copia sola: puede traer datos personales del cliente). Texto plano, sin HTML.
+       * @example ¿Hacen envíos a Garupá?
+       */
+      question: string;
+    };
+    RegressionCaseResponseDto: {
+      /** Format: uuid */
+      id: string;
+      question: string;
+      /** @enum {string} */
+      expected: 'answer' | 'handoff';
+      mustMention: string[];
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    RegressionCaseListResponseDto: {
+      items: components['schemas']['RegressionCaseResponseDto'][];
+      /**
+       * @description Tope de casos vigentes
+       * @example 100
+       */
+      limit: number;
+    };
+    CreateRegressionCaseDto: {
+      /**
+       * @description Lo que escribiría un cliente. Único entre los casos vigentes (sin distinguir mayúsculas).
+       * @example ¿Hasta qué hora toman pedidos?
+       */
+      question: string;
+      /**
+       * @description `answer`: tiene que responder; `handoff`: tiene que pasar a una persona
+       * @enum {string}
+       */
+      expected: 'answer' | 'handoff';
+      /**
+       * @description Sólo con `answer`: palabras o frases que la respuesta tiene que mencionar (sin distinguir mayúsculas ni tildes), hasta 10 de 1 a 100 caracteres.
+       * @example [
+       *       "20"
+       *     ]
+       */
+      mustMention?: string[];
+    };
+    UpdateRegressionCaseDto: {
+      /**
+       * @description Lo que escribiría un cliente. Único entre los casos vigentes (sin distinguir mayúsculas).
+       * @example ¿Hasta qué hora toman pedidos?
+       */
+      question?: string;
+      /**
+       * @description `answer`: tiene que responder; `handoff`: tiene que pasar a una persona
+       * @enum {string}
+       */
+      expected?: 'answer' | 'handoff';
+      /**
+       * @description Sólo con `answer`: palabras o frases que la respuesta tiene que mencionar (sin distinguir mayúsculas ni tildes), hasta 10 de 1 a 100 caracteres.
+       * @example [
+       *       "20"
+       *     ]
+       */
+      mustMention?: string[];
+    };
+    RegressionCaseResultDto: {
+      /**
+       * @description Lo que contestaría (texto plano). Nulo si pasaría la conversación a una persona.
+       * @example Abrimos de lunes a sábado de 8 a 20.
+       */
+      answer: string | null;
+      /** @description Si pasaría la conversación a una persona del equipo */
+      wouldHandOff: boolean;
+      /**
+       * @description Por qué pasaría a una persona (el mismo código que las métricas); nulo si responde.
+       * @enum {string|null}
+       */
+      handOffReason:
+        | 'requested'
+        | 'refusal'
+        | 'max_tokens'
+        | 'no_text'
+        | 'invalid_text'
+        | 'tool_rounds'
+        | 'timeout'
+        | 'rate_limited'
+        | 'api_error'
+        | 'unavailable'
+        | 'reply_limit'
+        | 'monthly_limit'
+        | 'unverified_amount'
+        | 'not_processed'
+        | null;
+      /** @example El asistente no pudo resolverlo o la persona pidió hablar con alguien */
+      handOffReasonLabel: string | null;
+      /**
+       * @description Con `requested` (llamó a pasar a una persona), la causa que dio: `no_info` (no tenía la información), `low_confidence` (no estaba seguro), `customer_asked` (la persona lo pidió), `complaint` (reclamo o hay que hacer algo), `other`. Nula en el resto.
+       * @enum {string|null}
+       */
+      handOffCause: 'no_info' | 'low_confidence' | 'customer_asked' | 'complaint' | 'other' | null;
+      /** @example No tenía la información */
+      handOffCauseLabel: string | null;
+      sources: components['schemas']['AssistantSourceDto'][];
+      /**
+       * @description `ai`: contestó o derivó la capa inteligente; `fixed`: la IA no corrió (tope mensual, sin clave del servicio o falla) y en una conversación real saldrían las respuestas fijas.
+       * @enum {string}
+       */
+      layer: 'fixed' | 'ai';
+      /** Format: uuid */
+      caseId: string;
+      /** @description La pregunta como estaba al correrla */
+      question: string;
+      /** @enum {string} */
+      expected: 'answer' | 'handoff';
+      mustMention: string[];
+      /**
+       * @description `error`: no se pudo juzgar (la IA no corrió, se terminó el cupo de pruebas o el caso falló)
+       * @enum {string}
+       */
+      outcome: 'passed' | 'failed' | 'error';
+      /** @enum {string|null} */
+      reason:
+        | 'expected_answer_got_handoff'
+        | 'expected_handoff_got_answer'
+        | 'missing_mentions'
+        | 'assistant_not_run'
+        | 'test_quota_reached'
+        | 'case_error'
+        | null;
+      /**
+       * @description Por qué, en castellano
+       * @example La respuesta no menciona: 20
+       */
+      detail: string;
+      /** @description Lo que faltó mencionar (con `missing_mentions`) */
+      missing: string[];
+    };
+    RegressionRunResponseDto: {
+      /** Format: uuid */
+      id: string;
+      /**
+       * @description `running`: en curso (los resultados se van sumando); `failed`: se cortó por un error o porque el proceso se reinició
+       * @enum {string}
+       */
+      status: 'running' | 'finished' | 'failed';
+      /** @description Casos a correr */
+      total: number;
+      passed: number;
+      failed: number;
+      /** @description Casos que no se pudieron juzgar */
+      errored: number;
+      results: components['schemas']['RegressionCaseResultDto'][];
+      /** Format: date-time */
+      startedAt: string;
+      /** Format: date-time */
+      finishedAt: string | null;
+    };
+    PlatformAssistantPreviewDto: {
+      /**
+       * @description Lo que escribiría la persona, como un mensaje del chat (texto plano).
+       * @example ¿Cómo cargo un chofer nuevo?
+       */
+      question: string;
     };
   };
   responses: never;
@@ -29725,7 +30611,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) ni para gestionar el personal (`personal.gestionar`) ni para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -35013,7 +35899,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Cuenta que no es del panel, administrador sin `administradores.gestionar` (`PERMISSION_DENIED`), se quiere cambiar el propio rol (`STAFF_ROLE_SELF_ASSIGN`) o el rol tiene permisos que quien asigna no tiene, como el de sistema (`STAFF_ROLE_PERMISSION_NOT_HELD`) */
+      /** @description Cuenta que no es del panel, administrador sin `administradores.gestionar` (`PERMISSION_DENIED`), se quiere cambiar el propio rol (`STAFF_ROLE_SELF_ASSIGN`), el rol nuevo tiene permisos que quien asigna no tiene, como el de sistema (`STAFF_ROLE_PERMISSION_NOT_HELD`), o el rol que la persona tiene hoy tiene permisos que quien asigna no tiene: nadie le cambia el rol a quien tiene más (`STAFF_ROLE_TARGET_OUTRANKS`). Asignar el mismo rol que ya tiene no controla nada y devuelve 200 */
       403: {
         headers: {
           [name: string]: unknown;
@@ -53665,7 +54551,9 @@ export interface operations {
           | 'support_session_expiry'
           | 'support_housekeeping'
           | 'assistant_ai_sweep'
-          | 'chat_attachment_scan';
+          | 'chat_attachment_scan'
+          | 'chat_inactivity_close'
+          | 'chat_auto_assign';
         status?: 'running' | 'ok' | 'partial' | 'failed' | 'skipped';
         /** @description Corridas que arrancaron desde este instante (ISO 8601; un día suelto es 00:00 UTC) */
         from?: string;
@@ -63767,6 +64655,8 @@ export interface operations {
         q?: string;
         /** @description Sólo las que cambiaron después (reconexión) */
         updatedSince?: string;
+        /** @description Sólo las que tienen esa etiqueta (vigente). Una etiqueta de otra empresa no trae nada. */
+        labelId?: string;
       };
       header?: never;
       path?: never;
@@ -64707,6 +65597,59 @@ export interface operations {
       };
     };
   };
+  CompanyInboxController_etiquetar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetConversationLabelsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InboxConversationDto'];
+        };
+      };
+      /** @description Id que no es uuid, falta `labelIds` o no es una lista, más de 5, repetidas o ids que no son uuid */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es del personal de una empresa; el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`); o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, es de otra empresa o de un canal que quien pide no atiende; o alguna etiqueta no existe, está dada de baja o es de otra empresa (`CHAT_LABEL_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   CompanyInboxController_reclamo: {
     parameters: {
       query?: never;
@@ -64830,7 +65773,7 @@ export interface operations {
           'application/json': components['schemas']['ChatSettingsResponseDto'];
         };
       };
-      /** @description Valor fuera de rango, texto vacío o de más de 500, nombre del asistente de menos de 2 o más de 60 caracteres o en más de una línea, o variable desconocida o que no corresponde (`TEMPLATE_VARIABLE_UNKNOWN`) */
+      /** @description Valor fuera de rango, texto vacío o de más de 500, nombre del asistente de menos de 2 o más de 60 caracteres o en más de una línea, variable desconocida o que no corresponde (`TEMPLATE_VARIABLE_UNKNOWN`), cierre por inactividad fuera de 30–10080 minutos, aviso fuera de 5–1440 minutos, aviso sin cierre o no anterior al cierre (contra lo ya guardado), `autoAssignEnabled` nulo o no booleano, `autoAssignMaxOpen` nulo, no entero o fuera de 1–50 */
       400: {
         headers: {
           [name: string]: unknown;
@@ -64965,7 +65908,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`) ni para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para atender los mensajes de los clientes (`mensajes.clientes`) ni para atender los mensajes de los choferes (`mensajes.choferes`) ni para configurar los mensajes (`mensajes.configurar`) ni para supervisar los mensajes (`mensajes.supervisar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -65126,6 +66069,401 @@ export interface operations {
       };
       /** @description Ya hay una vigente con esa clave (`MESSAGE_TEMPLATE_KEY_TAKEN`) */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatLabelsController_listar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatLabelListResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es del personal de una empresa, el rol no tiene ninguno de los permisos de mensajes (`PERMISSION_DENIED`) o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatLabelsController_crear: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateChatLabelDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatLabelResponseDto'];
+        };
+      };
+      /** @description Nombre vacío, de más de 30 caracteres o en más de una línea; color fuera de la paleta; campos de más */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una vigente con ese nombre, sin distinguir mayúsculas ni tildes (`CHAT_LABEL_NAME_TAKEN`), o ya hay 50 (`CHAT_LABEL_LIMIT_REACHED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatLabelsController_baja: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Dada de baja */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Id que no es uuid */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, ya está dada de baja o es de otra empresa (`CHAT_LABEL_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatLabelsController_actualizar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateChatLabelDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatLabelResponseDto'];
+        };
+      };
+      /** @description Id que no es uuid, nombre vacío, de más de 30 caracteres o en más de una línea, color fuera de la paleta */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, ya está dada de baja o es de otra empresa (`CHAT_LABEL_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay otra vigente con ese nombre (`CHAT_LABEL_NAME_TAKEN`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyChatStatusController_leer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatStatusResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es del personal de una empresa, el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`) o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyChatStatusController_cambiar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateMyChatStatusDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatStatusResponseDto'];
+        };
+      };
+      /** @description `status` falta o no es `online` ni `away` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es del personal de una empresa, el rol no atiende ningún canal de mensajes (`PERMISSION_DENIED`) o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatAgentsController_listar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatAgentListResponseDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es del personal de una empresa, el rol no tiene `mensajes.supervisar` ni `mensajes.configurar` (`PERMISSION_DENIED`) o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyChatAgentsController_cambiarTope: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        userId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateChatAgentDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChatAgentDto'];
+        };
+      };
+      /** @description `userId` que no es uuid (`INVALID_ID`), o `maxOpenOverride` que falta, no es entero o está fuera de 1–50 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para configurar los mensajes (`mensajes.configurar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La persona no es del equipo de la bandeja de la empresa: de otra empresa, dada de baja o bloqueada, o sin permiso de ningún canal */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MyExpectedReplyController_tiempoEsperado: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ExpectedReplyResponseDto'];
+        };
+      };
+      /** @description El cliente sin `X-Distributor` (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no es de un cliente o un chofer, o la empresa no tiene habilitados los mensajes (`MODULE_DISABLED`). La función «Mensajes con clientes y choferes» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -68216,6 +69554,745 @@ export interface operations {
       };
       /** @description Ya hay una pregunta de ejemplo igual en el catálogo (`ASSISTANT_TEMPLATE_DUPLICATE`) */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantLabController_probar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AssistantPreviewDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssistantPreviewResponseDto'];
+        };
+      };
+      /** @description Pregunta vacía o de más de 2000 caracteres, `customerId` que no es uuid, un campo que no corresponde, o falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la base de conocimiento del asistente (`asistente.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El cliente no existe o no es de la distribuidora (`ASSISTANT_PREVIEW_CUSTOMER_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 20 pruebas por minuto en la sesión, o se terminó el cupo de pruebas del mes (`ASSISTANT_TEST_QUOTA_REACHED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantLabController_sinResponder: {
+    parameters: {
+      query?: {
+        /** @description Desde (día en hora argentina, AAAA-MM-DD, inclusive). Sin `from`: los 30 días que terminan en `to`. */
+        from?: string;
+        /** @description Hasta (día en hora argentina, AAAA-MM-DD, inclusive). Sin `to`: hoy. El período abarca hasta 366 días. */
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UnansweredListResponseDto'];
+        };
+      };
+      /** @description Fecha que no es AAAA-MM-DD o no existe, «desde» posterior a «hasta», período de más de 366 días o parámetro desconocido, o falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin. La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantLabController_crearPregunta: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Id del grupo (32 hexadecimales) */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateFaqFromUnansweredDto'];
+      };
+    };
+    responses: {
+      /** @description El grupo ya tenía su pregunta creada y vigente: es esa */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssistantFaqResponseDto'];
+        };
+      };
+      /** @description Pregunta en borrador creada */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssistantFaqResponseDto'];
+        };
+      };
+      /** @description El id no es válido (`INVALID_ID`); falta la pregunta, tiene menos de 5 o más de 200 caracteres o lleva HTML; o falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la base de conocimiento del asistente (`asistente.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No hay preguntas pendientes con ese id en el último año: ya se resolvió o descartó, o es de otra distribuidora (`ASSISTANT_UNANSWERED_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una pregunta igual en la base (`ASSISTANT_FAQ_DUPLICATE`) o la base ya tiene 200 preguntas (`ASSISTANT_FAQ_LIMIT_REACHED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantLabController_descartar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Id del grupo (32 hexadecimales) */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Descartado */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El id no es válido (`INVALID_ID`), o falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la base de conocimiento del asistente (`asistente.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No hay preguntas pendientes con ese id en el último año: ya se resolvió o descartó, o es de otra distribuidora (`ASSISTANT_UNANSWERED_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantLabController_listarCasos: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RegressionCaseListResponseDto'];
+        };
+      };
+      /** @description Falta la distribuidora (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la base de conocimiento del asistente (`asistente.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantLabController_crearCaso: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateRegressionCaseDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RegressionCaseResponseDto'];
+        };
+      };
+      /** @description Datos inválidos (p. ej. «Pregunta: tiene que tener entre 2 y 500 caracteres», «expected» que no es `answer` ni `handoff`, más de 10 menciones, menciones con `handoff`, un campo que no corresponde) o falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la base de conocimiento del asistente (`asistente.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay un caso con esa misma pregunta (`ASSISTANT_REGRESSION_CASE_DUPLICATE`), o ya hay 100 casos (`ASSISTANT_REGRESSION_CASE_LIMIT_REACHED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantLabController_darDeBajaCaso: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Dado de baja */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El id no es un UUID (`INVALID_ID`), o falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la base de conocimiento del asistente (`asistente.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, ya está dado de baja o es de otra distribuidora (`ASSISTANT_REGRESSION_CASE_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantLabController_actualizarCaso: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateRegressionCaseDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RegressionCaseResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID (`INVALID_ID`). Datos inválidos (p. ej. «Pregunta: tiene que tener entre 2 y 500 caracteres», «expected» que no es `answer` ni `handoff`, más de 10 menciones, menciones con `handoff`, un campo que no corresponde) o falta la distribuidora: super admin sin sesión de soporte ni empresa propia (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la base de conocimiento del asistente (`asistente.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe, ya está dado de baja o es de otra distribuidora (`ASSISTANT_REGRESSION_CASE_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay un caso con esa misma pregunta (`ASSISTANT_REGRESSION_CASE_DUPLICATE`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantLabController_correr: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RegressionRunResponseDto'];
+        };
+      };
+      /** @description Falta la distribuidora (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la base de conocimiento del asistente (`asistente.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una corrida en curso (`ASSISTANT_REGRESSION_RUN_IN_PROGRESS`) o no hay casos vigentes (`ASSISTANT_REGRESSION_NO_CASES`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La última corrida empezó hace menos de 10 minutos (`ASSISTANT_REGRESSION_RUN_COOLDOWN`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CompanyAssistantLabController_ultimaCorrida: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RegressionRunResponseDto'];
+        };
+      };
+      /** @description Falta la distribuidora (`MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la base de conocimiento del asistente (`asistente.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Asistente del chat» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Todavía no se corrió nunca (`ASSISTANT_REGRESSION_RUN_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformAssistantLabController_probar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PlatformAssistantPreviewDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AssistantPreviewResponseDto'];
+        };
+      };
+      /** @description Pregunta vacía o de más de 2000 caracteres, o un campo que no corresponde (como `customerId`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Más de 20 pruebas por minuto en la sesión, o se terminó el cupo de pruebas del mes (`ASSISTANT_TEST_QUOTA_REACHED`) */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformAssistantLabController_sinResponder: {
+    parameters: {
+      query?: {
+        /** @description Desde (día en hora argentina, AAAA-MM-DD, inclusive). Sin `from`: los 30 días que terminan en `to`. */
+        from?: string;
+        /** @description Hasta (día en hora argentina, AAAA-MM-DD, inclusive). Sin `to`: hoy. El período abarca hasta 366 días. */
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UnansweredListResponseDto'];
+        };
+      };
+      /** @description Fecha que no es AAAA-MM-DD o no existe, «desde» posterior a «hasta», período de más de 366 días o parámetro desconocido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformAssistantLabController_crearPregunta: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Id del grupo (32 hexadecimales) */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateFaqFromUnansweredDto'];
+      };
+    };
+    responses: {
+      /** @description El grupo ya tenía su pregunta creada y vigente: es esa */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformAssistantFaqResponseDto'];
+        };
+      };
+      /** @description Pregunta en borrador creada */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlatformAssistantFaqResponseDto'];
+        };
+      };
+      /** @description El id no es válido (`INVALID_ID`); falta la pregunta, tiene menos de 5 o más de 200 caracteres o lleva HTML */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No hay preguntas pendientes con ese id en el último año: ya se resolvió o descartó, o no es del soporte de la plataforma (`ASSISTANT_UNANSWERED_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Ya hay una pregunta igual o con esa clave en la base (`ASSISTANT_FAQ_DUPLICATE`, `ASSISTANT_FAQ_KEY_TAKEN`) o la base ya tiene 200 preguntas (`ASSISTANT_FAQ_LIMIT_REACHED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  PlatformAssistantLabController_descartar: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Id del grupo (32 hexadecimales) */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Descartado */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El id no es válido (`INVALID_ID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: super_admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No hay preguntas pendientes con ese id en el último año: ya se resolvió o descartó, o no es del soporte de la plataforma (`ASSISTANT_UNANSWERED_NOT_FOUND`) */
+      404: {
         headers: {
           [name: string]: unknown;
         };

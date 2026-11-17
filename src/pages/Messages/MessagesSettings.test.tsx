@@ -59,6 +59,8 @@ const SETTINGS = {
   effectiveCsatMessage: '¿Cómo te atendimos en {{empresa.nombre}}? Tocá de 1 a 5 para calificar la conversación.',
   customerActions: ['where_is_my_order', 'repeat_last_order', 'payment_methods', 'talk_to_person'],
   firstResponseTargetMinutes: 30,
+  autoAssignEnabled: false,
+  autoAssignMaxOpen: 5,
   openNow: false,
   nextOpenAt: '2026-11-16T12:00:00.000Z',
 };

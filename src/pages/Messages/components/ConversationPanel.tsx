@@ -45,11 +45,14 @@ import {
   useReopenConversation,
 } from '../../../services/queries/inbox';
 import { confirm, notify } from '../../../utils/notifications';
+import { AUTO_ASSIGNED } from '../../../utils/statusLabels';
 import { AssignModal } from './AssignModal';
 import { ClaimFromChatModal } from './ClaimFromChatModal';
 import { ConversationContext } from './ConversationContext';
+import { ConversationMeta } from './ConversationMeta';
 import { hasConversationContext } from './hasConversationContext';
 import { ReplySuggestions } from './ReplySuggestions';
+import { StaffTypingNotice } from './StaffTypingNotice';
 
 interface Props {
   id: string;
@@ -254,6 +257,9 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
                 <CsatResult csat={conversation.csat} />
               </p>
             )}
+            {open && conversation.assignedTo && conversation.assignedAutomatically && (
+              <Badge label={AUTO_ASSIGNED} className="mt-0.5" />
+            )}
             {open && conversation.awaitingHumanSince && (
               <AwaitingHumanMark since={conversation.awaitingHumanSince} now={now} className="mt-0.5" />
             )}
@@ -308,6 +314,11 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
           )}
           <MoreActionsMenu actions={more} label="Más acciones" />
         </header>
+        <ConversationMeta
+          conversation={conversation}
+          canLabel={isCustomer ? access.customers : access.drivers}
+          canConfigure={access.configure}
+        />
         <ChatThread
           side="company"
           source={binding.source}
@@ -336,6 +347,7 @@ export const ConversationPanel = ({ id, myUserId, companyName, access }: Props) 
           variables={variables}
           empty={<p className="px-4 py-10 text-center text-sm text-muted">Todavía no hay mensajes.</p>}
           reloadKey={conversation.linkedClaimId ?? undefined}
+          composerNotice={<StaffTypingNotice conversationId={id} />}
           renderSuggestions={({ lastCounterpartSeq, pick }) => (
             <ReplySuggestions conversationId={id} lastCounterpartSeq={lastCounterpartSeq} onPick={pick} />
           )}

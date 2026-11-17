@@ -4,7 +4,8 @@ name: Deploy panel
 # de main termina bien, o a mano desde Actions > Deploy panel > Run workflow.
 #
 # Secretos: FIREBASE_SERVICE_ACCOUNT_SPLG_GAS, VITE_GOOGLE_MAPS_API_KEY, TELEGRAM_BOT_TOKEN,
-# TELEGRAM_CHAT_ID. Variable: API_PUBLICA (https://orix-server…ts.net, sin /api).
+# TELEGRAM_CHAT_ID, SENTRY_AUTH_TOKEN (sube los source maps; sin él el build sigue igual y no sube nada).
+# Variables: API_PUBLICA (https://orix-server…ts.net, sin /api), VITE_SENTRY_DSN (proyecto splg-frontend).
 on:
   workflow_run:
     workflows: ['Release automatico']
@@ -114,6 +115,12 @@ jobs:
           VITE_APP_API_URL: ${{ vars.API_PUBLICA }}/api
           VITE_APP_SOCKET_URL: ${{ vars.API_PUBLICA }}
           VITE_GOOGLE_MAPS_API_KEY: ${{ secrets.VITE_GOOGLE_MAPS_API_KEY }}
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          VITE_SENTRY_ENVIRONMENT: develop
+          # Source maps a Sentry (los .map se borran después de subirlos: no se publican).
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: wagners-labs
+          SENTRY_PROJECT: splg-frontend
         run: npx vite build
 
       - name: Publicar en Firebase Hosting

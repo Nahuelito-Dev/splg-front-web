@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route } from 'react-router-dom';
+import { SentryRoutes } from '../observability/routing';
 import { DashboardLayout } from '../common/layout';
 import { RouteProgressBar } from '../common/layout/RouteProgressBar';
 import { LoadingState } from '../common/components/ui';
@@ -104,6 +105,7 @@ const DistributorForm = lazyPage(() => import('../pages/Distributors/Distributor
 const DistributorDetails = lazyPage(() => import('../pages/Distributors/DistributorDetails'), 'DistributorDetails');
 const Admins = lazyPage(() => import('../pages/Admins/Admins'), 'Admins');
 const AdminDetails = lazyPage(() => import('../pages/Admins/AdminDetails'), 'AdminDetails');
+const StaffRoles = lazyPage(() => import('../pages/StaffRoles/StaffRoles'), 'StaffRoles');
 const Ratings = lazyPage(() => import('../pages/Ratings/Ratings'), 'Ratings');
 const SupportAccess = lazyPage(() => import('../pages/SupportAccess/SupportAccess'), 'SupportAccess');
 const Audit = lazyPage(() => import('../pages/Audit/Audit'), 'Audit');
@@ -159,6 +161,7 @@ const SupportHelp = lazyPage(() => import('../pages/Support/SupportHelp'), 'Supp
 const Messages = lazyPage(() => import('../pages/Messages/Messages'), 'Messages');
 const MessagesSettings = lazyPage(() => import('../pages/Messages/MessagesSettings'), 'MessagesSettings');
 const MessagesMetrics = lazyPage(() => import('../pages/Messages/MessagesMetrics'), 'MessagesMetrics');
+const MessagesTeam = lazyPage(() => import('../pages/Messages/MessagesTeam'), 'MessagesTeam');
 const CompanyTicketDetail = lazyPage(() => import('../pages/Support/CompanyTicketDetail'), 'CompanyTicketDetail');
 const CompanyChatArchive = lazyPage(() => import('../pages/Support/CompanyChatArchive'), 'CompanyChatArchive');
 const PlatformChats = lazyPage(() => import('../pages/Platform/Support/PlatformChats'), 'PlatformChats');
@@ -193,7 +196,7 @@ export const DashboardRoutes = () => {
           </>
         }
       >
-        <Routes>
+        <SentryRoutes>
           {/* «Ambos» (§2 del diseño del modo soporte): el admin de empresa y el administrador general, cada uno con lo suyo */}
           <Route path="home" element={<Home />} />
           <Route path="account" element={<Account />} />
@@ -215,6 +218,7 @@ export const DashboardRoutes = () => {
               <Route path="messages" element={<Messages />} />
               <Route path="messages/settings" element={<MessagesSettings />} />
               <Route path="messages/metrics" element={<MessagesMetrics />} />
+              <Route path="messages/team" element={<MessagesTeam />} />
               <Route path="messages/:id" element={<Messages />} />
             </Route>
           </Route>
@@ -363,11 +367,12 @@ export const DashboardRoutes = () => {
             <Route path="reservations" element={<Reservations />} />
             <Route path="reports" element={<Reports />} />
             <Route path="ratings" element={<Ratings />} />
+            <Route path="staff-roles" element={<StaffRoles />} />
           </Route>
 
           {/* Ruta por defecto */}
           <Route path="/*" element={<Navigate to="/home" />} />
-        </Routes>
+        </SentryRoutes>
       </Suspense>
     </DashboardLayout>
   );
