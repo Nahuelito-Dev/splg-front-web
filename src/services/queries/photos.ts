@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getPhotoLink, removePhoto, uploadPhoto, type PhotoKind } from '../api/photos';
+import { PEOPLE_PHOTOS_KEY } from './peoplePhotos';
 import { queryKeys } from './queryKeys';
 
 /** Clave del enlace a la foto de los recursos cuya respuesta no trae `photoUrl`. */
@@ -28,13 +29,14 @@ const AFFECTED: Record<PhotoKind, readonly (readonly string[])[]> = {
     queryKeys.admins.all,
     queryKeys.cars.all,
     queryKeys.employees.all,
+    PEOPLE_PHOTOS_KEY,
   ],
   car: [queryKeys.cars.all],
   gasCylinder: [queryKeys.gasCylinders.all],
-  distributor: [queryKeys.distributors.all],
+  distributor: [queryKeys.distributors.all, queryKeys.platformConsole.all, queryKeys.companyTheme.all],
   incident: [queryKeys.incidents.all],
   claim: [queryKeys.claims.all],
-  employee: [queryKeys.employees.all],
+  employee: [queryKeys.employees.all, PEOPLE_PHOTOS_KEY],
   // Sin `photoUrl` en su respuesta: la foto se pide aparte (`usePhotoLink`).
   supplier: [photoLinkKey('supplier')],
   cylinder: [photoLinkKey('cylinder')],

@@ -764,7 +764,10 @@ export interface paths {
     delete: operations['UsersController_remove'];
     options?: never;
     head?: never;
-    /** Update user by ID */
+    /**
+     * Update user by ID
+     * @description Cada uno edita su nombre y teléfono. Un administrador edita además la cuenta de otro (nombre, teléfono, bloqueo y contraseña) con el permiso del rol de esa cuenta: chofer `personal.gestionar`, administrador `administradores.gestionar` y todos los permisos de su rol. La contraseña de otro administrador sólo la cambia el super admin (403 `ADMIN_PASSWORD_NOT_CHANGEABLE`): la cambia él con el enlace de `POST /email/password-reset`.
+     */
     patch: operations['UsersController_update'];
     trace?: never;
   };
@@ -1313,6 +1316,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/fleet/tasks/board': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Tablero de tareas: columnas por estado
+     * @description Columnas `forecast`, `scheduled`, `in_progress` y `done` (las hechas desde `doneSince`, 30 días por omisión, la más reciente primero); las demás ordenadas por `position`. Las vencidas quedan en su columna con `isOverdue: true`. Las canceladas sólo se cuentan. Los cambios llegan por el socket del panel en el evento `fleet:task` (`{ id, change, card }`)
+     */
+    get: operations['FleetTaskV2Controller_boardView'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/fleet/tasks': {
     parameters: {
       query?: never;
@@ -1323,7 +1346,11 @@ export interface paths {
     /** Listar tareas, con su estado de pago */
     get: operations['FleetTaskV2Controller_findAll'];
     put?: never;
-    post?: never;
+    /**
+     * Crear una tarea, con su responsable
+     * @description Igual que `POST /fleet/tasks` (v1) más `assigneeEmployeeId`. La tarea entra al final de su columna del tablero
+     */
+    post: operations['FleetTaskV2Controller_create'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1341,6 +1368,30 @@ export interface paths {
     get: operations['FleetTaskV2Controller_findOne'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Editar una tarea abierta, con su responsable
+     * @description Igual que `PATCH /fleet/tasks/:id` (v1) más el responsable (`assigneeEmployeeId`, `null` lo quita) y la precondición (`expectedUpdatedAt` o `If-Match`)
+     */
+    patch: operations['FleetTaskV2Controller_update'];
+    trace?: never;
+  };
+  '/api/v2/fleet/tasks/{id}/move': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mover una tarjeta del tablero
+     * @description Transiciones: `forecast → scheduled` (con `scheduledAt`), `scheduled → forecast` (borra el turno y cancela la ventana confirmada del planificador), `scheduled ↔ in_progress`. A la misma columna sólo reordena. A «hecha» se llega con `POST /v2/fleet/tasks/:id/close`; cancelar, con `PATCH /fleet/tasks/:id/cancel`. Responde la tarjeta como quedó
+     */
+    post: operations['FleetTaskV2Controller_move'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1586,6 +1637,26 @@ export interface paths {
      * @description Por vehículo: el consumo diario estimado y de dónde sale (su historial o el promedio de su tipo), y cada tarea abierta con su vencimiento proyectado —por fecha, por kilometraje o el primero de los dos—, si entró en su anticipación y el caso de planificación si lo hay. `nextWindow` es la próxima ventana de taller del vehículo.
      */
     get: operations['MaintenancePlannerController_forecast'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/maintenance-planner/accuracy': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cuánto acierta la fecha proyectada de los vencimientos
+     * @description De las tareas cerradas en el período que tenían fecha proyectada por kilometraje: cuántas se pudieron comparar, el error medio en días, el porcentaje hecho a ±7 días de lo proyectado y si tienden a hacerse antes o después. Por omisión, los últimos 180 días.
+     */
+    get: operations['MaintenancePlannerController_acierto'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1970,14 +2041,14 @@ export interface paths {
     post?: never;
     /**
      * Dar de baja a un administrador (baja lógica)
-     * @description Es la baja del usuario (`DELETE /users/:id`): queda con `deletedAt`, su cuenta de acceso se deshabilita y nada se borra. Mismos permisos que la edición, y nadie se da de baja a sí mismo. No se puede dar de baja al último administrador activo de una distribuidora ni al último super administrador. El administrador de una distribuidora dada de baja lo da de baja el super admin sin `X-Distributor` (con ella en el header responde 401), y ahí no se exige que quede otro administrador.
+     * @description Es la baja del usuario (`DELETE /users/:id`): queda con `deletedAt`, su cuenta de acceso se deshabilita y nada se borra. Mismos permisos que la edición, y nadie se da de baja a sí mismo. No se puede dar de baja al último administrador activo de una distribuidora ni al último super administrador. El administrador de una distribuidora dada de baja lo da de baja el super admin sin `X-Distributor` (con ella en el header responde 401), y ahí no se exige que quede otro administrador. Un admin de empresa sólo da de baja a quien no tiene permisos que él no tenga (el rol de sistema pide todos).
      */
     delete: operations['AdminController_remove'];
     options?: never;
     head?: never;
     /**
      * Editar los datos de un administrador
-     * @description Nombre y teléfono (`fullName`, `phoneNumber`). El correo cambia por `POST /email/change-email`; el bloqueo por `PATCH /users/:id/block`. El super admin edita a cualquiera; un admin de empresa sólo a los de su distribuidora, nunca a sí mismo (sus datos van por `PATCH /users/:id`) ni a un super admin.
+     * @description Nombre y teléfono (`fullName`, `phoneNumber`). El correo cambia por `POST /email/change-email`; el bloqueo por `PATCH /users/:id/block`. El super admin edita a cualquiera; un admin de empresa sólo a los de su distribuidora, nunca a sí mismo (sus datos van por `PATCH /users/:id`) ni a un super admin, y sólo si tiene todos los permisos del rol de personal de ese administrador (el de sistema pide todos): nadie sube ni baja a quien tiene más permisos.
      */
     patch: operations['AdminController_update'];
     trace?: never;
@@ -4727,7 +4798,7 @@ export interface paths {
     put?: never;
     /**
      * Otorgar una cuenta de acceso a un empleado, con el rol que le corresponde a su puesto (CU-182)
-     * @description Sólo los empleados de categoría driver tienen cuenta (rol chofer, con su perfil de reparto). Cualquier otra categoría responde 400.
+     * @description Sólo los empleados de categoría driver tienen cuenta (rol chofer, con su perfil de reparto). Cualquier otra categoría responde 400. Pide `personal.gestionar` (403 `PERMISSION_DENIED`).
      */
     post: operations['EmployeeAccountController_grantAccount'];
     delete?: never;
@@ -5695,6 +5766,26 @@ export interface paths {
      * @description Uno de los nueve estados de pago de Mercado Pago (`paymentStatus`), su motivo (`paymentStatusDetail`), el texto en castellano armado por el back (`paymentStatusLabel`), si se puede reintentar el pago (`canRetry`) y el enlace para hacerlo (`paymentUrl`). El cliente sólo lee sus pedidos; admin y super admin los de su distribuidora (el super admin manda `X-Distributor`) y además reciben el `history` de cambios. Lo ajeno responde 404.
      */
     get: operations['OrderPaymentV2Controller_deUno'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/dispatch/metrics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cómo viene el despacho
+     * @description Pedidos despachados, ofertas por pedido, porcentaje de ofertas aceptadas, rechazadas y vencidas (sobre las ya resueltas), tiempo de respuesta del chofer y tiempo hasta asignar (mediana y p90, en segundos), pedidos que se quedaron sin chofer y los 5 choferes con mejor tasa de aceptación. El tiempo de respuesta sólo cuenta ofertas con respuesta registrada: las anteriores a esta función no la tienen. Por omisión, los últimos 30 días; el período puede ser de hasta 366 días. El super admin tiene que mandar `X-Distributor`.
+     */
+    get: operations['DispatchMetricsController_obtener'];
     put?: never;
     post?: never;
     delete?: never;
@@ -9220,7 +9311,7 @@ export interface paths {
     };
     /**
      * Cómo le va a la recompra anticipada
-     * @description Invitaciones del período por resultado y la tasa de conversión: aceptadas sobre las que ya tuvieron resolución (aceptadas, descartadas y vencidas; las abiertas y las canceladas por compra propia no cuentan). Por omisión, los últimos 90 días.
+     * @description Invitaciones del período por resultado y la tasa de conversión: aceptadas sobre las que ya tuvieron resolución (aceptadas, descartadas y vencidas; las abiertas y las canceladas por compra propia no cuentan). `accuracy` mide cuánto acertó la fecha proyectada contra la primera compra entregada después de cada invitación. Por omisión, los últimos 90 días.
      */
     get: operations['RepurchaseAdminController_stats'];
     put?: never;
@@ -12440,41 +12531,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
-    DispatchMetricsResponseDto: {
-      /** Format: date-time */
-      from: string;
-      /** Format: date-time */
-      to: string;
-      /** @description Pedidos con al menos una oferta en el período */
-      pedidosDespachados: number;
-      ofertasPorPedido: number | null;
-      /** @description Sobre las ofertas resueltas, 0 a 100 */
-      porcentajeAceptadas: number | null;
-      porcentajeRechazadas: number | null;
-      porcentajeVencidas: number | null;
-      /** @description Sólo ofertas con respuesta registrada, en segundos */
-      respuestaDelChofer: components['schemas']['TiempoEnSegundosDto'];
-      /** @description Desde que el pedido quedó pendiente hasta que un chofer lo aceptó, en segundos */
-      hastaAsignar: components['schemas']['TiempoEnSegundosDto'];
-      /** @description Pedidos que el sistema canceló porque ningún chofer los tomó */
-      pedidosSinChofer: number;
-      topChoferes: components['schemas']['ChoferEnElTopDto'][];
-    };
-    TiempoEnSegundosDto: {
-      mediana: number | null;
-      p90: number | null;
-    };
-    ChoferEnElTopDto: {
-      /** Format: uuid */
-      driverId: string;
-      nombre: string;
-      /** @description Ofertas ya resueltas del período */
-      ofertas: number;
-      aceptadas: number;
-      /** @description 0 a 100 */
-      tasaAceptacion: number;
-      medianaRespuestaSegundos: number | null;
-    };
     RunDocumentReadingsDto: {
       /** @description Con true sólo cuenta los adjuntos que leería, sin descargar ni leer archivos */
       dryRun?: boolean;
@@ -14144,21 +14200,50 @@ export interface components {
     FleetTaskBoardCarDto: {
       /** Format: uuid */
       id: string;
+      /** @example AB123CD */
       plate: string | null;
+      /**
+       * @description Marca y modelo; si no hay, el tipo de vehículo o la patente
+       * @example Ford Cargo 1722
+       */
       label: string;
     };
     FleetTaskBoardAssigneeDto: {
       /** Format: uuid */
       employeeId: string;
+      /** @example Pérez, Juan */
       name: string;
     };
     FleetTaskBoardCardDto: {
       /** Format: uuid */
       id: string;
+      /**
+       * @description El nombre del plan
+       * @example VTV
+       */
       title: string;
-      category: string;
-      status: 'forecast' | 'scheduled' | 'in_progress' | 'overdue' | 'done' | 'cancelled';
+      /**
+       * @description Tipo de tarea (el `documentKind` del plan; `generic` si no tiene)
+       * @enum {string}
+       */
+      category:
+        | 'insurance'
+        | 'vtv'
+        | 'hazmat_vehicle_permit'
+        | 'driver_license'
+        | 'hazmat_driver_course'
+        | 'psychophysical'
+        | 'art_coverage'
+        | 'service'
+        | 'generic';
+      /** @enum {string} */
+      status: 'forecast' | 'scheduled' | 'in_progress' | 'done' | 'overdue' | 'cancelled';
+      /**
+       * @description La columna donde va (`null` si está cancelada)
+       * @enum {string|null}
+       */
       column: 'forecast' | 'scheduled' | 'in_progress' | 'done' | null;
+      /** @description Abierta y con el vencimiento ya pasado (o con estado `overdue`). No cambia de columna */
       isOverdue: boolean;
       /** Format: date-time */
       dueAt: string | null;
@@ -14167,39 +14252,116 @@ export interface components {
       scheduledAt: string | null;
       car: components['schemas']['FleetTaskBoardCarDto'] | null;
       assignee: components['schemas']['FleetTaskBoardAssigneeDto'] | null;
+      /** @example 2 */
       attachmentsCount: number;
+      /** @example 185000 */
       cost: number | null;
+      /**
+       * @description Orden dentro de la columna (ascendente)
+       * @example 2048
+       */
       position: number;
-      /** Format: date-time */
+      /**
+       * Format: date-time
+       * @description La precondición para mover o editar (`expectedUpdatedAt`)
+       */
       updatedAt: string;
+    };
+    FleetTaskBoardEventDto: {
+      /** Format: uuid */
+      id: string;
+      /** @enum {string} */
+      change: 'created' | 'moved' | 'updated' | 'closed' | 'cancelled' | 'overdue' | 'reordered';
+      card: components['schemas']['FleetTaskBoardCardDto'];
     };
     FleetTaskBoardColumnsDto: {
       forecast: components['schemas']['FleetTaskBoardCardDto'][];
       scheduled: components['schemas']['FleetTaskBoardCardDto'][];
       in_progress: components['schemas']['FleetTaskBoardCardDto'][];
+      /** @description Las hechas desde `doneSince` (30 días por omisión), la más reciente primero */
       done: components['schemas']['FleetTaskBoardCardDto'][];
     };
     FleetTaskBoardDto: {
       columns: components['schemas']['FleetTaskBoardColumnsDto'];
+      /**
+       * @description Canceladas con los mismos filtros (no tienen columna)
+       * @example 3
+       */
       cancelledCount: number;
     };
-    FleetTaskBoardEventDto: {
+    CreateFleetTaskV2Dto: {
       /** Format: uuid */
-      id: string;
-      change: 'created' | 'moved' | 'updated' | 'closed' | 'cancelled' | 'overdue' | 'reordered';
-      card: components['schemas']['FleetTaskBoardCardDto'];
-    };
-    MoveFleetTaskDto: {
-      /** @enum {string} */
-      to: 'forecast' | 'scheduled' | 'in_progress';
-      /** Format: date-time */
+      planId: string;
+      /**
+       * Format: uuid
+       * @description Obligatorio si el plan es de vehículo (subject: vehicle)
+       */
+      carId?: string;
+      /**
+       * Format: uuid
+       * @description Obligatorio si el plan es de chofer (subject: driver)
+       */
+      deliveryId?: string;
+      /**
+       * Format: uuid
+       * @description Obligatorio si el plan es de personal (subject: employee): curso de mercancías peligrosas, psicofísico, ART (CU-183 a CU-185)
+       */
+      employeeId?: string;
+      /**
+       * Format: date-time
+       * @description Fecha límite (vencimiento de la póliza, la VTV, la licencia)
+       * @example 2026-12-31T00:00:00.000Z
+       */
+      dueAt?: string;
+      /**
+       * Format: date-time
+       * @description Inicio de la vigencia (póliza, habilitación). No puede ser posterior al vencimiento
+       * @example 2026-01-01T00:00:00.000Z
+       */
+      validFrom?: string;
+      /**
+       * @description Importe de la tarea (la prima de la póliza, el costo del service). Entra en el costo del vehículo
+       * @example 185000
+       */
+      cost?: number;
+      /** @description Km al que corresponde el próximo service */
+      dueKm?: number;
+      /**
+       * @description Aseguradora, taller o gestoría
+       * @example La Segunda Seguros
+       */
+      provider?: string;
+      /**
+       * @description Número de póliza, de licencia, u otra referencia del proveedor
+       * @example 123456789
+       */
+      referenceNumber?: string;
+      /**
+       * @description Categoría de la licencia de conducir, si aplica
+       * @example B1
+       */
+      category?: string;
+      notes?: string;
+      /**
+       * @description Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle.
+       * @example {
+       *       "certificateNumber": "123/26",
+       *       "issuer": "CNRT"
+       *     }
+       */
+      details?: {
+        [key: string]: string;
+      };
+      /**
+       * Format: date-time
+       * @description Cuándo está agendado el turno/trámite, si ya se sabe. Un `YYYY-MM-DD` (o medianoche argentina) es ese día argentino y se guarda a las 00:00 de Argentina; un instante con hora se guarda tal cual. Inválido: 400.
+       */
       scheduledAt?: string;
-      /** Format: uuid */
-      beforeId?: string;
-      /** Format: uuid */
-      afterId?: string;
-      /** Format: date-time */
-      expectedUpdatedAt?: string;
+      /**
+       * Format: uuid
+       * @description Responsable de la tarea: un empleado activo de la distribuidora (404 si no es de ella, 409 si está egresado)
+       */
+      assigneeEmployeeId?: string;
     };
     FleetTaskV2ResponseDto: {
       /** Format: uuid */
@@ -14257,6 +14419,106 @@ export interface components {
       payable: boolean;
       /** @description Por qué no se paga por acá, cuando es por la naturaleza de la tarea (el seguro se paga por sus cuotas) */
       notPayableReason: string | null;
+      /**
+       * Format: uuid
+       * @description Responsable de la tarea en el tablero
+       */
+      assigneeEmployeeId: string | null;
+      /**
+       * Format: date-time
+       * @description Última modificación: la precondición para editar o mover (`expectedUpdatedAt` / `If-Match`)
+       */
+      updatedAt: string;
+    };
+    UpdateFleetTaskV2Dto: {
+      /**
+       * Format: date-time
+       * @description Fecha límite (vencimiento de la póliza, la VTV, la licencia)
+       * @example 2026-12-31T00:00:00.000Z
+       */
+      dueAt?: string;
+      /**
+       * Format: date-time
+       * @description Inicio de la vigencia (póliza, habilitación). No puede ser posterior al vencimiento
+       * @example 2026-01-01T00:00:00.000Z
+       */
+      validFrom?: string;
+      /**
+       * @description Importe de la tarea (la prima de la póliza, el costo del service). Entra en el costo del vehículo
+       * @example 185000
+       */
+      cost?: number;
+      /** @description Km al que corresponde el próximo service */
+      dueKm?: number;
+      /**
+       * @description Aseguradora, taller o gestoría
+       * @example La Segunda Seguros
+       */
+      provider?: string;
+      /**
+       * @description Número de póliza, de licencia, u otra referencia del proveedor
+       * @example 123456789
+       */
+      referenceNumber?: string;
+      /**
+       * @description Categoría de la licencia de conducir, si aplica
+       * @example B1
+       */
+      category?: string;
+      notes?: string;
+      /**
+       * @description Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle.
+       * @example {
+       *       "certificateNumber": "123/26",
+       *       "issuer": "CNRT"
+       *     }
+       */
+      details?: {
+        [key: string]: string;
+      };
+      /**
+       * Format: date-time
+       * @description Cuándo está agendado el turno/trámite. Si la tarea tiene un caso del planificador de taller (M2) confirmado cuya ventana no terminó, cambiar el turno mueve esa ventana (y con ella el bloqueo del despacho) en la misma operación: un `YYYY-MM-DD` (o medianoche argentina) la lleva a ese día argentino conservando su hora de inicio; un instante con hora la hace arrancar a esa hora; en ambos casos la duración se conserva y la ventana nueva tiene que ser a futuro (400 si no). `null` borra el turno y cancela el caso confirmado. Un turno igual al guardado no toca la tarea ni el caso.
+       */
+      scheduledAt?: string | null;
+      /**
+       * Format: uuid
+       * @description Responsable de la tarea: un empleado activo de la distribuidora (404 si no es de ella, 409 si está egresado). `null` lo quita
+       */
+      assigneeEmployeeId?: string | null;
+      /**
+       * Format: date-time
+       * @description Precondición: el `updatedAt` que tiene el panel. Si la tarea cambió, 409 `FLEET_TASK_STALE`. También se acepta en el header `If-Match`
+       */
+      expectedUpdatedAt?: string;
+    };
+    MoveFleetTaskDto: {
+      /**
+       * @description Columna de destino. A «hecha» no se mueve por acá (se cierra con `POST /v2/fleet/tasks/:id/close`) y cancelar va por `PATCH /fleet/tasks/:id/cancel`
+       * @enum {string}
+       */
+      to: 'forecast' | 'scheduled' | 'in_progress';
+      /**
+       * Format: date-time
+       * @description Turno. Obligatorio al pasar de `forecast` a `scheduled`; opcional al ir a `scheduled` desde `scheduled` o `in_progress` (reprograma, y mueve la ventana confirmada del planificador). En otro destino, 400. Un `YYYY-MM-DD` es ese día argentino. `null` cuenta como ausente: el turno se borra sólo yendo a `forecast`
+       * @example 2026-12-02
+       */
+      scheduledAt?: string;
+      /**
+       * Format: uuid
+       * @description La tarjeta queda inmediatamente ANTES de esta (de la misma columna de destino y la misma empresa)
+       */
+      beforeId?: string;
+      /**
+       * Format: uuid
+       * @description La tarjeta queda inmediatamente DESPUÉS de esta (de la misma columna de destino y la misma empresa). Sin `beforeId` ni `afterId`, al final de la columna
+       */
+      afterId?: string;
+      /**
+       * Format: date-time
+       * @description Precondición: el `updatedAt` de la tarjeta que tiene el panel. Si la tarea cambió, 409 `FLEET_TASK_STALE`. También se acepta en el header `If-Match`
+       */
+      expectedUpdatedAt?: string;
     };
     FleetTaskV2PageDto: {
       data: components['schemas']['FleetTaskV2ResponseDto'][];
@@ -14585,6 +14847,26 @@ export interface components {
     };
     PlannerForecastResponseDto: {
       vehicles: components['schemas']['ForecastVehicleResponseDto'][];
+    };
+    PredictionAccuracyDto: {
+      /** @description Predicciones que ya se pudieron comparar */
+      measured: number;
+      /** @description Error medio absoluto en días; `null` si no hay nada medido */
+      meanAbsoluteErrorDays: number | null;
+      /** @description Parte de las medidas dentro del margen, de 0 a 1; `null` si no hay nada medido */
+      withinMarginRate: number | null;
+      /** @description Margen en días de `withinMarginRate` */
+      marginDays: number;
+      /** @description Error medio con signo en días: positivo = pasó después de lo proyectado, negativo = antes; `null` si no hay nada medido */
+      meanBiasDays: number | null;
+    };
+    PlannerAccuracyResponseDto: {
+      /** Format: date-time */
+      from: string;
+      /** Format: date-time */
+      to: string;
+      /** @description Primera fecha proyectada del vencimiento por kilometraje contra la fecha en que se hizo el trabajo, en las tareas cerradas del período */
+      accuracy: components['schemas']['PredictionAccuracyDto'];
     };
     ProcessConfigFieldDto: {
       /** @example anticipationDays */
@@ -20151,6 +20433,47 @@ export interface components {
        */
       reason: string;
     };
+    TiempoEnSegundosDto: {
+      /** @example 14.5 */
+      mediana: number | null;
+      /** @example 28 */
+      p90: number | null;
+    };
+    ChoferEnElTopDto: {
+      /** Format: uuid */
+      driverId: string;
+      /** @example Ana Pérez */
+      nombre: string;
+      /** @description Ofertas ya resueltas del período */
+      ofertas: number;
+      aceptadas: number;
+      /**
+       * @description 0 a 100
+       * @example 80
+       */
+      tasaAceptacion: number;
+      medianaRespuestaSegundos: number | null;
+    };
+    DispatchMetricsResponseDto: {
+      /** Format: date-time */
+      from: string;
+      /** Format: date-time */
+      to: string;
+      /** @description Pedidos con al menos una oferta en el período */
+      pedidosDespachados: number;
+      ofertasPorPedido: number | null;
+      /** @description Sobre las ofertas resueltas, 0 a 100 */
+      porcentajeAceptadas: number | null;
+      porcentajeRechazadas: number | null;
+      porcentajeVencidas: number | null;
+      /** @description Sólo ofertas con respuesta registrada */
+      respuestaDelChofer: components['schemas']['TiempoEnSegundosDto'];
+      /** @description Desde que el pedido quedó pendiente hasta que un chofer lo aceptó */
+      hastaAsignar: components['schemas']['TiempoEnSegundosDto'];
+      /** @description Pedidos que el sistema canceló porque ningún chofer los tomó */
+      pedidosSinChofer: number;
+      topChoferes: components['schemas']['ChoferEnElTopDto'][];
+    };
     CustomerPurchaseStatsDto: {
       /**
        * @description Suma del total de los pedidos entregados (los cancelados y los que siguen en curso no cuentan como compra)
@@ -24242,26 +24565,6 @@ export interface components {
       /** @description Acierto de la fecha proyectada de recompra contra la primera compra entregada después de la invitación */
       accuracy: components['schemas']['PredictionAccuracyDto'];
     };
-    PredictionAccuracyDto: {
-      /** @description Predicciones que ya se pudieron comparar */
-      measured: number;
-      /** @description Error medio absoluto en días; `null` si no hay nada medido */
-      meanAbsoluteErrorDays: number | null;
-      /** @description Parte de las medidas dentro del margen, de 0 a 1; `null` si no hay nada medido */
-      withinMarginRate: number | null;
-      /** @description Margen en días de `withinMarginRate` */
-      marginDays: number;
-      /** @description Error medio con signo en días: positivo = pasó después de lo proyectado, negativo = antes; `null` si no hay nada medido */
-      meanBiasDays: number | null;
-    };
-    PlannerAccuracyResponseDto: {
-      /** Format: date-time */
-      from: string;
-      /** Format: date-time */
-      to: string;
-      /** @description Primera fecha proyectada del vencimiento por kilometraje contra la fecha en que se hizo el trabajo, en las tareas cerradas del período */
-      accuracy: components['schemas']['PredictionAccuracyDto'];
-    };
     RunRepurchaseDto: {
       /** @description Con true sólo calcula a quién se invitaría: no escribe, no vence nada y no avisa a nadie. Por omisión, false */
       dryRun?: boolean;
@@ -27139,6 +27442,8 @@ export interface components {
       name: string;
       /** @example gas-del-norte */
       slug: string;
+      /** @description Logo de la empresa: URL firmada de S3 de corta vigencia, o null si no tiene */
+      logoUrl: string | null;
       /** @enum {string} */
       status: 'active' | 'suspended';
       /** @description Empresa propia de la plataforma: el administrador general la opera con `X-Distributor`, sin sesión de soporte */
@@ -30714,7 +31019,7 @@ export interface operations {
           'application/json': components['schemas']['UserResponseDto'];
         };
       };
-      /** @description Datos inválidos o falta la distribuidora */
+      /** @description Datos inválidos o falta la distribuidora; `staffRoleId` en un alta que no es de administrador (`STAFF_ROLE_ONLY_FOR_ADMINS`); un administrador sin `staffRoleId` cuando quien pide no tiene todos los permisos: el rol de sistema sólo lo da quien los tiene (`STAFF_ROLE_REQUIRED`) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -30730,6 +31035,13 @@ export interface operations {
       };
       /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) ni para gestionar el personal (`personal.gestionar`) ni para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El rol del personal (`staffRoleId`) no existe, es de otra distribuidora o está dado de baja */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -31015,7 +31327,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) ni para gestionar el personal (`personal.gestionar`) ni para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31079,7 +31391,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) ni para gestionar el personal (`personal.gestionar`) ni para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31179,7 +31491,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) ni para gestionar el personal (`personal.gestionar`) ni para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31240,7 +31552,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description No es su cuenta, pide contraseña o bloqueo sin ser admin, o es la cuenta de un cliente */
+      /** @description No es su cuenta, pide contraseña o bloqueo sin ser admin, se bloquea a sí mismo, o es la cuenta de un cliente (para un admin de empresa). La contraseña de otro administrador, sin ser super admin (`ADMIN_PASSWORD_NOT_CHANGEABLE`). Sobre la cuenta de otro: un chofer pide `personal.gestionar`, un cliente `clientes.gestionar` y un administrador `administradores.gestionar` (`PERMISSION_DENIED`); además, un administrador con permisos que quien pide no tiene (o con el rol de sistema, si quien pide no los tiene todos) no se modifica, bloquea ni da de baja (`STAFF_ROLE_TARGET_OUTRANKS`). El super admin pasa siempre. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31388,7 +31700,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) ni para gestionar el personal (`personal.gestionar`) ni para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -33540,6 +33852,68 @@ export interface operations {
       };
     };
   };
+  FleetTaskV2Controller_boardView: {
+    parameters: {
+      query?: {
+        /** @description Sólo las del vehículo */
+        carId?: string;
+        /** @description Tipo de tarea (el `documentKind` del plan). `generic` incluye las de planes sin tipo */
+        category?:
+          | 'insurance'
+          | 'vtv'
+          | 'hazmat_vehicle_permit'
+          | 'driver_license'
+          | 'hazmat_driver_course'
+          | 'psychophysical'
+          | 'art_coverage'
+          | 'service'
+          | 'generic';
+        /** @description Sólo las de ese empleado: las que tiene como responsable o las de su legajo */
+        employeeId?: string;
+        /** @description Sólo las que vencen hasta ese día inclusive */
+        dueBefore?: string;
+        /** @description Desde cuándo entran las hechas (por la fecha en que se hicieron). Por omisión, los últimos 30 días */
+        doneSince?: string;
+        /** @description Texto en el nombre del plan, la patente, la marca o el modelo, el responsable, el proveedor, la referencia o las notas */
+        q?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetTaskBoardDto'];
+        };
+      };
+      /** @description Un filtro con formato inválido (id que no es UUID, fecha irreal, tipo desconocido, texto de más de 100 caracteres) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   FleetTaskV2Controller_findAll: {
     parameters: {
       query?: {
@@ -33578,6 +33952,71 @@ export interface operations {
       };
       /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FleetTaskV2Controller_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateFleetTaskV2Dto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetTaskV2ResponseDto'];
+        };
+      };
+      /** @description Cuerpo inválido, o el vehículo/chofer/empleado no coincide con el sujeto del plan */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Plan, vehículo, chofer, empleado o responsable no encontrado (o de otra distribuidora) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El empleado del plan o el responsable está egresado */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -33628,6 +34067,134 @@ export interface operations {
       };
       /** @description No existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FleetTaskV2Controller_update: {
+    parameters: {
+      query?: never;
+      header?: {
+        /** @description Precondición: el `updatedAt` de la tarea (ISO 8601) que tiene el panel. Si cambió, 409 `FLEET_TASK_STALE`. El campo `expectedUpdatedAt` del cuerpo tiene prioridad */
+        'If-Match'?: string;
+      };
+      path: {
+        /** @description Task UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateFleetTaskV2Dto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetTaskV2ResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID, el cuerpo trae un campo que no se puede editar o con formato inválido, `If-Match` no es una fecha, el inicio de la vigencia es posterior al vencimiento o el detalle no es válido para el plan */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Tarea o responsable no encontrado (o de otra distribuidora) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La tarea ya está hecha o cancelada, el responsable está egresado, o la tarea cambió desde que se leyó (`FLEET_TASK_STALE`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FleetTaskV2Controller_move: {
+    parameters: {
+      query?: never;
+      header?: {
+        /** @description Precondición: el `updatedAt` de la tarea (ISO 8601) que tiene el panel. Si cambió, 409 `FLEET_TASK_STALE`. El campo `expectedUpdatedAt` del cuerpo tiene prioridad */
+        'If-Match'?: string;
+      };
+      path: {
+        /** @description Task UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MoveFleetTaskDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetTaskBoardCardDto'];
+        };
+      };
+      /** @description Cuerpo inválido (destino desconocido o `done`, fecha irreal, id que no es UUID), `If-Match` no es una fecha, falta el turno al programar (`FLEET_TASK_SCHEDULED_AT_REQUIRED`), turno en otro destino (`FLEET_TASK_SCHEDULED_AT_NOT_ALLOWED`), día inválido (`SCHEDULED_DAY_INVALID`), ventana del planificador en el pasado (`SCHEDULED_WINDOW_IN_PAST`), o la tarjeta de referencia no está en la columna de destino de la empresa, es la misma o están al revés (`FLEET_TASK_NEIGHBOR_INVALID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La tarea no existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La tarea está hecha o cancelada (`FLEET_TASK_CLOSED`), la transición no está permitida (`FLEET_TASK_TRANSITION_NOT_ALLOWED`), o la tarea cambió desde que se leyó (`FLEET_TASK_STALE`) */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -34382,6 +34949,51 @@ export interface operations {
         };
       };
       /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MaintenancePlannerController_acierto: {
+    parameters: {
+      query?: {
+        /** @description Desde este día (por omisión, 180 días atrás) */
+        from?: string;
+        /** @description Hasta este día inclusive (por omisión, hoy) */
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlannerAccuracyResponseDto'];
+        };
+      };
+      /** @description from o to inválidos, o from posterior a to. Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
       400: {
         headers: {
           [name: string]: unknown;
@@ -37219,7 +37831,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Ya está egresado, o el chofer tiene pedidos en curso, una carga de camión abierta o una rendición pendiente */
+      /** @description Ya está egresado, o el chofer tiene pedidos en curso, una carga de camión abierta o una rendición pendiente; o la cuenta es de un administrador y es el último activo de la distribuidora, o el último que puede gestionar los roles y permisos (`LAST_ROLES_MANAGER`) */
       409: {
         headers: {
           [name: string]: unknown;
@@ -45682,7 +46294,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -45932,7 +46544,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Es de otro cliente */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -46036,7 +46648,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Es de otro cliente */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -48858,6 +49470,49 @@ export interface operations {
       };
       /** @description Pedido no encontrado */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DispatchMetricsController_obtener: {
+    parameters: {
+      query?: {
+        from?: string;
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DispatchMetricsResponseDto'];
+        };
+      };
+      /** @description Fecha inválida, `from` posterior a `to`, período de más de 366 días o falta `X-Distributor` (super admin) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
         headers: {
           [name: string]: unknown;
         };
