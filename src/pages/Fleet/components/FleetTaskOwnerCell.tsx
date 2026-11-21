@@ -1,3 +1,4 @@
+import { Car } from 'lucide-react';
 import { IdentityCell } from '../../../common/components/ui';
 import type { FleetTask } from '../../../services/api/types';
 import { useEmployee } from '../../../services/queries/employees';
@@ -27,7 +28,9 @@ export const FleetTaskOwnerCell = ({ task, carMap, driverMap }: { task: FleetTas
       <IdentityCell
         title={[car.car_brand, car.car_model].filter(Boolean).join(' ') || 'Vehículo'}
         subtitle={car.car_patent ?? undefined}
+        icon={Car}
         monoSubtitle
+        photo={{ kind: 'car', id: car.car_id, url: car.photoUrl }}
       />
     );
   }

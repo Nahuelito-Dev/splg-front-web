@@ -2,7 +2,7 @@ import AttachFile from '@mui/icons-material/AttachFile';
 import DirectionsCar from '@mui/icons-material/DirectionsCar';
 import Event from '@mui/icons-material/Event';
 import type { DragEvent } from 'react';
-import { Avatar, cx, MoreActionsMenu, type MenuAction } from '../../../common/components/ui';
+import { cx, MoreActionsMenu, PersonAvatar, type MenuAction } from '../../../common/components/ui';
 import type { FleetTaskBoardCard } from '../../../services/api/types';
 import { formatCurrency, formatDay, formatNumber, formatScheduledDay } from '../../../utils/format';
 import { BOARD_COLUMNS, columnLabel, type BoardColumnId } from './boardModel';
@@ -103,7 +103,7 @@ export const BoardCard = ({
       <div className="mt-2.5 flex items-center gap-2 text-[11.5px] text-muted">
         {card.assignee ? (
           <span className="inline-flex min-w-0 items-center gap-1.5" title={card.assignee.name}>
-            <Avatar name={card.assignee.name} size="xs" />
+            <PersonAvatar name={card.assignee.name} employeeId={card.assignee.employeeId} size="xs" decorative />
             <span className="truncate text-ink-2">{card.assignee.name}</span>
           </span>
         ) : (

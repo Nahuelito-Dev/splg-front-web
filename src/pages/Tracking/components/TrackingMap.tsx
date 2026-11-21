@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DriverPin } from '../../../common/components/map/DriverPin';
 import { HtmlMarker } from '../../../common/components/map/HtmlMarker';
 import { MapCanvas } from '../../../common/components/map/MapCanvas';
+import { PersonAvatar } from '../../../common/components/ui';
 import { formatShortId } from '../../../utils/format';
 import type { TrackedOrder } from '../types';
 import { MapAutoCenter } from './MapAutoCenter';
@@ -44,7 +45,10 @@ export const TrackingMap = ({ trackedOrders, focusPoint }: Props) => {
                 className="absolute bottom-full left-1/2 mb-2 block w-max -translate-x-1/2 rounded-lg border border-outline bg-surface px-2.5 py-1.5 text-left text-xs text-ink shadow-control"
               >
                 <b className="block font-semibold">Pedido {formatShortId(order.orderId)}</b>
-                <span className="block text-muted">Chofer {formatShortId(order.driverId)}</span>
+                <span className="mt-1 flex items-center gap-1.5 text-muted">
+                  <PersonAvatar name="Chofer" userId={order.driverId} size="sm" decorative />
+                  Chofer {formatShortId(order.driverId)}
+                </span>
                 <span className="block text-muted">Última actualización: {time(order.at)}</span>
               </span>
             )}

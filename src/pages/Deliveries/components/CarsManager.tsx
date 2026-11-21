@@ -5,7 +5,15 @@ import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
-import { Button, Card, EmptyState, IconButton, LoadingState, CardHeader } from '../../../common/components/ui';
+import {
+  Button,
+  Card,
+  EmptyState,
+  IconButton,
+  LoadingState,
+  CardHeader,
+  PhotoThumb,
+} from '../../../common/components/ui';
 import { CarFormModal } from '../../Cars/components/CarFormModal';
 import type { Car } from '../../../services/api/types';
 import { useCarsByUser, useDeleteCar } from '../../../services/queries/cars';
@@ -70,11 +78,21 @@ export const CarsManager = ({ userId }: { userId: string }) => {
               className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-outline p-3"
             >
               <div className="flex min-w-0 items-center gap-3">
-                <span
-                  aria-hidden="true"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary-strong [&_svg]:h-5 [&_svg]:w-5"
-                >
-                  {carIcon(car.type_car)}
+                <span className="h-10 w-10 shrink-0">
+                  <PhotoThumb
+                    kind="car"
+                    id={car.car_id}
+                    url={car.photoUrl}
+                    size="fill"
+                    fallback={
+                      <span
+                        aria-hidden="true"
+                        className="flex h-full w-full items-center justify-center rounded-full bg-primary-soft text-primary-strong [&_svg]:h-5 [&_svg]:w-5"
+                      >
+                        {carIcon(car.type_car)}
+                      </span>
+                    }
+                  />
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-ink">

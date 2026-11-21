@@ -13,6 +13,30 @@ afterEach(cleanup);
 const owners = { carMap: new Map(), driverMap: new Map() } as unknown as Parameters<typeof FleetTaskOwnerCell>[0];
 
 describe('FleetTaskOwnerCell: fotos', () => {
+  const withCar = (photoUrl: string | null) => {
+    const carMap = new Map([
+      ['car-1', { car_id: 'car-1', car_brand: 'Ford', car_model: 'Cargo', car_patent: 'AB123CD', photoUrl }],
+    ]);
+    return render(
+      <FleetTaskOwnerCell
+        {...owners}
+        carMap={carMap as unknown as typeof owners.carMap}
+        task={{ carId: 'car-1' } as FleetTask}
+      />,
+    );
+  };
+
+  it('el vehículo de una tarea muestra su foto', () => {
+    const { container } = withCar('https://fotos.test/cargo.jpg');
+    expect(container.querySelector('img[src="https://fotos.test/cargo.jpg"]')).not.toBeNull();
+  });
+
+  it('el vehículo sin foto muestra el ícono de auto', () => {
+    const { container } = withCar(null);
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('svg.lucide-car')).not.toBeNull();
+  });
+
   it('el legajo de una tarea de personal pide su foto por employeeId', () => {
     vi.mocked(usePersonPhoto).mockClear();
     render(<FleetTaskOwnerCell {...owners} task={{ employeeId: 'emp-1' } as FleetTask} />);

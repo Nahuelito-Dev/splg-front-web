@@ -1,6 +1,7 @@
 import { useMap } from '@vis.gl/react-google-maps';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { usePersonPhoto } from '../../../services/queries/peoplePhotos';
 import { TrackingMap } from './TrackingMap';
 
 afterEach(() => {
@@ -30,6 +31,26 @@ describe('TrackingMap', () => {
     expect(info).toHaveTextContent('Última actualización: 10:05:09');
     fireEvent.click(markers[0]);
     expect(screen.queryByTestId('tracking-marker-info')).not.toBeInTheDocument();
+  });
+
+  it('en el globo del chofer muestra su foto, pedida por su id de usuario; sin foto, las iniciales', () => {
+    vi.mocked(usePersonPhoto).mockClear();
+    vi.mocked(usePersonPhoto).mockReturnValue({
+      data: { url: 'https://fotos.test/chofer.jpg', expiresAt: '2030-01-01T00:00:00.000Z' },
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof usePersonPhoto>);
+    render(<TrackingMap trackedOrders={[order(1)]} focusPoint={null} />);
+    fireEvent.click(screen.getByTestId('map-marker'));
+    const info = screen.getByTestId('tracking-marker-info');
+    expect(usePersonPhoto).toHaveBeenCalledWith({ kind: 'user', id: 'd1000000-bbbb' });
+    expect(info.querySelector('img[src="https://fotos.test/chofer.jpg"]')).not.toBeNull();
+    cleanup();
+    vi.mocked(usePersonPhoto).mockReturnValue({ data: null, refetch: vi.fn() } as unknown as ReturnType<
+      typeof usePersonPhoto
+    >);
+    render(<TrackingMap trackedOrders={[order(1)]} focusPoint={null} />);
+    fireEvent.click(screen.getByTestId('map-marker'));
+    expect(screen.getByTestId('tracking-marker-info').querySelector('img')).toBeNull();
   });
 
   it('va a la primera posición que llega una sola vez: después no le pisa la vista al admin', () => {
