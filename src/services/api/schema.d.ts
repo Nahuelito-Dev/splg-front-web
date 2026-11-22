@@ -2857,12 +2857,12 @@ export interface paths {
     };
     /**
      * Recargos por medio de pago de la distribuidora
-     * @description Porcentaje que se suma al total del pedido según el medio de pago (transferencia, Mercado Pago, efectivo). Sin configuración rigen los de omisión: transferencia 10, Mercado Pago 10, efectivo 0 (`isDefault: true`).
+     * @description Porcentaje que se suma al total del pedido según el medio de pago (Mercado Pago, efectivo). Sin configuración rigen los de omisión: Mercado Pago 10, efectivo 0 (`isDefault: true`). `transferPercentage` queda sólo por compatibilidad (la transferencia ya no se acepta).
      */
     get: operations['PaymentSurchargeConfigController_get'];
     /**
      * Cambiar los recargos por medio de pago
-     * @description Reemplaza la configuración: los tres porcentajes (`transferPercentage`, `mercadoPagoPercentage`, `cashPercentage`) son obligatorios; omitir uno o mandar `null` es 400. Para volver a los valores por omisión del sistema mandá 10, 10 y 0. Rige para los pedidos que se cotizan o crean desde ese momento; los pedidos ya creados conservan el porcentaje con que se crearon. El cliente ve el recargo en la cotización antes de confirmar.
+     * @description Reemplaza la configuración: `mercadoPagoPercentage` y `cashPercentage` son obligatorios; omitir uno o mandar `null` es 400. Mandar `transferPercentage` también es 400 porque la transferencia ya no se acepta. Para volver a los valores por omisión del sistema mandá 10 y 0.
      */
     put: operations['PaymentSurchargeConfigController_put'];
     post?: never;
@@ -4739,7 +4739,7 @@ export interface paths {
     };
     /**
      * Medios de pago y su recargo, sin iniciar sesión
-     * @description Público. Efectivo, transferencia y Mercado Pago con el recargo (%) que la distribuidora cobra hoy con cada uno. Es informativo: el monto exacto de un pedido lo da `POST /orders/quote`.
+     * @description Público. Efectivo y Mercado Pago (la transferencia ya no se acepta) con el recargo (%) que la distribuidora cobra hoy con cada uno. Es informativo: el monto exacto de un pedido lo da `POST /orders/quote`.
      */
     get: operations['PublicCatalogController_mediosDePago'];
     put?: never;
@@ -5079,7 +5079,7 @@ export interface paths {
     put?: never;
     /**
      * Cotizar un pedido
-     * @description Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (`paymentSurchargePercentage` % sobre subtotal + zona: parámetro de la distribuidora por medio de pago, por omisión 10 en `mercadopago` y `transfer` y 0 en `cash`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta. Con `orderId` cotiza la EDICIÓN de ese pedido (mismas reglas que `PATCH /orders/:id`): pedido ajeno o inexistente 404, no editable 409, stock por diferencia contra lo ya reservado, franja y fecha sólo si cambian.
+     * @description Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (`paymentSurchargePercentage` % sobre subtotal + zona: parámetro de la distribuidora por medio de pago, por omisión 10 en `mercadopago` y 0 en `cash`; la transferencia ya no se acepta: 400 `PAYMENT_METHOD_NOT_ACCEPTED`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta. Con `orderId` cotiza la EDICIÓN de ese pedido (mismas reglas que `PATCH /orders/:id`): pedido ajeno o inexistente 404, no editable 409, stock por diferencia contra lo ya reservado, franja y fecha sólo si cambian.
      */
     post: operations['OrderController_quote'];
     delete?: never;
@@ -5243,7 +5243,7 @@ export interface paths {
     head?: never;
     /**
      * Editar un pedido pendiente (sin chofer asignado)
-     * @description Admin, super admin y el CLIENTE DUEÑO del pedido (uno ajeno es 404). Idempotente vía `Idempotency-Key`. Los precios y recargos los calcula SIEMPRE el servidor. El cliente deja una anotación en el historial de estados. Dirección, franja/fecha, medio de pago, notas y renglones. Si vienen `items` reemplazan a los actuales: se devuelve el stock viejo y se reserva el nuevo con los precios y recargos vigentes (mismas reglas que el alta). Fuera de `pending`, o con un pedido de Mercado Pago, responde 409; pasar un pedido a Mercado Pago es 400 (la transferencia sí se edita). Para eliminar un pedido: `PATCH /orders/:id/cancel`.
+     * @description Admin, super admin y el CLIENTE DUEÑO del pedido (uno ajeno es 404). Idempotente vía `Idempotency-Key`. Los precios y recargos los calcula SIEMPRE el servidor. El cliente deja una anotación en el historial de estados. Dirección, franja/fecha, medio de pago, notas y renglones. Si vienen `items` reemplazan a los actuales: se devuelve el stock viejo y se reserva el nuevo con los precios y recargos vigentes (mismas reglas que el alta). Fuera de `pending`, o con un pedido de Mercado Pago, responde 409; pasar un pedido a Mercado Pago es 400 (pasar a transferencia también es 400 `PAYMENT_METHOD_NOT_ACCEPTED`; un pedido viejo con transferencia la conserva si el medio no cambia). Para eliminar un pedido: `PATCH /orders/:id/cancel`.
      */
     patch: operations['OrderController_update'];
     trace?: never;
@@ -16222,7 +16222,11 @@ export interface components {
       standardEstimatedMinutes?: number;
     };
     PaymentSurchargeConfigResponseDto: {
-      /** @example 10 */
+      /**
+       * @deprecated
+       * @description Sin uso: la transferencia ya no se acepta. Se conserva lo guardado y los pedidos viejos que la tienen
+       * @example 10
+       */
       transferPercentage: number;
       /** @example 10 */
       mercadoPagoPercentage: number;
@@ -16239,11 +16243,6 @@ export interface components {
       updatedByUserId: string | null;
     };
     PaymentSurchargeConfigDto: {
-      /**
-       * @description Recargo por transferencia, en % (0 a 30 %, hasta 2 decimales). Obligatorio. Valor por omisión del sistema: 10
-       * @example 10
-       */
-      transferPercentage: number;
       /**
        * @description Recargo por Mercado Pago, en % (0 a 30 %, hasta 2 decimales). Obligatorio. Valor por omisión del sistema: 10
        * @example 10
@@ -19059,7 +19058,7 @@ export interface components {
        * @example CASH
        * @enum {string}
        */
-      key: 'CASH' | 'TRANSFER' | 'MERCADOPAGO';
+      key: 'CASH' | 'MERCADOPAGO';
       /**
        * @description Recargo en % que la distribuidora cobra con ese medio de pago (parámetro configurable; el monto exacto lo da `POST /orders/quote`)
        * @example 0
@@ -19368,7 +19367,7 @@ export interface components {
        * @example cash
        * @enum {string}
        */
-      paymentMethod: 'cash' | 'mercadopago' | 'transfer' | 'account';
+      paymentMethod: 'cash' | 'mercadopago' | 'account';
       /**
        * Format: uuid
        * @description Tipo de garrafa. Si no se manda, el de la última compra del cliente en esta distribuidora; sin compras previas es obligatorio (400).
@@ -19452,12 +19451,12 @@ export interface components {
        */
       zoneSurcharge: number;
       /**
-       * @example transfer
+       * @example cash
        * @enum {string}
        */
       paymentMethod: 'cash' | 'mercadopago' | 'transfer' | 'account';
       /**
-       * @description Recargo por medio de pago en pesos: `paymentSurchargePercentage` % sobre subtotal + recargo de zona (parámetro de la distribuidora por medio de pago; por omisión 10 en `mercadopago` y `transfer`, 0 en `cash`)
+       * @description Recargo por medio de pago en pesos: `paymentSurchargePercentage` % sobre subtotal + recargo de zona (parámetro de la distribuidora por medio de pago; por omisión 10 en `mercadopago`, 0 en `cash`)
        * @example 1995
        */
       paymentSurcharge: number;
@@ -19800,7 +19799,7 @@ export interface components {
        * @example cash
        * @enum {string}
        */
-      paymentMethod: 'cash' | 'mercadopago' | 'transfer' | 'account';
+      paymentMethod: 'cash' | 'mercadopago' | 'account';
       /** @description Notas adicionales */
       notes?: string;
       /** @description Token de notificación push */
@@ -19836,7 +19835,7 @@ export interface components {
        * @example cash
        * @enum {string}
        */
-      paymentMethod: 'cash' | 'mercadopago' | 'transfer' | 'account';
+      paymentMethod: 'cash' | 'mercadopago' | 'account';
       /** @description ID del cliente */
       customerId?: string;
       /** @description ID de la dirección de entrega */
@@ -20329,7 +20328,7 @@ export interface components {
        * @description Medio de pago. No se puede pasar a ni desde MercadoPago: cancelá y creá el pedido de nuevo.
        * @enum {string}
        */
-      paymentMethod?: 'cash' | 'mercadopago' | 'transfer' | 'account';
+      paymentMethod?: 'cash' | 'mercadopago' | 'account';
       /** @example Tocar timbre 2B */
       notes?: string;
       /** @description Renglones nuevos: reemplazan a los actuales (se devuelve el stock viejo y se reserva el nuevo, con los precios vigentes) */
@@ -24926,7 +24925,7 @@ export interface components {
        * @description Medio de pago; por omisión el de la invitación
        * @enum {string}
        */
-      paymentMethod?: 'cash' | 'transfer' | 'mercadopago';
+      paymentMethod?: 'cash' | 'mercadopago';
       /**
        * Format: uuid
        * @description Franja horaria de la entrega. Va junto con `scheduledDate`; sin ninguna de las dos, la entrega es inmediata

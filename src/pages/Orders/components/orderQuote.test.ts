@@ -4,7 +4,7 @@ import { buildQuoteBody, quoteHint } from './orderQuote';
 const base = {
   customerId: 'c1',
   addressId: 'a1',
-  paymentMethod: 'transfer' as const,
+  paymentMethod: 'cash' as const,
   deliveryMode: 'express' as const,
   items: [{ gasCylinderId: 'g1', quantity: 2, unitPrice: 9500 }],
 };

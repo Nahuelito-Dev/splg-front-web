@@ -15,7 +15,6 @@ interface Props {
 
 const DEPOSIT_HINT: Record<NewOrderValues['paymentMethod'], string> = {
   cash: 'Efectivo: queda pendiente hasta que la confirmes en Reservas.',
-  transfer: 'Transferencia: la confirmás en Reservas cuando llegue.',
   mercadopago:
     'MercadoPago: al crear la reserva se genera el enlace de pago de la seña; se muestra y queda en la reserva. La seña se confirma sola.',
   account: 'Una reserva no se puede pagar con cuenta corriente.',

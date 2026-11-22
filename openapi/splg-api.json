@@ -12342,7 +12342,7 @@
         },
         "/api/v2/payment-surcharges": {
             "get": {
-                "description": "Porcentaje que se suma al total del pedido según el medio de pago (transferencia, Mercado Pago, efectivo). Sin configuración rigen los de omisión: transferencia 10, Mercado Pago 10, efectivo 0 (`isDefault: true`).",
+                "description": "Porcentaje que se suma al total del pedido según el medio de pago (Mercado Pago, efectivo). Sin configuración rigen los de omisión: Mercado Pago 10, efectivo 0 (`isDefault: true`). `transferPercentage` queda sólo por compatibilidad (la transferencia ya no se acepta).",
                 "operationId": "PaymentSurchargeConfigController_get",
                 "parameters": [],
                 "responses": {
@@ -12377,7 +12377,7 @@
                 ]
             },
             "put": {
-                "description": "Reemplaza la configuración: los tres porcentajes (`transferPercentage`, `mercadoPagoPercentage`, `cashPercentage`) son obligatorios; omitir uno o mandar `null` es 400. Para volver a los valores por omisión del sistema mandá 10, 10 y 0. Rige para los pedidos que se cotizan o crean desde ese momento; los pedidos ya creados conservan el porcentaje con que se crearon. El cliente ve el recargo en la cotización antes de confirmar.",
+                "description": "Reemplaza la configuración: `mercadoPagoPercentage` y `cashPercentage` son obligatorios; omitir uno o mandar `null` es 400. Mandar `transferPercentage` también es 400 porque la transferencia ya no se acepta. Para volver a los valores por omisión del sistema mandá 10 y 0.",
                 "operationId": "PaymentSurchargeConfigController_put",
                 "parameters": [],
                 "requestBody": {
@@ -20283,7 +20283,7 @@
         },
         "/api/v2/public/distributors/{slug}/payment-methods": {
             "get": {
-                "description": "Público. Efectivo, transferencia y Mercado Pago con el recargo (%) que la distribuidora cobra hoy con cada uno. Es informativo: el monto exacto de un pedido lo da `POST /orders/quote`.",
+                "description": "Público. Efectivo y Mercado Pago (la transferencia ya no se acepta) con el recargo (%) que la distribuidora cobra hoy con cada uno. Es informativo: el monto exacto de un pedido lo da `POST /orders/quote`.",
                 "operationId": "PublicCatalogController_mediosDePago",
                 "parameters": [
                     {
@@ -21725,7 +21725,7 @@
         },
         "/api/v1/orders/quote": {
             "post": {
-                "description": "Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (`paymentSurchargePercentage` % sobre subtotal + zona: parámetro de la distribuidora por medio de pago, por omisión 10 en `mercadopago` y `transfer` y 0 en `cash`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta. Con `orderId` cotiza la EDICIÓN de ese pedido (mismas reglas que `PATCH /orders/:id`): pedido ajeno o inexistente 404, no editable 409, stock por diferencia contra lo ya reservado, franja y fecha sólo si cambian.",
+                "description": "Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (`paymentSurchargePercentage` % sobre subtotal + zona: parámetro de la distribuidora por medio de pago, por omisión 10 en `mercadopago` y 0 en `cash`; la transferencia ya no se acepta: 400 `PAYMENT_METHOD_NOT_ACCEPTED`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta. Con `orderId` cotiza la EDICIÓN de ese pedido (mismas reglas que `PATCH /orders/:id`): pedido ajeno o inexistente 404, no editable 409, stock por diferencia contra lo ya reservado, franja y fecha sólo si cambian.",
                 "operationId": "OrderController_quote",
                 "parameters": [],
                 "requestBody": {
@@ -22288,7 +22288,7 @@
                 ]
             },
             "patch": {
-                "description": "Admin, super admin y el CLIENTE DUEÑO del pedido (uno ajeno es 404). Idempotente vía `Idempotency-Key`. Los precios y recargos los calcula SIEMPRE el servidor. El cliente deja una anotación en el historial de estados. Dirección, franja/fecha, medio de pago, notas y renglones. Si vienen `items` reemplazan a los actuales: se devuelve el stock viejo y se reserva el nuevo con los precios y recargos vigentes (mismas reglas que el alta). Fuera de `pending`, o con un pedido de Mercado Pago, responde 409; pasar un pedido a Mercado Pago es 400 (la transferencia sí se edita). Para eliminar un pedido: `PATCH /orders/:id/cancel`.",
+                "description": "Admin, super admin y el CLIENTE DUEÑO del pedido (uno ajeno es 404). Idempotente vía `Idempotency-Key`. Los precios y recargos los calcula SIEMPRE el servidor. El cliente deja una anotación en el historial de estados. Dirección, franja/fecha, medio de pago, notas y renglones. Si vienen `items` reemplazan a los actuales: se devuelve el stock viejo y se reserva el nuevo con los precios y recargos vigentes (mismas reglas que el alta). Fuera de `pending`, o con un pedido de Mercado Pago, responde 409; pasar un pedido a Mercado Pago es 400 (pasar a transferencia también es 400 `PAYMENT_METHOD_NOT_ACCEPTED`; un pedido viejo con transferencia la conserva si el medio no cambia). Para eliminar un pedido: `PATCH /orders/:id/cancel`.",
                 "operationId": "OrderController_update",
                 "parameters": [
                     {
@@ -57524,7 +57524,9 @@
                 "properties": {
                     "transferPercentage": {
                         "type": "number",
-                        "example": 10
+                        "example": 10,
+                        "deprecated": true,
+                        "description": "Sin uso: la transferencia ya no se acepta. Se conserva lo guardado y los pedidos viejos que la tienen"
                     },
                     "mercadoPagoPercentage": {
                         "type": "number",
@@ -57562,11 +57564,6 @@
             "PaymentSurchargeConfigDto": {
                 "type": "object",
                 "properties": {
-                    "transferPercentage": {
-                        "type": "number",
-                        "description": "Recargo por transferencia, en % (0 a 30 %, hasta 2 decimales). Obligatorio. Valor por omisión del sistema: 10",
-                        "example": 10
-                    },
                     "mercadoPagoPercentage": {
                         "type": "number",
                         "description": "Recargo por Mercado Pago, en % (0 a 30 %, hasta 2 decimales). Obligatorio. Valor por omisión del sistema: 10",
@@ -57579,7 +57576,6 @@
                     }
                 },
                 "required": [
-                    "transferPercentage",
                     "mercadoPagoPercentage",
                     "cashPercentage"
                 ]
@@ -64245,7 +64241,6 @@
                         "example": "CASH",
                         "enum": [
                             "CASH",
-                            "TRANSFER",
                             "MERCADOPAGO"
                         ]
                     },
@@ -64957,7 +64952,6 @@
                         "enum": [
                             "cash",
                             "mercadopago",
-                            "transfer",
                             "account"
                         ],
                         "example": "cash"
@@ -65152,12 +65146,12 @@
                             "transfer",
                             "account"
                         ],
-                        "example": "transfer"
+                        "example": "cash"
                     },
                     "paymentSurcharge": {
                         "type": "number",
                         "example": 1995,
-                        "description": "Recargo por medio de pago en pesos: `paymentSurchargePercentage` % sobre subtotal + recargo de zona (parámetro de la distribuidora por medio de pago; por omisión 10 en `mercadopago` y `transfer`, 0 en `cash`)"
+                        "description": "Recargo por medio de pago en pesos: `paymentSurchargePercentage` % sobre subtotal + recargo de zona (parámetro de la distribuidora por medio de pago; por omisión 10 en `mercadopago`, 0 en `cash`)"
                     },
                     "paymentSurchargePercentage": {
                         "type": "number",
@@ -66001,7 +65995,6 @@
                         "enum": [
                             "cash",
                             "mercadopago",
-                            "transfer",
                             "account"
                         ],
                         "example": "cash"
@@ -66069,7 +66062,6 @@
                         "enum": [
                             "cash",
                             "mercadopago",
-                            "transfer",
                             "account"
                         ],
                         "example": "cash"
@@ -67159,7 +67151,6 @@
                         "enum": [
                             "cash",
                             "mercadopago",
-                            "transfer",
                             "account"
                         ],
                         "description": "Medio de pago. No se puede pasar a ni desde MercadoPago: cancelá y creá el pedido de nuevo."
@@ -78583,7 +78574,6 @@
                         "type": "string",
                         "enum": [
                             "cash",
-                            "transfer",
                             "mercadopago"
                         ],
                         "description": "Medio de pago; por omisión el de la invitación"

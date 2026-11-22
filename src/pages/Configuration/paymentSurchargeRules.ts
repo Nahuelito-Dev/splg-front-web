@@ -5,12 +5,11 @@ import type { PaymentSurchargeConfig, PaymentSurchargeConfigBody } from '../../s
 export const SURCHARGE_MIN = 0;
 export const SURCHARGE_MAX = 30;
 
-/** Lo que regía antes de que fuera configurable. */
-export const DEFAULT_SURCHARGES = { transfer: '10', mercadoPago: '10', cash: '0' } as const;
+/** Lo que regía antes de que fuera configurable. La transferencia ya no se acepta: no se configura. */
+export const DEFAULT_SURCHARGES = { mercadoPago: '10', cash: '0' } as const;
 
 /** Lo que tipea la persona: todo como texto. */
 export interface PaymentSurchargeFormValues {
-  transfer: string;
   mercadoPago: string;
   cash: string;
 }
@@ -26,22 +25,19 @@ const percentage = z.string().superRefine((raw, ctx) => {
 });
 
 export const paymentSurchargeSchema = z.object({
-  transfer: percentage,
   mercadoPago: percentage,
   cash: percentage,
 });
 
 export const valuesOf = (config: PaymentSurchargeConfig): PaymentSurchargeFormValues => ({
-  transfer: String(config.transferPercentage),
   mercadoPago: String(config.mercadoPagoPercentage),
   cash: String(config.cashPercentage),
 });
 
 const toNumber = (raw: string): number => Number(raw.trim().replace(',', '.'));
 
-/** El cuerpo del PUT a partir de lo tipeado (sólo llamar si no hay errores). */
+/** El cuerpo del PUT a partir de lo tipeado (sólo llamar si no hay errores). No manda el recargo de transferencia. */
 export const toPaymentSurchargeBody = (v: PaymentSurchargeFormValues): PaymentSurchargeConfigBody => ({
-  transferPercentage: toNumber(v.transfer),
   mercadoPagoPercentage: toNumber(v.mercadoPago),
   cashPercentage: toNumber(v.cash),
 });

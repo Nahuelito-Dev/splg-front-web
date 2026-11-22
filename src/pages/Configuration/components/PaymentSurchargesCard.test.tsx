@@ -52,25 +52,25 @@ const type = (label: string, value: string) => fireEvent.change(screen.getByLabe
 const save = () => screen.getByRole('button', { name: 'Guardar recargos' });
 
 describe('PaymentSurchargesCard', () => {
-  it('muestra los tres porcentajes, la explicación y no deja guardar sin cambios', () => {
-    setup({ ...defaults, transferPercentage: 7.5, isDefault: false });
-    expect(screen.getByLabelText('Transferencia (%)')).toHaveValue('7.5');
-    expect(screen.getByLabelText('Mercado Pago (%)')).toHaveValue('10');
+  it('muestra los porcentajes de Mercado Pago y efectivo, sin el de transferencia, y no deja guardar sin cambios', () => {
+    setup({ ...defaults, transferPercentage: 7.5, mercadoPagoPercentage: 12, isDefault: false });
+    expect(screen.queryByLabelText('Transferencia (%)')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Mercado Pago (%)')).toHaveValue('12');
     expect(screen.getByLabelText('Efectivo (%)')).toHaveValue('0');
     expect(screen.getByText(/el cliente lo ve antes de confirmar/)).toBeInTheDocument();
     expect(save()).toBeDisabled();
   });
 
-  it('guarda los tres porcentajes como número (con coma decimal) y avisa', async () => {
+  it('guarda los dos porcentajes como número (con coma decimal), sin mandar el de transferencia, y avisa', async () => {
     const update = setup();
-    type('Transferencia (%)', '7,5');
+    type('Mercado Pago (%)', '7,5');
     type('Efectivo (%)', '2.25');
     await waitFor(() => expect(save()).toBeEnabled());
     fireEvent.click(save());
     await waitFor(() => expect(update.mutate).toHaveBeenCalled());
     const [body, options] = update.mutate.mock.calls[0] as [unknown, { onSuccess: (saved: unknown) => void }];
-    expect(body).toEqual({ transferPercentage: 7.5, mercadoPagoPercentage: 10, cashPercentage: 2.25 });
-    options.onSuccess({ ...defaults, transferPercentage: 7.5, cashPercentage: 2.25, isDefault: false });
+    expect(body).toEqual({ mercadoPagoPercentage: 7.5, cashPercentage: 2.25 });
+    options.onSuccess({ ...defaults, mercadoPagoPercentage: 7.5, cashPercentage: 2.25, isDefault: false });
     expect(notify.success).toHaveBeenCalledWith('Recargos por medio de pago guardados');
   });
 
@@ -88,22 +88,21 @@ describe('PaymentSurchargesCard', () => {
 
   it('muestra el mensaje que devuelve el back', async () => {
     const update = setup();
-    type('Transferencia (%)', '5');
+    type('Mercado Pago (%)', '5');
     await waitFor(() => expect(save()).toBeEnabled());
     fireEvent.click(save());
     await waitFor(() => expect(update.mutate).toHaveBeenCalled());
     const [, options] = update.mutate.mock.calls[0] as [unknown, { onError: (e: Error) => void }];
-    options.onError(new ApiError(400, ['transferPercentage must not be greater than 30']));
-    expect(await screen.findByRole('alert')).toHaveTextContent('transferPercentage must not be greater than 30');
+    options.onError(new ApiError(400, ['mercadoPagoPercentage must not be greater than 30']));
+    expect(await screen.findByRole('alert')).toHaveTextContent('mercadoPagoPercentage must not be greater than 30');
   });
 
-  it('restablecer pide confirmación y manda los tres valores por defecto (10, 10 y 0)', async () => {
+  it('restablecer pide confirmación y manda los valores por defecto de Mercado Pago y efectivo (10 y 0)', async () => {
     confirm.mockResolvedValue(true);
-    const update = setup({ ...defaults, transferPercentage: 7.5, isDefault: false });
+    const update = setup({ ...defaults, mercadoPagoPercentage: 7.5, isDefault: false });
     fireEvent.click(screen.getByRole('button', { name: /Restablecer valores por defecto/ }));
     await waitFor(() => expect(update.mutate).toHaveBeenCalled());
     expect(update.mutate.mock.calls[0][0]).toEqual({
-      transferPercentage: 10,
       mercadoPagoPercentage: 10,
       cashPercentage: 0,
     });
@@ -112,7 +111,7 @@ describe('PaymentSurchargesCard', () => {
   it('sin permiso de escritura los campos quedan deshabilitados', () => {
     state.perms.canWrite = false;
     setup();
-    expect(screen.getByLabelText('Transferencia (%)')).toBeDisabled();
+    expect(screen.getByLabelText('Mercado Pago (%)')).toBeDisabled();
     expect(save()).toBeDisabled();
   });
 
