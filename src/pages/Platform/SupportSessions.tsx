@@ -70,11 +70,13 @@ const StatusBadges = ({ row }: { row: SupportSession }) => (
   </span>
 );
 
-const Who = ({ row }: { row: SupportSession }) => (
+/** Quién pidió el acceso, con su foto (`requestedBy.photoUrl` firmada de la API); sin foto, sus iniciales. */
+const Who = ({ row, withReason = true }: { row: SupportSession; withReason?: boolean }) => (
   <IdentityCell
     title={row.requestedBy.fullName ?? 'Administrador general'}
-    subtitle={row.reason}
+    subtitle={withReason ? row.reason : undefined}
     avatarName={row.requestedBy.fullName ?? 'A'}
+    photo={{ kind: 'user', id: row.requestedBy.userId, url: row.requestedBy.photoUrl }}
   />
 );
 
@@ -382,8 +384,8 @@ export const SupportSessions = () => {
                 aria-label={`Ver la sesión de ${row.requestedBy.fullName ?? 'soporte'} en ${row.distributorName}`}
               >
                 <span className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="min-w-0 truncate font-medium text-ink">
-                    {row.requestedBy.fullName ?? 'Administrador general'}
+                  <span className="min-w-0 flex-1">
+                    <Who row={row} withReason={false} />
                   </span>
                   <StatusBadges row={row} />
                 </span>

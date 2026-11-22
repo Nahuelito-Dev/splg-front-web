@@ -158,8 +158,15 @@ export const platformChatMetrics = (over: Partial<PlatformChatMetrics> = {}): Pl
   },
   assistant: assistantMetrics(),
   companies: [
-    { distributorId: 'd-1', name: 'Florchi Gas', conversations: 82, messages: 667, assistant: assistantMetrics() },
-    { distributorId: 'd-2', name: 'Gas del Sur', conversations: 3, messages: 12, assistant: null },
+    {
+      distributorId: 'd-1',
+      name: 'Florchi Gas',
+      logoUrl: null,
+      conversations: 82,
+      messages: 667,
+      assistant: assistantMetrics(),
+    },
+    { distributorId: 'd-2', name: 'Gas del Sur', logoUrl: null, conversations: 3, messages: 12, assistant: null },
   ],
   ...over,
 });

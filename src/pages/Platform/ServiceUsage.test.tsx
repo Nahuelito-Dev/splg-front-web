@@ -20,6 +20,7 @@ function row(over: Record<string, unknown> = {}) {
   return {
     distributorId: 'c1',
     name: 'Distribuidora Demo',
+    logoUrl: null,
     readings: 14,
     costUsd: 0.2453,
     monthlyBudgetUsd: 2,
@@ -85,5 +86,21 @@ describe('Uso y costo de servicios', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Mes anterior' }));
     expect(state.month).toHaveBeenLastCalledWith(shiftMonth(month, -1));
     expect(screen.getByRole('button', { name: 'Mes siguiente' })).toBeEnabled();
+  });
+
+  it('cada empresa con su logo si la API lo manda', () => {
+    const LOGO = 'https://fotos.test/logo-demo.png';
+    state.usage = usage([row({ logoUrl: LOGO }), row({ distributorId: 'c2', name: 'Gas Sur' })]);
+    const { container } = renderPage(<ServiceUsage />, { url: '/platform/service-usage' });
+    expect(container.querySelectorAll('img')).toHaveLength(1);
+    expect(container.querySelector(`img[src="${LOGO}"]`)).not.toBeNull();
+    // La que no tiene logo conserva sus iniciales.
+    expect(screen.getByText('GS')).toBeInTheDocument();
+  });
+
+  it('sin logo quedan las iniciales de la empresa', () => {
+    const { container } = renderPage(<ServiceUsage />, { url: '/platform/service-usage' });
+    expect(container.querySelector('img')).toBeNull();
+    expect(screen.getByText('DD')).toBeInTheDocument();
   });
 });

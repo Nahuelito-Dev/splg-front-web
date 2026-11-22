@@ -25556,6 +25556,8 @@ export interface components {
       userId: string;
       /** @example Ana Pérez */
       fullName: string | null;
+      /** @description Foto de perfil: URL firmada de S3 de corta vigencia, o null si no tiene */
+      photoUrl: string | null;
     };
     SupportSessionResponseDto: {
       /** Format: uuid */
@@ -25718,6 +25720,8 @@ export interface components {
       /** Format: uuid */
       distributorId: string;
       distributorName: string;
+      /** @description Logo de la empresa del ticket: URL firmada de S3 de corta vigencia. Sólo para la plataforma, en la lista y la ficha de tickets; null si la empresa no tiene logo, si quien pide es la empresa o en el ticket que viaja dentro de una conversación */
+      distributorLogoUrl: string | null;
       /** @enum {string} */
       category: 'billing' | 'technical' | 'module' | 'data' | 'account' | 'other';
       /**
@@ -27336,6 +27340,8 @@ export interface components {
       distributorId: string;
       /** @example Gas del Sur */
       name: string;
+      /** @description Logo de la empresa: URL firmada de S3 de corta vigencia, o null si no tiene */
+      logoUrl: string | null;
       /** @description Conversaciones con clientes y choferes creadas en el período */
       conversations: number;
       /** @description Mensajes visibles de personas en esas conversaciones (sólo el conteo) */
@@ -27809,6 +27815,8 @@ export interface components {
       distributorId: string;
       /** @example Gas del Norte */
       name: string;
+      /** @description Logo de la empresa: URL firmada de S3 de corta vigencia, o null si no tiene */
+      logoUrl: string | null;
       /** @example 41 */
       readings: number;
       /** @example 0.318204 */
@@ -27847,6 +27855,8 @@ export interface components {
       actorUserId: string | null;
       /** @example Soporte Plataforma */
       actorName: string | null;
+      /** @description Foto de perfil de quien lo hizo: URL firmada de S3 de corta vigencia, o null si no tiene (o no hay actor) */
+      actorPhotoUrl: string | null;
       /** @example super_admin */
       actorRole: string | null;
       /** @example PATCH */

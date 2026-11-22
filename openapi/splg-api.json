@@ -80072,11 +80072,17 @@
                         "type": "string",
                         "nullable": true,
                         "example": "Ana Pérez"
+                    },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Foto de perfil: URL firmada de S3 de corta vigencia, o null si no tiene"
                     }
                 },
                 "required": [
                     "userId",
-                    "fullName"
+                    "fullName",
+                    "photoUrl"
                 ]
             },
             "SupportSessionResponseDto": {
@@ -80602,6 +80608,11 @@
                     "distributorName": {
                         "type": "string"
                     },
+                    "distributorLogoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Logo de la empresa del ticket: URL firmada de S3 de corta vigencia. Sólo para la plataforma, en la lista y la ficha de tickets; null si la empresa no tiene logo, si quien pide es la empresa o en el ticket que viaja dentro de una conversación"
+                    },
                     "category": {
                         "type": "string",
                         "enum": [
@@ -80706,6 +80717,7 @@
                     "lastMessage",
                     "distributorId",
                     "distributorName",
+                    "distributorLogoUrl",
                     "category",
                     "conversationId",
                     "origin",
@@ -85167,6 +85179,11 @@
                         "type": "string",
                         "example": "Gas del Sur"
                     },
+                    "logoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Logo de la empresa: URL firmada de S3 de corta vigencia, o null si no tiene"
+                    },
                     "conversations": {
                         "type": "number",
                         "description": "Conversaciones con clientes y choferes creadas en el período"
@@ -85188,6 +85205,7 @@
                 "required": [
                     "distributorId",
                     "name",
+                    "logoUrl",
                     "conversations",
                     "messages",
                     "assistant"
@@ -86113,6 +86131,11 @@
                         "type": "string",
                         "example": "Gas del Norte"
                     },
+                    "logoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Logo de la empresa: URL firmada de S3 de corta vigencia, o null si no tiene"
+                    },
                     "readings": {
                         "type": "number",
                         "example": 41
@@ -86138,6 +86161,7 @@
                 "required": [
                     "distributorId",
                     "name",
+                    "logoUrl",
                     "readings",
                     "costUsd",
                     "monthlyBudgetUsd",
@@ -86204,6 +86228,11 @@
                         "nullable": true,
                         "example": "Soporte Plataforma"
                     },
+                    "actorPhotoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Foto de perfil de quien lo hizo: URL firmada de S3 de corta vigencia, o null si no tiene (o no hay actor)"
+                    },
                     "actorRole": {
                         "type": "string",
                         "nullable": true,
@@ -86257,6 +86286,7 @@
                     "kind",
                     "actorUserId",
                     "actorName",
+                    "actorPhotoUrl",
                     "actorRole",
                     "method",
                     "resource",

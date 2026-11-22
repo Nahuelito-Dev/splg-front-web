@@ -14,7 +14,7 @@ interface Props {
   /** El subtítulo es un id, una patente o un código: va en mono. */
   monoSubtitle?: boolean;
   /** Foto del back (`photoUrl`): reemplaza al avatar o al ícono; si no hay o no carga, queda lo de siempre. */
-  photo?: { kind: PhotoKind; id: string; url: string | null | undefined };
+  photo?: { kind: PhotoKind; id: string; url: string | null | undefined; renewable?: boolean };
   /** Persona cuya foto no viene en la fila: se pide por id (usuario o legajo) y, sin foto, quedan las iniciales. */
   person?: { userId?: string | null; employeeId?: string | null; deliveryId?: string | null };
 }

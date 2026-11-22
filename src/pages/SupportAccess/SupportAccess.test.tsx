@@ -52,13 +52,16 @@ vi.mock('../../utils/notifications', () => ({
   notify: { success: q.success, error: vi.fn() },
 }));
 
+const photoLink = vi.hoisted(() => vi.fn());
+vi.mock('../../services/api/photos', () => ({ getPhotoLink: photoLink }));
+
 import { SupportAccess } from './SupportAccess';
 
 const session = (over: Partial<SupportSession> = {}): SupportSession => ({
   id: 's-1',
   distributorId: 'd-1',
   distributorName: 'Gas Norte',
-  requestedBy: { userId: 'u-1', fullName: 'Soporte Uno' },
+  requestedBy: { userId: 'u-1', fullName: 'Soporte Uno', photoUrl: null },
   kind: 'consented',
   status: 'pending',
   reason: 'El tablero de despacho no muestra los pedidos de hoy',
@@ -173,5 +176,38 @@ describe('SupportAccess', () => {
     renderPage(<SupportAccess />, { url: '/support-access?session=s-1', path: '/support-access' });
     expect(screen.getByRole('dialog', { name: 'Acceso de soporte' })).toBeInTheDocument();
     expect(screen.getByText('Qué miró')).toBeInTheDocument();
+  });
+
+  describe('la foto de quien del soporte pidió el acceso', () => {
+    const PHOTO = 'https://fotos.test/soporte-uno.jpg?X-Amz-Signature=abc';
+    const withPhoto = () =>
+      session({ status: 'ended', requestedBy: { userId: 'u-1', fullName: 'Soporte Uno', photoUrl: PHOTO } });
+
+    it('se ve en el historial si la API la manda', () => {
+      q.pending = [];
+      q.all = [withPhoto()];
+      const { container } = open();
+      expect(container.querySelector(`img[src="${PHOTO}"]`)).not.toBeNull();
+    });
+
+    it('sin foto quedan las iniciales', () => {
+      q.pending = [];
+      q.all = [session({ status: 'ended' })];
+      const { container } = open();
+      expect(container.querySelector('img')).toBeNull();
+      expect(screen.getByText('SU')).toBeInTheDocument();
+    });
+
+    it('si la URL venció no se le pide a la API (la cuenta es de la plataforma: sería un 404): quedan las iniciales', () => {
+      q.pending = [];
+      q.all = [withPhoto()];
+      const { container } = open();
+      const img = container.querySelector('img');
+      if (!img) throw new Error('Sin la foto');
+      fireEvent.error(img);
+      expect(photoLink).not.toHaveBeenCalled();
+      expect(container.querySelector('img')).toBeNull();
+      expect(screen.getByText('SU')).toBeInTheDocument();
+    });
   });
 });

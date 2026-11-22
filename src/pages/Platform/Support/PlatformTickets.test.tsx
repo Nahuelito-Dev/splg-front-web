@@ -63,4 +63,23 @@ describe('PlatformTickets: la cola de la plataforma', () => {
     fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar' }), { target: { value: 'T-000123' } });
     await waitFor(() => expect(list).toHaveBeenLastCalledWith(expect.objectContaining({ q: 'T-000123' })));
   });
+
+  it('cada ticket con el logo de su empresa si la API lo manda; sin logo, las iniciales de la empresa', async () => {
+    const LOGO = 'https://fotos.test/gas-norte.png';
+    list.mockImplementation(() =>
+      Promise.resolve({
+        items: [
+          ticket({ id: 't-1', subject: 'Con logo', distributorLogoUrl: LOGO }),
+          ticket({ id: 't-2', subject: 'Sin logo', distributorId: 'd-2', distributorName: 'Florchi Gas' }),
+        ],
+        total: 2,
+        counts: COUNTS,
+      }),
+    );
+    const { container } = show();
+    expect(await screen.findByText('Con logo')).toBeInTheDocument();
+    expect(container.querySelectorAll('img')).toHaveLength(1);
+    expect(container.querySelector(`img[src="${LOGO}"]`)).not.toBeNull();
+    expect(screen.getByText('FG')).toBeInTheDocument();
+  });
 });

@@ -152,4 +152,13 @@ describe('useRenewablePhoto', () => {
     expect(result.current.failed).toBe(false);
     expect(calls).toHaveLength(1);
   });
+
+  it('con `renewable` en false no pide nada: si la imagen falla queda como error (respaldo)', () => {
+    answers = [gives(SIGNED_NEW)];
+    const { result } = renderHook(() => useRenewablePhoto('user', 'u1', SIGNED_OLD, false));
+    expect(result.current.src).toBe(SIGNED_OLD);
+    act(() => result.current.handleError());
+    expect(calls).toEqual([]);
+    expect(result.current.failed).toBe(true);
+  });
 });

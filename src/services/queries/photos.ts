@@ -29,6 +29,9 @@ const AFFECTED: Record<PhotoKind, readonly (readonly string[])[]> = {
     queryKeys.admins.all,
     queryKeys.cars.all,
     queryKeys.employees.all,
+    queryKeys.supportSessions.all,
+    queryKeys.supportAccess.all,
+    queryKeys.platformConsole.all,
     PEOPLE_PHOTOS_KEY,
   ],
   car: [
@@ -47,7 +50,13 @@ const AFFECTED: Record<PhotoKind, readonly (readonly string[])[]> = {
     queryKeys.purchaseReceipts.all,
     queryKeys.cylinders.all,
   ],
-  distributor: [queryKeys.distributors.all, queryKeys.platformConsole.all, queryKeys.companyTheme.all],
+  distributor: [
+    queryKeys.distributors.all,
+    queryKeys.platformConsole.all,
+    queryKeys.companyTheme.all,
+    queryKeys.supportChat.all,
+    queryKeys.chatMetrics.all,
+  ],
   incident: [queryKeys.incidents.all],
   claim: [queryKeys.claims.all],
   employee: [queryKeys.employees.all, PEOPLE_PHOTOS_KEY],
@@ -107,9 +116,11 @@ export const isSignedPhotoUrl = (url: string | null | undefined): boolean => Boo
  * si el `<img>` falla (o ya pasó su `expiresAt`) se pide una nueva con `GET .../photo?modo=url`, una sola vez por
  * URL. Nunca se arma ni se guarda una URL de S3 en el panel. Cuando el back manda otra `photoUrl` (se subió o se
  * quitó la foto, o se refrescó la lista), lo renovado se descarta solo. Si la renovación dice que ya no hay foto
- * (`none`) o devuelve la misma URL que falló (`failed`: una URL externa muerta), no se insiste.
+ * (`none`) o devuelve la misma URL que falló (`failed`: una URL externa muerta), no se insiste. Con `renewable` en
+ * `false` (quien mira no puede pedirle esa foto al back: sería un 404 seguro) no se pide nada: si el `<img>` falla,
+ * queda el respaldo hasta que la lista se refresque y traiga otra URL.
  */
-export const useRenewablePhoto = (kind: PhotoKind, id: string, url: string | null | undefined) => {
+export const useRenewablePhoto = (kind: PhotoKind, id: string, url: string | null | undefined, renewable = true) => {
   const [renewed, setRenewed] = useState<Renewed | null>(null);
   const [failedFor, setFailedFor] = useState<string | null | undefined>(undefined);
   const [noneFor, setNoneFor] = useState<string | null | undefined>(undefined);
@@ -149,13 +160,13 @@ export const useRenewablePhoto = (kind: PhotoKind, id: string, url: string | nul
   /** `<img onError>`: la primera vez se renueva la URL; si vuelve a fallar, la foto no se pudo cargar. */
   const handleError = useCallback(() => {
     if (running.current) return;
-    if (tried.current === url) {
+    if (!renewable || tried.current === url) {
       setFailedFor(url);
       return;
     }
     tried.current = url;
     void renew();
-  }, [url, renew]);
+  }, [url, renew, renewable]);
 
   /** Antes de ampliar: si la URL renovada ya venció se pide otra. */
   const renewIfExpired = useCallback(() => {

@@ -23,11 +23,22 @@ interface Props {
   /** Personas en círculo, cosas (vehículos, productos, empresas) en recuadro. */
   shape?: 'circle' | 'square';
   className?: string;
+  /** `false` si quien mira no puede pedir esa foto al back: al vencer la URL queda el `fallback`, sin pedido. */
+  renewable?: boolean;
 }
 
 /** Miniatura de una foto del back. Decorativa: el nombre siempre está escrito al lado. */
-export const PhotoThumb = ({ kind, id, url, fallback, size = 'md', shape = 'circle', className }: Props) => {
-  const photo = useRenewablePhoto(kind, id, url);
+export const PhotoThumb = ({
+  kind,
+  id,
+  url,
+  fallback,
+  size = 'md',
+  shape = 'circle',
+  className,
+  renewable = true,
+}: Props) => {
+  const photo = useRenewablePhoto(kind, id, url, renewable);
   if (!photo.src || photo.failed) return <>{fallback}</>;
   return (
     <img

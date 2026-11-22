@@ -35,6 +35,16 @@ const CASES = [
       queryKeys.cylinders.all,
     ],
   },
+  // Las pantallas de plataforma: quién pidió un acceso de soporte y el actor de la auditoría.
+  {
+    kind: 'user',
+    keys: [queryKeys.supportSessions.all, queryKeys.supportAccess.all, queryKeys.platformConsole.all],
+  },
+  // El logo en el uso de servicios (consola), los tickets del soporte y el uso del chat por empresa.
+  {
+    kind: 'distributor',
+    keys: [queryKeys.platformConsole.all, queryKeys.supportChat.all, queryKeys.chatMetrics.all],
+  },
 ] as const;
 
 describe.each(CASES)('foto de $kind: qué se refresca', ({ kind, keys }) => {

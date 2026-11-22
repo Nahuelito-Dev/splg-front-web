@@ -44,6 +44,7 @@ export const ticket = (over: Partial<Ticket> = {}): Ticket => ({
   lastReadSeq: 0,
   distributorId: 'd-1',
   distributorName: 'Gas Norte',
+  distributorLogoUrl: null,
   category: 'billing',
   conversationId: 'c-t1',
   origin: null,
