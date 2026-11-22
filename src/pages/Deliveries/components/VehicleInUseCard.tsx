@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowRightLeft, ShieldAlert } from 'lucide-react';
-import { Button, Card, EmptyState, LoadingState, CardHeader } from '../../../common/components/ui';
+import { Button, Card, EmptyState, LoadingState, CardHeader, PhotoThumb } from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
 import { carIcon } from '../../Cars/components/carIcon';
 import { useReleaseVehicle, useVehicleInUse } from '../../../services/queries/fleet';
@@ -88,11 +88,21 @@ export const VehicleInUseCard = ({ deliveryId, canWrite, writeHint }: Props) => 
       ) : vehicle ? (
         <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-outline p-3">
           <div className="flex items-center gap-3">
-            <span
-              aria-hidden="true"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary-strong [&_svg]:h-5 [&_svg]:w-5"
-            >
-              <Icon strokeWidth={1.8} />
+            <span className="h-12 w-12 shrink-0">
+              <PhotoThumb
+                kind="car"
+                id={vehicle.carId}
+                url={vehicle.photoUrl}
+                size="fill"
+                fallback={
+                  <span
+                    aria-hidden="true"
+                    className="flex h-full w-full items-center justify-center rounded-full bg-primary-soft text-primary-strong [&_svg]:h-5 [&_svg]:w-5"
+                  >
+                    <Icon strokeWidth={1.8} />
+                  </span>
+                }
+              />
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-ink">

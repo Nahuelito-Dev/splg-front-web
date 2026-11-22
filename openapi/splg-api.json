@@ -52551,12 +52551,18 @@
                         "type": "string",
                         "example": "Ford Cargo 1722",
                         "description": "Marca y modelo; si no hay, el tipo de vehículo o la patente"
+                    },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Foto del vehículo: URL firmada de corta vigencia, o null"
                     }
                 },
                 "required": [
                     "id",
                     "plate",
-                    "label"
+                    "label",
+                    "photoUrl"
                 ]
             },
             "FleetTaskBoardAssigneeDto": {
@@ -53555,6 +53561,11 @@
                         "nullable": true,
                         "example": "Moto"
                     },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Foto del vehículo: URL firmada de corta vigencia, o null"
+                    },
                     "isLocked": {
                         "type": "boolean",
                         "description": "Si el vehículo está inhabilitado por documentación vencida (CU-136/137)"
@@ -53575,6 +53586,7 @@
                     "carBrand",
                     "carModel",
                     "carTypeCar",
+                    "photoUrl",
                     "isLocked",
                     "assignedAt",
                     "note"
@@ -53620,6 +53632,11 @@
                         "type": "string",
                         "nullable": true
                     },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Foto del vehículo: URL firmada de corta vigencia, o null"
+                    },
                     "deliveryId": {
                         "type": "string",
                         "format": "uuid"
@@ -53648,6 +53665,7 @@
                     "carPatent",
                     "carBrand",
                     "carModel",
+                    "photoUrl",
                     "deliveryId",
                     "driverName",
                     "assignedAt",
@@ -65414,13 +65432,19 @@
                     "model": {
                         "type": "string",
                         "nullable": true
+                    },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Foto del vehículo: URL firmada de corta vigencia, o null (sin foto o vehículo dado de baja)"
                     }
                 },
                 "required": [
                     "car_id",
                     "patent",
                     "brand",
-                    "model"
+                    "model",
+                    "photoUrl"
                 ]
             },
             "DriverLocationDto": {
@@ -75641,6 +75665,11 @@
                         "type": "number",
                         "nullable": true
                     },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Foto del vehículo: URL firmada de corta vigencia, o null"
+                    },
                     "available": {
                         "type": "boolean"
                     },
@@ -75656,6 +75685,7 @@
                     "description",
                     "capacityKg",
                     "capacityUnits",
+                    "photoUrl",
                     "available",
                     "busySheetId"
                 ]

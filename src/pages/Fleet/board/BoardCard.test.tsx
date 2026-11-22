@@ -6,11 +6,11 @@ import { card } from './boardFixtures';
 
 afterEach(cleanup);
 
-const renderCard = () =>
+const renderCard = (over: Partial<Parameters<typeof card>[0]> = {}) =>
   render(
     <ul>
       <BoardCard
-        card={card({ id: 'c1' })}
+        card={card({ id: 'c1', ...over })}
         column="forecast"
         canMove
         dragging={false}
@@ -43,5 +43,20 @@ describe('BoardCard: foto del responsable', () => {
     const { container } = renderCard();
     expect(container.querySelector('img')).toBeNull();
     expect(screen.getByText('PJ')).toBeInTheDocument();
+  });
+});
+
+describe('BoardCard: foto del vehículo', () => {
+  it('muestra la miniatura del vehículo de la tarjeta', () => {
+    const { container } = renderCard({
+      car: { id: 'car-1', plate: 'AB123CD', label: 'Ford Cargo', photoUrl: 'https://fotos.test/cargo.jpg' },
+    });
+    expect(container.querySelector('img[src="https://fotos.test/cargo.jpg"]')).not.toBeNull();
+  });
+
+  it('sin foto queda el ícono de auto', () => {
+    const { container } = renderCard();
+    expect(container.querySelector('img[src*="cargo"]')).toBeNull();
+    expect(container.querySelector('[data-testid="DirectionsCarIcon"]')).not.toBeNull();
   });
 });

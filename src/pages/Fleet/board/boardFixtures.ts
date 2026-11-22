@@ -9,7 +9,7 @@ export const card = (over: Partial<FleetTaskBoardCard> & { id: string }): FleetT
   dueAt: '2026-12-01T00:00:00.000Z',
   dueKm: null,
   scheduledAt: null,
-  car: { id: 'car-1', plate: 'AB123CD', label: 'Ford Cargo' },
+  car: { id: 'car-1', plate: 'AB123CD', label: 'Ford Cargo', photoUrl: null },
   assignee: { employeeId: 'e-1', name: 'Pérez, Juan' },
   attachmentsCount: 0,
   cost: null,

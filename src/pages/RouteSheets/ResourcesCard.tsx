@@ -1,5 +1,5 @@
 import { Truck, UserRound } from 'lucide-react';
-import { Badge, Card, CardHeader } from '../../common/components/ui';
+import { Badge, Card, CardHeader, PhotoThumb } from '../../common/components/ui';
 import type { RoutePlanResources, RouteSheet } from '../../services/api/types';
 import type { Label } from '../../utils/statusLabels';
 import { sheetTitle } from './routeSheetLabels';
@@ -47,16 +47,19 @@ export const ResourcesCard = ({ resources, sheets }: { resources: RoutePlanResou
         <ul className="divide-y divide-outline-soft rounded-xl border border-outline-soft">
           {resources.cars.map((car) => (
             <li key={car.carId} className="flex items-center justify-between gap-2 px-3 py-2 text-[13px]">
-              <span className="min-w-0">
-                <span className="block truncate font-mono text-ink">{car.patent ?? 'Sin patente'}</span>
-                <span className="block truncate text-xs text-muted">
-                  {[
-                    car.description,
-                    car.capacityUnits ? `${car.capacityUnits} garrafas` : null,
-                    car.capacityKg ? `${car.capacityKg} kg` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' · ') || 'Sin capacidad cargada'}
+              <span className="flex min-w-0 items-center gap-2">
+                <PhotoThumb kind="car" id={car.carId} url={car.photoUrl} size="md" shape="square" fallback={null} />
+                <span className="min-w-0">
+                  <span className="block truncate font-mono text-ink">{car.patent ?? 'Sin patente'}</span>
+                  <span className="block truncate text-xs text-muted">
+                    {[
+                      car.description,
+                      car.capacityUnits ? `${car.capacityUnits} garrafas` : null,
+                      car.capacityKg ? `${car.capacityKg} kg` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || 'Sin capacidad cargada'}
+                  </span>
                 </span>
               </span>
               <Badge label={stateOf(car.available, car.busySheetId, sheets)} />

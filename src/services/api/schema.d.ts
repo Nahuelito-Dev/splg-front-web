@@ -14207,6 +14207,8 @@ export interface components {
        * @example Ford Cargo 1722
        */
       label: string;
+      /** @description Foto del vehículo: URL firmada de corta vigencia, o null */
+      photoUrl: string | null;
     };
     FleetTaskBoardAssigneeDto: {
       /** Format: uuid */
@@ -14652,6 +14654,8 @@ export interface components {
       carModel: string | null;
       /** @example Moto */
       carTypeCar: string | null;
+      /** @description Foto del vehículo: URL firmada de corta vigencia, o null */
+      photoUrl: string | null;
       /** @description Si el vehículo está inhabilitado por documentación vencida (CU-136/137) */
       isLocked: boolean;
       /** Format: date-time */
@@ -14675,6 +14679,8 @@ export interface components {
       carPatent: string | null;
       carBrand: string | null;
       carModel: string | null;
+      /** @description Foto del vehículo: URL firmada de corta vigencia, o null */
+      photoUrl: string | null;
       /** Format: uuid */
       deliveryId: string;
       driverName: string | null;
@@ -19557,6 +19563,8 @@ export interface components {
       patent: string | null;
       brand: string | null;
       model: string | null;
+      /** @description Foto del vehículo: URL firmada de corta vigencia, o null (sin foto o vehículo dado de baja) */
+      photoUrl: string | null;
     };
     DriverLocationDto: {
       /** @example -34.6037 */
@@ -23791,6 +23799,8 @@ export interface components {
       description: string | null;
       capacityKg: number | null;
       capacityUnits: number | null;
+      /** @description Foto del vehículo: URL firmada de corta vigencia, o null */
+      photoUrl: string | null;
       available: boolean;
       /** Format: uuid */
       busySheetId: string | null;

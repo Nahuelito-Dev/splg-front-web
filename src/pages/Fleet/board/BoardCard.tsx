@@ -2,7 +2,7 @@ import AttachFile from '@mui/icons-material/AttachFile';
 import DirectionsCar from '@mui/icons-material/DirectionsCar';
 import Event from '@mui/icons-material/Event';
 import type { DragEvent } from 'react';
-import { cx, MoreActionsMenu, PersonAvatar, type MenuAction } from '../../../common/components/ui';
+import { cx, MoreActionsMenu, PersonAvatar, PhotoThumb, type MenuAction } from '../../../common/components/ui';
 import type { FleetTaskBoardCard } from '../../../services/api/types';
 import { formatCurrency, formatDay, formatNumber, formatScheduledDay } from '../../../utils/format';
 import { BOARD_COLUMNS, columnLabel, type BoardColumnId } from './boardModel';
@@ -80,7 +80,14 @@ export const BoardCard = ({
       </div>
       {card.car && (
         <p className="mt-1.5 flex items-center gap-1.5 text-[12px] text-ink-2">
-          <DirectionsCar aria-hidden="true" fontSize="inherit" className="text-muted" />
+          <PhotoThumb
+            kind="car"
+            id={card.car.id}
+            url={card.car.photoUrl}
+            size="sm"
+            shape="square"
+            fallback={<DirectionsCar aria-hidden="true" fontSize="inherit" className="text-muted" />}
+          />
           <span className="truncate">{card.car.plate ? `${card.car.label} · ${card.car.plate}` : card.car.label}</span>
         </p>
       )}

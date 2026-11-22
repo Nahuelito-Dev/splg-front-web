@@ -100,6 +100,7 @@ export const planDay = (over: Partial<RoutePlanDay> = {}): RoutePlanDay => ({
         description: 'Camioneta',
         capacityKg: 950,
         capacityUnits: null,
+        photoUrl: null,
         available: true,
         busySheetId: null,
       },

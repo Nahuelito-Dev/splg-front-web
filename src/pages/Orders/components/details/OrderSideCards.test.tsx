@@ -207,3 +207,22 @@ describe('OrderSideCards: modalidad express', () => {
     expect(screen.getByText(/descontado/)).toBeInTheDocument();
   });
 });
+
+describe('OrderSideCards: foto del vehículo', () => {
+  const withVehicle = (photoUrl: string | null) =>
+    order({
+      delivery_id: 'd-1',
+      delivery_name: 'Beto',
+      vehicle: { car_id: 'car-1', patent: 'AB123CD', brand: 'Ford', model: 'Cargo', photoUrl },
+    });
+
+  it('muestra la foto del vehículo en la sección del chofer', () => {
+    const { container } = renderCards(withVehicle('https://fotos.test/cargo.jpg'));
+    expect(container.querySelector('img[src="https://fotos.test/cargo.jpg"]')).not.toBeNull();
+  });
+
+  it('sin foto no hay imagen', () => {
+    const { container } = renderCards(withVehicle(null));
+    expect(container.querySelector('img[src*="cargo"]')).toBeNull();
+  });
+});
