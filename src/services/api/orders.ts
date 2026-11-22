@@ -4,7 +4,7 @@ import { idempotencyHeaders } from './idempotency';
 import type {
   CancelOrderBody,
   CodigoDeEntrega,
-  ConfirmDeliveryBody,
+  ConfirmDeliveryV3Body,
   ConfirmTransferBody,
   CreateOrderBody,
   CustomerPurchaseStats,
@@ -153,23 +153,31 @@ export const updateOrderStatus = async (
   return data;
 };
 
+const V3 = { baseURL: env.apiUrlV3 };
+
 /**
- * GET /orders/:id/delivery-code: el código secreto de la prueba de entrega
- * con QR. Sólo existe si el pedido ya fue aceptado; sensible, se pide bajo
- * demanda (nunca se precarga con el resto de la ficha).
+ * GET /v3/orders/:id/delivery-code: el código de 6 dígitos que ve el cliente y tipea el chofer. Sólo existe con el
+ * pedido aceptado o en camino; sensible, se pide bajo demanda (nunca se precarga con el resto de la ficha).
  */
 export const getOrderDeliveryCode = async (id: string): Promise<CodigoDeEntrega> => {
-  const { data } = await http.get<CodigoDeEntrega>(`/orders/${id}/delivery-code`);
+  const { data } = await http.get<CodigoDeEntrega>(`/orders/${id}/delivery-code`, V3);
   return data;
 };
 
-/** POST /orders/:id/confirm-delivery: confirma la entrega con el código leído del QR del chofer. */
+/** POST /v3/orders/:id/delivery-code/regenerate: un código nuevo (los intentos vuelven a 0). Sólo con el pedido en camino. */
+export const regenerateOrderDeliveryCode = async (id: string): Promise<CodigoDeEntrega> => {
+  const { data } = await http.post<CodigoDeEntrega>(`/orders/${id}/delivery-code/regenerate`, undefined, V3);
+  return data;
+};
+
+/** POST /v3/orders/:id/confirm-delivery: el admin confirma la entrega sin el chofer, con motivo. */
 export const confirmOrderDelivery = async (
   id: string,
-  body: ConfirmDeliveryBody,
+  body: ConfirmDeliveryV3Body,
   idempotencyKey: string,
 ): Promise<Order> => {
   const { data } = await http.post<Order>(`/orders/${id}/confirm-delivery`, body, {
+    ...V3,
     headers: idempotencyHeaders(idempotencyKey),
   });
   return data;

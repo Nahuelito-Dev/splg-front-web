@@ -11,6 +11,7 @@ import {
   getDeliveryOptions,
   getOrder,
   getOrderDeliveryCode,
+  regenerateOrderDeliveryCode,
   getOrderPaymentState,
   getOrderStatusHistory,
   listAvailableOrders,
@@ -30,7 +31,7 @@ import {
 } from '../api/orders';
 import type {
   CancelOrderBody,
-  ConfirmDeliveryBody,
+  ConfirmDeliveryV3Body,
   ConfirmTransferBody,
   CreateOrderBody,
   MotivoDeCobroBody,
@@ -293,11 +294,15 @@ export const useUpdateOrderStatus = () => {
  */
 export const useOrderDeliveryCode = () => useMutation({ mutationFn: (id: string) => getOrderDeliveryCode(id) });
 
-/** POST /orders/:id/confirm-delivery: confirma la entrega en nombre del cliente. */
+/** POST /v3/orders/:id/delivery-code/regenerate: código nuevo cuando el chofer agotó los intentos. */
+export const useRegenerateOrderDeliveryCode = () =>
+  useMutation({ mutationFn: (id: string) => regenerateOrderDeliveryCode(id) });
+
+/** POST /v3/orders/:id/confirm-delivery: el admin confirma la entrega sin el chofer, con motivo. */
 export const useConfirmOrderDelivery = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body, scope }: { id: string; body: ConfirmDeliveryBody; scope: string }) =>
+    mutationFn: ({ id, body, scope }: { id: string; body: ConfirmDeliveryV3Body; scope: string }) =>
       runIntent(queryClient, scope, { id, body }, (key) => confirmOrderDelivery(id, body, key)),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),
   });

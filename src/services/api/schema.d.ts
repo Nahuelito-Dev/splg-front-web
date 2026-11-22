@@ -5324,8 +5324,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Obtener el código secreto de entrega (para el QR del chofer)
-     * @description El chofer renderiza este código como QR y lo muestra al cliente al llegar. Solo existe si el pedido ya fue aceptado. El chofer solo puede ver el de SUS pedidos. Trae `attempts` (códigos incorrectos del cliente) y `blocked` (agotó los 5 intentos: hay que generar un código nuevo). El chofer también se entera en vivo por el socket: `order:delivery-code-failed` en cada error y `order:delivery-code-blocked` al bloquearse.
+     * Obtener el código secreto de entrega (admin)
+     * @description Sólo admin y super admin (soporte): el chofer ya no puede leerlo (403) porque el código lo ve el cliente y se lo dice al chofer (`GET /api/v3/orders/:id/delivery-code`). Solo existe si el pedido ya fue aceptado. Trae `attempts` (códigos incorrectos) y `blocked` (agotó los 5 intentos: hay que generar un código nuevo).
      */
     get: operations['OrderController_getDeliveryCode'];
     put?: never;
@@ -5346,8 +5346,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Confirmar entrega escaneando el QR del chofer (prueba anti-fraude)
-     * @description El cliente escanea el QR que muestra el chofer y envía el código leído. Si coincide con `order.deliveryCode` y el pedido está ON_THE_WAY, se marca DELIVERED. Idempotente vía header `Idempotency-Key`: reintentos de red no re-procesan la entrega. Si lo confirma un admin/super_admin, `reason` es obligatorio (10 a 500 caracteres, 400 si falta) y queda en el historial de estados y en la auditoría; para el cliente no se pide y se ignora.
+     * Confirmar la entrega con el código (admin)
+     * @description Sólo admin y super admin: el cliente ya no puede confirmar (403); la entrega la confirma el chofer con el código del cliente en `POST /api/v3/orders/:id/confirm-delivery`. Si coincide con `order.deliveryCode` y el pedido está ON_THE_WAY, se marca DELIVERED. Idempotente vía header `Idempotency-Key`: reintentos de red no re-procesan la entrega. Si lo confirma un admin/super_admin, `reason` es obligatorio (10 a 500 caracteres, 400 si falta) y queda en el historial de estados y en la auditoría; para el cliente no se pide y se ignora.
      */
     post: operations['OrderController_confirmDelivery'];
     delete?: never;
@@ -5725,7 +5725,7 @@ export interface paths {
     put?: never;
     /**
      * Generar un código de entrega nuevo
-     * @description El chofer asignado (o un admin) reemplaza el código del pedido en camino por uno de 6 dígitos y los intentos fallidos del cliente vuelven a 0. Sirve cuando el cliente agotó los intentos (`DELIVERY_CODE_BLOQUEADO`). Queda en la auditoría de datos. El código viejo deja de valer.
+     * @description Sólo un admin (el chofer no puede: el código lo ve el cliente, que lo regenera en `POST /api/v3/orders/:id/delivery-code/regenerate`) reemplaza el código del pedido en camino por uno de 6 dígitos y los intentos fallidos del cliente vuelven a 0. Sirve cuando el cliente agotó los intentos (`DELIVERY_CODE_BLOQUEADO`). Queda en la auditoría de datos. El código viejo deja de valer.
      */
     post: operations['DeliveryCodeV2Controller_regenerate'];
     delete?: never;
@@ -12561,6 +12561,66 @@ export interface paths {
      * @description Deja de mostrar lo que hay hasta ahora en el grupo; si se vuelve a preguntar, aparece de nuevo.
      */
     post: operations['PlatformAssistantLabController_descartar'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/delivery-code': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ver el código de entrega (el que el cliente le dice al chofer)
+     * @description Lo ve el cliente dueño del pedido y el admin, con el pedido aceptado o en camino. El chofer no tiene acceso (403): es el que lo escribe. Trae `attempts` (códigos incorrectos del chofer) y `blocked` (agotó los 5 intentos: hay que generar un código nuevo). Al cliente le llegan por socket `order:delivery-code-failed` (`{orderId, attempts, remaining}`) en cada error del chofer y `order:delivery-code-blocked` (`{orderId}`) al bloquearse.
+     */
+    get: operations['DeliveryCodeV3Controller_getDeliveryCode'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/delivery-code/regenerate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generar un código de entrega nuevo
+     * @description El cliente dueño del pedido (o un admin con permiso de despacho) reemplaza el código del pedido en camino por uno de 6 dígitos; los intentos del chofer vuelven a 0 y el código viejo deja de valer. Sirve cuando se bloqueó (`DELIVERY_CODE_BLOQUEADO`) o se filtró. Queda en la auditoría de datos. Un super admin tiene que mandar `X-Distributor`.
+     */
+    post: operations['DeliveryCodeV3Controller_regenerate'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/confirm-delivery': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirmar la entrega con el código del cliente y la ubicación
+     * @description El chofer asignado escribe el código de 6 dígitos que le dice el cliente y manda su ubicación (`latitude`, `longitude`, `accuracyMeters` opcional). Con el pedido en camino y el código correcto pasa a entregado y queda asentado dónde estaba (punto, precisión, distancia al domicilio), quién confirmó y la hora de la base. Si está más lejos del domicilio que el radio de llegada de la distribuidora no se rechaza: `deliveryConfirmation.outOfRange` queda en `true` y se audita. 5 códigos incorrectos bloquean el código (el cliente genera otro) y a cada error se le avisa al cliente por socket. Un admin entrega mandando SIEMPRE `reason` (10 a 500 caracteres), sin ubicación; el `code` que mande es informativo (no se compara). Pedido ya entregado: responde 200 con el pedido, sin volver a pedir el código ni pisar la confirmación. Idempotente vía header `Idempotency-Key`: el reintento con la misma clave de un código incorrecto responde el mismo error sin sumar otro intento ni volver a avisar al cliente. `deliveryConfirmation.confirmedByUserId` sólo viene para el admin.
+     */
+    post: operations['DeliveryCodeV3Controller_confirm'];
     delete?: never;
     options?: never;
     head?: never;
@@ -19844,6 +19904,7 @@ export interface components {
       /** @enum {string|null} */
       cancelledBy: 'customer' | 'admin' | 'system' | 'driver' | null;
       driver: components['schemas']['DriverDeOrderDto'] | null;
+      deliveryConfirmation: components['schemas']['DeliveryConfirmationDto'] | null;
     };
     OrderItemDto: {
       /** @description ID de la garrafa */
@@ -20272,6 +20333,7 @@ export interface components {
       /** @enum {string|null} */
       cancelledBy: 'customer' | 'admin' | 'system' | 'driver' | null;
       driver: components['schemas']['DriverDeOrderDto'] | null;
+      deliveryConfirmation: components['schemas']['DeliveryConfirmationDto'] | null;
       /**
        * @description `true` si el pedido ya estaba en el destino pedido (reintento o segundo admin): no se tocó nada, ni la nota del pedido ni la incidencia.
        * @example false
@@ -28821,6 +28883,56 @@ export interface components {
        * @example ¿Cómo cargo un chofer nuevo?
        */
       question: string;
+    };
+    DeliveryConfirmationDto: {
+      /**
+       * Format: date-time
+       * @description Hora de la base al confirmar
+       */
+      confirmedAt: string;
+      /** @enum {string|null} */
+      confirmedByRole: 'delivery' | 'admin' | 'super_admin' | null;
+      /**
+       * Format: uuid
+       * @description Usuario que confirmó (el chofer o el admin). Sólo en las respuestas al personal del panel; para el cliente y el chofer, `null`
+       */
+      confirmedByUserId: string | null;
+      /** @description Latitud del chofer al confirmar; null si confirmó un admin */
+      latitude: number | null;
+      longitude: number | null;
+      /** @description Precisión del GPS, en metros */
+      accuracyMeters: number | null;
+      /** @description Metros entre el chofer y el domicilio al confirmar */
+      distanceMeters: number | null;
+      /** @description Confirmó más lejos del domicilio que el radio de llegada de la distribuidora (no se rechaza: se marca) */
+      outOfRange: boolean;
+    };
+    ConfirmDeliveryV3Dto: {
+      /**
+       * @description Código de 6 dígitos que el cliente ve en su app. Obligatorio para el chofer: si no tiene 6 dígitos responde 400 `DELIVERY_CODE_FORMATO` y no cuenta como intento (el formato lo valida el caso de uso, para devolver ese `code`). Para el admin es opcional e informativo: no se compara ni frena la entrega, que sale con `reason`.
+       * @example 482913
+       */
+      code?: string;
+      /**
+       * @description Latitud del chofer al confirmar. Obligatoria para el chofer.
+       * @example -27.3671
+       */
+      latitude?: number;
+      /**
+       * @description Longitud del chofer al confirmar. Obligatoria para el chofer.
+       * @example -55.8961
+       */
+      longitude?: number;
+      /**
+       * @description Precisión del GPS, en metros.
+       * @example 12.5
+       */
+      accuracyMeters?: number;
+      /**
+       * @description Motivo de la entrega. Obligatorio SIEMPRE que confirma un admin o super admin (10 a 500 caracteres; 400 si falta o es corto), mande o no el `code`; el chofer no lo manda.
+       * @example El cliente no tiene celular: confirmó por teléfono
+       */
+      reason?: string;
     };
   };
   responses: never;
@@ -71432,6 +71544,191 @@ export interface operations {
       };
       /** @description No hay preguntas pendientes con ese id en el último año: ya se resolvió o descartó, o no es del soporte de la plataforma (`ASSISTANT_UNANSWERED_NOT_FOUND`) */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DeliveryCodeV3Controller_getDeliveryCode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CodigoDeEntregaResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente, de otro cliente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está aceptado ni en camino (`code: ORDER_WITHOUT_DELIVERY_CODE`): todavía no lo aceptó un chofer, ya se entregó o se canceló */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DeliveryCodeV3Controller_regenerate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CodigoDeEntregaResponseDto'];
+        };
+      };
+      /** @description Super admin sin `X-Distributor` (`code: MISSING_DISTRIBUTOR`) o el id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente, de otro cliente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`): todavía no salió, ya se entregó o se canceló */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DeliveryCodeV3Controller_confirm: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmDeliveryV3Dto'];
+      };
+    };
+    responses: {
+      /** @description Entrega confirmada (o ya estaba entregada) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description Código sin 6 dígitos (`code: DELIVERY_CODE_FORMATO`, no cuenta como intento); faltan o son `null` el código o la ubicación del chofer, o la ubicación está fuera de rango (`code: VALIDATION`); falta el motivo del admin o es corto; código incorrecto (`code: DELIVERY_CODE_INCORRECTO`, con `attempts` y `remaining` en el cuerpo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`) o el código quedó bloqueado por 5 intentos (`code: DELIVERY_CODE_BLOQUEADO`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };

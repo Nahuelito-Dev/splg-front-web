@@ -5,6 +5,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Order } from '../../../../services/api/types';
 import { OrderSideCards } from './OrderSideCards';
 
+vi.mock('../../../../services/api/orders', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getOrderStatusHistory: vi.fn(() =>
+    Promise.resolve([{ id: 'h1', isNote: false, toStatus: 'delivered', reason: 'El cliente llamó para confirmar' }]),
+  ),
+}));
 vi.mock('./OrderRefunds', () => ({ OrderRefunds: () => null }));
 vi.mock('./OrderMercadoPagoPayment', () => ({ OrderMercadoPagoPayment: () => null }));
 
@@ -224,5 +230,88 @@ describe('OrderSideCards: foto del vehículo', () => {
   it('sin foto no hay imagen', () => {
     const { container } = renderCards(withVehicle(null));
     expect(container.querySelector('img[src*="cargo"]')).toBeNull();
+  });
+});
+
+describe('OrderSideCards: confirmación de la entrega', () => {
+  const delivered = (over: Partial<Order>) =>
+    order({
+      status: 'delivered',
+      payment_method: 'cash',
+      payment_url: undefined,
+      actual_delivery_date: '2026-11-18T15:30:00.000Z',
+      ...over,
+    });
+
+  it('confirmada por el chofer: hora, distancia y enlace al mapa', () => {
+    renderCards(
+      delivered({
+        deliveryConfirmation: {
+          confirmedAt: '2026-11-18T15:30:00.000Z',
+          confirmedByRole: 'delivery',
+          confirmedByUserId: 'driver-1',
+          latitude: -27.37,
+          longitude: -55.9,
+          accuracyMeters: 10,
+          distanceMeters: 42.4,
+          outOfRange: false,
+        },
+      }),
+    );
+    expect(screen.getByText(/Confirmada por el chofer a las 12:30, a 42 m del domicilio/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Ver en Google Maps/ })).toHaveAttribute(
+      'href',
+      'https://www.google.com/maps/search/?api=1&query=-27.37,-55.9',
+    );
+    expect(screen.queryByText(/fuera del radio/)).not.toBeInTheDocument();
+  });
+
+  it('muestra la alerta si quedó fuera del radio', () => {
+    renderCards(
+      delivered({
+        deliveryConfirmation: {
+          confirmedAt: '2026-11-18T15:30:00.000Z',
+          confirmedByRole: 'delivery',
+          confirmedByUserId: 'driver-1',
+          latitude: -27.37,
+          longitude: -55.9,
+          accuracyMeters: null,
+          distanceMeters: 480,
+          outOfRange: true,
+        },
+      }),
+    );
+    expect(screen.getByRole('link', { name: /Ver en Google Maps/ })).toHaveAttribute(
+      'href',
+      'https://www.google.com/maps/search/?api=1&query=-27.37,-55.9',
+    );
+    expect(screen.getByRole('alert')).toHaveTextContent('Se confirmó fuera del radio del domicilio');
+  });
+
+  it('confirmada por la distribuidora: muestra el motivo del historial', async () => {
+    renderCards(
+      delivered({
+        deliveryConfirmation: {
+          confirmedAt: '2026-11-18T15:30:00.000Z',
+          confirmedByRole: 'admin',
+          confirmedByUserId: 'admin-1',
+          latitude: null,
+          longitude: null,
+          accuracyMeters: null,
+          distanceMeters: null,
+          outOfRange: false,
+        },
+      }),
+    );
+    expect(
+      await screen.findByText('Confirmada por la distribuidora: El cliente llamó para confirmar'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Confirmada por el chofer/)).not.toBeInTheDocument();
+  });
+
+  it('un pedido viejo, sin los campos nuevos, no muestra nada', () => {
+    renderCards(delivered({}));
+    expect(screen.queryByText(/Confirmada por/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

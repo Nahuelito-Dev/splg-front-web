@@ -14,6 +14,7 @@ import { PaymentLink } from '../PaymentLink';
 import { OrderMiniMap } from './OrderMiniMap';
 import { OrderMercadoPagoPayment } from './OrderMercadoPagoPayment';
 import { OrderRefunds } from './OrderRefunds';
+import { OrderDeliveryConfirmation } from './OrderDeliveryConfirmation';
 import { orderCoordinates } from './orderLocation';
 
 const Section = ({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) => (
@@ -104,6 +105,7 @@ const DeliverySection = ({ order }: { order: Order }) => {
         {zone && <Row label="Zona">{zone.name}</Row>}
         {zone && zone.amount > 0 && <Row label="Recargo">{formatCurrency(zone.amount)}</Row>}
       </dl>
+      <OrderDeliveryConfirmation order={order} />
       {address?.additional_instructions && (
         <p className="mt-3 rounded-lg bg-surface-hover p-2 text-xs text-muted">{address.additional_instructions}</p>
       )}

@@ -198,6 +198,29 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
           <p className="mt-1 break-all font-mono text-lg font-semibold tracking-widest text-ink">
             {actions.revealedCode}
           </p>
+          {actions.codeBlocked ? (
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <p role="alert" className="text-sm text-danger">
+                Código bloqueado: el chofer agotó los intentos.
+              </p>
+              {order.status === 'out_for_delivery' && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<KeyRound />}
+                  loading={actions.pending.regenerate}
+                  blockedReason={blockedReason}
+                  onClick={() => void actions.regenerateDeliveryCode()}
+                >
+                  Generar otro código
+                </Button>
+              )}
+            </div>
+          ) : (
+            actions.codeAttempts > 0 && (
+              <p className="mt-1 text-xs text-muted">Intentos fallidos del chofer: {actions.codeAttempts}</p>
+            )
+          )}
         </div>
       )}
 
@@ -234,11 +257,10 @@ export const OrderDetailsToolbar = ({ order }: { order: Order }) => {
       <ConfirmDeliveryModal
         open={actions.modal === 'confirm'}
         onClose={actions.close}
-        onConfirm={actions.confirmDeliveryWithCode}
+        onConfirm={actions.confirmDeliveryManually}
         confirming={actions.pending.confirm}
         error={actions.confirmDeliveryError}
         onEdit={actions.clearConfirmDeliveryError}
-        defaultCode={actions.revealedCode ?? ''}
       />
     </>
   );

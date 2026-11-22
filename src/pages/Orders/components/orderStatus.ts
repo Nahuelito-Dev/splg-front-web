@@ -82,7 +82,7 @@ export const manualStatusActionLabel = (from: OrderStatus, to: OrderStatus): str
   from === 'reserved' && to === 'pending' ? 'Activar reserva' : MANUAL_STATUS_LABEL[to];
 
 /**
- * El código de entrega (QR anti-fraude) existe desde que el pedido fue
+ * El código de entrega (el cliente se lo dice al chofer, que lo tipea) existe desde que el pedido fue
  * aceptado y hasta que se cierra: lo genera tanto la aceptación del chofer
  * como la asignación manual desde el panel (al reasignar se genera uno nuevo).
  */

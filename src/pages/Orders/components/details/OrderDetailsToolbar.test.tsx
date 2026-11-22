@@ -11,6 +11,8 @@ const permissions = vi.hoisted(() => vi.fn());
 const api = vi.hoisted(() => ({
   updateOrderStatus: vi.fn(),
   confirmOrderDelivery: vi.fn(),
+  getOrderDeliveryCode: vi.fn(),
+  regenerateOrderDeliveryCode: vi.fn(),
 }));
 const pdfApi = vi.hoisted(() => ({ downloadPdf: vi.fn() }));
 const notifications = vi.hoisted(() => ({
@@ -26,6 +28,8 @@ vi.mock('../../../../services/api/orders', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   updateOrderStatus: api.updateOrderStatus,
   confirmOrderDelivery: api.confirmOrderDelivery,
+  getOrderDeliveryCode: api.getOrderDeliveryCode,
+  regenerateOrderDeliveryCode: api.regenerateOrderDeliveryCode,
 }));
 vi.mock('../../../../services/api/pdfs', () => ({ downloadPdf: pdfApi.downloadPdf }));
 vi.mock('../../../../utils/fileSource', () => ({ openFileSource: vi.fn(() => true), saveFileSource: vi.fn() }));
@@ -199,10 +203,9 @@ describe('OrderDetailsToolbar: entrega manual', () => {
     );
   });
 
-  it('Confirmar entrega manda código y motivo en el mismo cuerpo', async () => {
+  it('Confirmar entrega manda sólo el motivo (el código lo tipea el chofer)', async () => {
     renderToolbar('out_for_delivery');
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar entrega' }));
-    fireEvent.change(screen.getByLabelText('Código de entrega'), { target: { value: ' A1B2C3 ' } });
     fireEvent.change(screen.getByRole('textbox', { name: /Motivo/ }), {
       target: { value: 'Cliente validó el pedido por teléfono' },
     });
@@ -211,20 +214,54 @@ describe('OrderDetailsToolbar: entrega manual', () => {
     await waitFor(() =>
       expect(api.confirmOrderDelivery).toHaveBeenCalledWith(
         'abcdef123456',
-        {
-          code: 'A1B2C3',
-          reason: 'Cliente validó el pedido por teléfono',
-        },
+        { reason: 'Cliente validó el pedido por teléfono' },
         expect.any(String),
       ),
     );
+  });
+
+  it('Ver código bloqueado ofrece «Generar otro código» y muestra el nuevo', async () => {
+    api.getOrderDeliveryCode.mockResolvedValue({
+      orderId: 'abcdef123456',
+      deliveryCode: '111222',
+      attempts: 5,
+      blocked: true,
+    });
+    api.regenerateOrderDeliveryCode.mockResolvedValue({
+      orderId: 'abcdef123456',
+      deliveryCode: '333444',
+      attempts: 0,
+      blocked: false,
+    });
+    renderToolbar('out_for_delivery');
+    clickMenu('Ver código');
+    expect(await screen.findByText('111222')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Código bloqueado');
+
+    fireEvent.click(screen.getByRole('button', { name: /Generar otro código/ }));
+    expect(await screen.findByText('333444')).toBeInTheDocument();
+    expect(api.regenerateOrderDeliveryCode).toHaveBeenCalledWith('abcdef123456');
+    expect(screen.queryByRole('button', { name: /Generar otro código/ })).not.toBeInTheDocument();
+  });
+
+  it('Ver código sin bloqueo no ofrece regenerar', async () => {
+    api.getOrderDeliveryCode.mockResolvedValue({
+      orderId: 'abcdef123456',
+      deliveryCode: '111222',
+      attempts: 2,
+      blocked: false,
+    });
+    renderToolbar('out_for_delivery');
+    clickMenu('Ver código');
+    expect(await screen.findByText('111222')).toBeInTheDocument();
+    expect(screen.getByText(/Intentos fallidos del chofer: 2/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Generar otro código/ })).not.toBeInTheDocument();
   });
 
   it('doble click en confirmar entrega dispara un solo envío', async () => {
     api.confirmOrderDelivery.mockReturnValue(new Promise(() => undefined));
     renderToolbar('out_for_delivery');
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar entrega' }));
-    fireEvent.change(screen.getByLabelText('Código de entrega'), { target: { value: 'A1B2C3' } });
     fireEvent.change(screen.getByRole('textbox', { name: /Motivo/ }), {
       target: { value: 'Cliente validó el pedido por teléfono' },
     });
@@ -272,17 +309,18 @@ describe('OrderDetailsToolbar: entrega manual', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('el error de confirmar con código queda en el modal y se limpia al editar', async () => {
+  it('el error de confirmar queda en el modal y se limpia al editar', async () => {
     api.confirmOrderDelivery.mockRejectedValue(new ApiError(400, ['Código inválido']));
     renderToolbar('out_for_delivery');
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar entrega' }));
-    fireEvent.change(screen.getByLabelText('Código de entrega'), { target: { value: 'A1B2C3' } });
     fireEvent.change(screen.getByRole('textbox', { name: /Motivo/ }), {
       target: { value: 'Cliente validó el pedido por teléfono' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Confirmar entrega' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Código inválido');
-    fireEvent.change(screen.getByLabelText('Código de entrega'), { target: { value: 'Z9Y8X7' } });
+    fireEvent.change(screen.getByRole('textbox', { name: /Motivo/ }), {
+      target: { value: 'Cliente llamó otra vez al local' },
+    });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 

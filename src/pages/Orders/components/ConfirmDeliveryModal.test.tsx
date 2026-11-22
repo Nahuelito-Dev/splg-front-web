@@ -5,24 +5,17 @@ import { ConfirmDeliveryModal } from './ConfirmDeliveryModal';
 afterEach(cleanup);
 
 const renderModal = (onConfirm = vi.fn(), confirming = false, onClose = vi.fn(), onEdit = vi.fn()) =>
-  render(
-    <ConfirmDeliveryModal
-      open
-      onClose={onClose}
-      onConfirm={onConfirm}
-      confirming={confirming}
-      onEdit={onEdit}
-      defaultCode="ABC123"
-    />,
-  );
+  render(<ConfirmDeliveryModal open onClose={onClose} onConfirm={onConfirm} confirming={confirming} onEdit={onEdit} />);
 
 describe('ConfirmDeliveryModal', () => {
-  it('enfoca el código al abrir', async () => {
+  it('enfoca el motivo al abrir y ya no pide el código (lo tipea el chofer)', async () => {
     renderModal();
-    await waitFor(() => expect(screen.getByLabelText('Código de entrega')).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole('textbox', { name: /Motivo/ })).toHaveFocus());
+    expect(screen.queryByLabelText('Código de entrega')).not.toBeInTheDocument();
+    expect(screen.queryByText(/QR/)).not.toBeInTheDocument();
   });
 
-  it('pide código y motivo válido antes de confirmar', () => {
+  it('pide un motivo válido antes de confirmar', () => {
     const onConfirm = vi.fn();
     renderModal(onConfirm);
     const confirm = screen.getByRole('button', { name: 'Confirmar entrega' });
@@ -38,7 +31,7 @@ describe('ConfirmDeliveryModal', () => {
       target: { value: '  Cliente confirmó por teléfono  ' },
     });
     fireEvent.click(confirm);
-    expect(onConfirm).toHaveBeenCalledWith('ABC123', 'Cliente confirmó por teléfono');
+    expect(onConfirm).toHaveBeenCalledWith('Cliente confirmó por teléfono');
   });
 
   it('muestra el error del back sin borrar lo escrito y lo limpia al editar', () => {
@@ -53,10 +46,8 @@ describe('ConfirmDeliveryModal', () => {
         onEdit={onEdit}
       />,
     );
-    fireEvent.change(screen.getByLabelText('Código de entrega'), { target: { value: 'XYZ' } });
     fireEvent.change(screen.getByRole('textbox', { name: /Motivo/ }), { target: { value: 'Cliente llamó al local' } });
     expect(screen.getByRole('alert')).toHaveTextContent('reason must be longer than or equal to 10 characters');
-    expect(screen.getByLabelText('Código de entrega')).toHaveValue('XYZ');
     expect(screen.getByRole('textbox', { name: /Motivo/ })).toHaveValue('Cliente llamó al local');
     expect(onEdit).toHaveBeenCalled();
   });

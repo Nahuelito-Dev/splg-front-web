@@ -9,10 +9,12 @@ vi.mock('./httpClient', async (importOriginal) => ({ ...(await importOriginal<Re
 
 import {
   confirmOrderDelivery,
+  getOrderDeliveryCode,
   getOrderPaymentState,
   getOrderStatusHistory,
   listOrderPaymentStates,
   listOrders,
+  regenerateOrderDeliveryCode,
   releaseFraudHold,
   resolveUnpaidOrder,
   updateOrderStatus,
@@ -41,7 +43,7 @@ describe('API de pedidos: cobros', () => {
 
   it('las entregas manuales viajan con motivo y clave de idempotencia', async () => {
     await updateOrderStatus('o-1', { status: 'delivered', reason: 'Cliente confirmó recepción' }, 'status-key');
-    await confirmOrderDelivery('o-1', { code: 'A1B2C3', reason: 'Cliente confirmó recepción' }, 'confirm-key');
+    await confirmOrderDelivery('o-1', { reason: 'Cliente confirmó recepción' }, 'confirm-key');
 
     expect(http.patch).toHaveBeenCalledWith(
       '/orders/o-1/status',
@@ -50,9 +52,18 @@ describe('API de pedidos: cobros', () => {
     );
     expect(http.post).toHaveBeenCalledWith(
       '/orders/o-1/confirm-delivery',
-      { code: 'A1B2C3', reason: 'Cliente confirmó recepción' },
-      { headers: { 'Idempotency-Key': 'confirm-key' } },
+      { reason: 'Cliente confirmó recepción' },
+      { baseURL: 'http://localhost:3100/api/v3', headers: { 'Idempotency-Key': 'confirm-key' } },
     );
+  });
+
+  it('el código de entrega y su regeneración van por la v3', async () => {
+    await getOrderDeliveryCode('o-1');
+    await regenerateOrderDeliveryCode('o-1');
+    expect(http.get).toHaveBeenCalledWith('/orders/o-1/delivery-code', { baseURL: 'http://localhost:3100/api/v3' });
+    expect(http.post).toHaveBeenCalledWith('/orders/o-1/delivery-code/regenerate', undefined, {
+      baseURL: 'http://localhost:3100/api/v3',
+    });
   });
 });
 
