@@ -1,5 +1,5 @@
 import { Flame } from 'lucide-react';
-import { Badge, Card, CardHeader } from '../../../../common/components/ui';
+import { Badge, Card, CardHeader, PhotoThumb } from '../../../../common/components/ui';
 import type { Order, OrderItem } from '../../../../services/api/types';
 import { formatCurrency } from '../../../../utils/format';
 import { labelOf, PAYMENT_METHOD } from '../../../../utils/statusLabels';
@@ -49,12 +49,22 @@ export const OrderItemsSummary = ({ order }: { order: Order }) => {
               key={`${cylinder?.gas_cylinder_id ?? 'item'}-${index}`}
               className="flex items-center gap-3 border-t border-dashed border-outline py-3.5"
             >
-              <span
-                aria-hidden="true"
-                className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-accent-soft text-on-accent"
-              >
-                <Flame className="h-6 w-6" strokeWidth={1.6} />
-              </span>
+              <PhotoThumb
+                kind="gasCylinder"
+                id={cylinder?.gas_cylinder_id ?? ''}
+                url={cylinder?.photoUrl}
+                size="lg"
+                shape="square"
+                className="!h-12 !w-12"
+                fallback={
+                  <span
+                    aria-hidden="true"
+                    className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-accent-soft text-on-accent"
+                  >
+                    <Flame className="h-6 w-6" strokeWidth={1.6} />
+                  </span>
+                }
+              />
               <div className="min-w-0 flex-1">
                 <p className="break-words font-medium text-ink">{cylinder?.type ?? 'Producto sin datos'}</p>
                 <p className="text-xs text-muted">

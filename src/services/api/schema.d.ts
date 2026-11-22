@@ -17738,6 +17738,8 @@ export interface components {
       /** @example 30 */
       paymentTermsDays: number | null;
       isActive: boolean;
+      /** @description URL firmada de la foto del proveedor (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -17928,6 +17930,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       /** @example 40 */
       quantity: number;
       /** @example 5200.5 */
@@ -18026,6 +18030,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       /** @example 40 */
       ordered: number;
       /** @example 25 */
@@ -18139,6 +18145,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       /** @example 25 */
       quantityFull: number;
       /** @example 25 */
@@ -18436,6 +18444,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       /** @enum {string} */
       condition: 'full' | 'empty' | 'defective';
       /** @example 40 */
@@ -18615,6 +18625,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       /** @description En los depósitos */
       warehouses: components['schemas']['ConditionTotalsDto'];
       /** @description En los camiones */
@@ -18875,6 +18887,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       /** @description `gas_cylinder.stock` */
       sellable: number;
       /** @description Llenas en depósitos y camiones */
@@ -18903,6 +18917,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       quantity: number;
     };
     StockReconciliationDto: {
@@ -19499,6 +19515,8 @@ export interface components {
       /** @example 11300 */
       price: number;
       description: string | null;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
     };
     OrderItemResponseDto: {
       /** @example 2 */
@@ -20899,6 +20917,8 @@ export interface components {
       type: string;
       /** @example 10 */
       weight: number;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
     };
     ClienteDelEnvaseDto: {
       /** Format: uuid */
@@ -20929,6 +20949,8 @@ export interface components {
       current_order_id: string | null;
       /** @example 15000 */
       deposit: number;
+      /** @description URL firmada de la foto del envase (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
       /** @description Tipo y peso del producto (null si no tiene uno asignado) */
       gas_cylinder: components['schemas']['ProductoDelEnvaseDto'] | null;
       /** @description Quién lo tiene ahora (null si está en la distribuidora) */
@@ -22193,6 +22215,8 @@ export interface components {
        * @example 2
        */
       itemsCount: number;
+      /** @description URL firmada de la foto de la carga (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
       items: components['schemas']['TruckLoadItemResponseDto'][];
       /** @description Vista previa del cierre (mismo cálculo que `close`): true si la rendición tendría diferencias (declarado distinto del esperado, o el camión con otra cosa que lo declarado). null mientras no se declaró la vuelta de todos los renglones y en cargas cerradas o canceladas (ahí vale el estado). */
       hayDiferencia: boolean | null;
@@ -22338,6 +22362,8 @@ export interface components {
        * @example 2
        */
       itemsCount: number;
+      /** @description URL firmada de la foto de la carga (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
     };
     TruckLoadPageDto: {
       data: components['schemas']['TruckLoadSummaryDto'][];

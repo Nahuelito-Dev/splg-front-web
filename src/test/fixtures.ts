@@ -39,6 +39,7 @@ export const supplier = (over: Partial<Supplier> = {}): Supplier => ({
   email: null,
   address: null,
   paymentTermsDays: 30,
+  photoUrl: null,
   isActive: true,
   createdAt: '2026-10-01T10:00:00.000Z',
   updatedAt: '2026-10-01T10:00:00.000Z',
@@ -103,5 +104,6 @@ export const loadSummary = (over: Partial<TruckLoadSummary> = {}): TruckLoadSumm
   returnedAt: null,
   closedAt: null,
   itemsCount: 2,
+  photoUrl: null,
   ...over,
 });

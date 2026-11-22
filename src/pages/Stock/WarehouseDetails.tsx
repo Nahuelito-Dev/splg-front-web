@@ -15,6 +15,7 @@ import {
   ResponsiveTable,
   PageContainer,
   CardHeader,
+  ProductName,
   type MenuAction,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
@@ -27,7 +28,18 @@ import { WarehouseFormModal } from './components/WarehouseFormModal';
 import { pivotBalances, type ConditionRow } from './stockMath';
 
 const COLUMNS: GridColDef<ConditionRow>[] = [
-  { field: 'gasCylinderType', headerName: 'Garrafa', flex: 1, minWidth: 140, sortable: false },
+  {
+    field: 'gasCylinderType',
+    headerName: 'Garrafa',
+    flex: 1,
+    minWidth: 140,
+    sortable: false,
+    renderCell: ({ row }) => (
+      <ProductName id={row.gasCylinderId} photoUrl={row.gasCylinderPhotoUrl}>
+        {row.gasCylinderType}
+      </ProductName>
+    ),
+  },
   { field: 'full', headerName: 'Llenas', width: 120, type: 'number', sortable: false },
   { field: 'empty', headerName: 'Vacías', width: 120, type: 'number', sortable: false },
   { field: 'defective', headerName: 'Defectuosas', width: 140, type: 'number', sortable: false },
@@ -180,7 +192,13 @@ export const WarehouseDetails = () => {
               }
               renderCard={(row) => (
                 <div>
-                  <p className="font-semibold text-ink">{row.gasCylinderType}</p>
+                  <ProductName
+                    id={row.gasCylinderId}
+                    photoUrl={row.gasCylinderPhotoUrl}
+                    className="font-semibold text-ink"
+                  >
+                    {row.gasCylinderType}
+                  </ProductName>
                   <p className="mt-1 text-sm text-muted">
                     {row.full} llenas · {row.empty} vacías · {row.defective} defectuosas
                   </p>

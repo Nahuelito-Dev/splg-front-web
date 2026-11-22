@@ -57,6 +57,13 @@ export const PhysicalCylindersTable = ({
               row.gas_cylinder ? `${row.gas_cylinder.type} · ${row.gas_cylinder.weight} kg` : 'Sin producto asignado'
             }
             icon={CylinderIcon}
+            photo={
+              row.photoUrl
+                ? { kind: 'cylinder', id: row.cylinder_id, url: row.photoUrl }
+                : row.gas_cylinder_id
+                  ? { kind: 'gasCylinder', id: row.gas_cylinder_id, url: row.gas_cylinder?.photoUrl }
+                  : undefined
+            }
           />
         ),
       },

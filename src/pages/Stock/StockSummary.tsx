@@ -16,6 +16,7 @@ import {
   Skeleton,
   PageContainer,
   CardHeader,
+  ProductName,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { useImportActions } from '../../hooks/useImportActions';
@@ -39,14 +40,34 @@ const LOCATION_COLUMNS: GridColDef<LocationRow>[] = [
       />
     ),
   },
-  { field: 'gasCylinderType', headerName: 'Garrafa', width: 130, sortable: false },
+  {
+    field: 'gasCylinderType',
+    headerName: 'Garrafa',
+    width: 130,
+    sortable: false,
+    renderCell: ({ row }) => (
+      <ProductName id={row.gasCylinderId} photoUrl={row.gasCylinderPhotoUrl}>
+        {row.gasCylinderType}
+      </ProductName>
+    ),
+  },
   { field: 'full', headerName: 'Llenas', width: 110, type: 'number', sortable: false },
   { field: 'empty', headerName: 'Vacías', width: 110, type: 'number', sortable: false },
   { field: 'defective', headerName: 'Defectuosas', width: 130, type: 'number', sortable: false },
 ];
 
 const SUMMARY_COLUMNS: GridColDef<StockSummaryRow>[] = [
-  { field: 'gasCylinderType', headerName: 'Garrafa', width: 120, sortable: false },
+  {
+    field: 'gasCylinderType',
+    headerName: 'Garrafa',
+    width: 120,
+    sortable: false,
+    renderCell: ({ row }) => (
+      <ProductName id={row.gasCylinderId} photoUrl={row.gasCylinderPhotoUrl}>
+        {row.gasCylinderType}
+      </ProductName>
+    ),
+  },
   {
     field: 'warehouses',
     headerName: 'En galpones',
@@ -171,7 +192,13 @@ export const StockSummary = () => {
             renderCard={(row) => (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="font-semibold text-ink">{row.gasCylinderType}</p>
+                  <ProductName
+                    id={row.gasCylinderId}
+                    photoUrl={row.gasCylinderPhotoUrl}
+                    className="font-semibold text-ink"
+                  >
+                    {row.gasCylinderType}
+                  </ProductName>
                   {row.minimumFull !== null && row.physicalFull < row.minimumFull && (
                     <Badge label={{ text: 'Stock bajo', tone: 'warn' }} />
                   )}
@@ -229,6 +256,9 @@ export const StockSummary = () => {
                   subtitle={`${row.locationKind === 'warehouse' ? 'Galpón' : 'Camión'} · ${row.gasCylinderType}`}
                   icon={row.locationKind === 'warehouse' ? Warehouse : Truck}
                 />
+                <ProductName id={row.gasCylinderId} photoUrl={row.gasCylinderPhotoUrl} className="text-sm text-ink">
+                  {row.gasCylinderType}
+                </ProductName>
                 <p className="text-sm text-muted">
                   {row.full} llenas · {row.empty} vacías · {row.defective} defectuosas
                 </p>

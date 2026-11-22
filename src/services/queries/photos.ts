@@ -38,15 +38,22 @@ const AFFECTED: Record<PhotoKind, readonly (readonly string[])[]> = {
     queryKeys.routePlans.all,
     queryKeys.routeSheets.all,
   ],
-  gasCylinder: [queryKeys.gasCylinders.all],
+  gasCylinder: [
+    queryKeys.gasCylinders.all,
+    queryKeys.orders.all,
+    queryKeys.stock.all,
+    queryKeys.warehouses.all,
+    queryKeys.purchaseOrders.all,
+    queryKeys.purchaseReceipts.all,
+    queryKeys.cylinders.all,
+  ],
   distributor: [queryKeys.distributors.all, queryKeys.platformConsole.all, queryKeys.companyTheme.all],
   incident: [queryKeys.incidents.all],
   claim: [queryKeys.claims.all],
   employee: [queryKeys.employees.all, PEOPLE_PHOTOS_KEY],
-  // Sin `photoUrl` en su respuesta: la foto se pide aparte (`usePhotoLink`).
-  supplier: [photoLinkKey('supplier')],
-  cylinder: [photoLinkKey('cylinder')],
-  truckLoad: [photoLinkKey('truckLoad')],
+  supplier: [queryKeys.suppliers.all, photoLinkKey('supplier')],
+  cylinder: [queryKeys.cylinders.all, photoLinkKey('cylinder')],
+  truckLoad: [queryKeys.truckLoads.all, photoLinkKey('truckLoad')],
 };
 
 const useInvalidatePhoto = (kind: PhotoKind) => {

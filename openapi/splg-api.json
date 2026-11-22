@@ -61028,6 +61028,11 @@
                     "isActive": {
                         "type": "boolean"
                     },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto del proveedor (se abre sin token, vence); `null` si no tiene."
+                    },
                     "createdAt": {
                         "format": "date-time",
                         "type": "string"
@@ -61048,6 +61053,7 @@
                     "address",
                     "paymentTermsDays",
                     "isActive",
+                    "photoUrl",
                     "createdAt",
                     "updatedAt"
                 ]
@@ -61431,6 +61437,11 @@
                         "type": "string",
                         "example": "10kg"
                     },
+                    "gasCylinderPhotoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene."
+                    },
                     "quantity": {
                         "type": "number",
                         "example": 40
@@ -61460,6 +61471,7 @@
                     "itemId",
                     "gasCylinderId",
                     "gasCylinderType",
+                    "gasCylinderPhotoUrl",
                     "quantity",
                     "unitCost",
                     "subtotal",
@@ -61727,6 +61739,11 @@
                         "type": "string",
                         "example": "10kg"
                     },
+                    "gasCylinderPhotoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene."
+                    },
                     "ordered": {
                         "type": "number",
                         "example": 40
@@ -61748,6 +61765,7 @@
                 "required": [
                     "gasCylinderId",
                     "gasCylinderType",
+                    "gasCylinderPhotoUrl",
                     "ordered",
                     "received",
                     "pending",
@@ -61954,6 +61972,11 @@
                         "type": "string",
                         "example": "10kg"
                     },
+                    "gasCylinderPhotoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene."
+                    },
                     "quantityFull": {
                         "type": "number",
                         "example": 25
@@ -61975,6 +61998,7 @@
                     "itemId",
                     "gasCylinderId",
                     "gasCylinderType",
+                    "gasCylinderPhotoUrl",
                     "quantityFull",
                     "quantityEmptyOut",
                     "unitCost",
@@ -62695,6 +62719,11 @@
                         "type": "string",
                         "example": "10kg"
                     },
+                    "gasCylinderPhotoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene."
+                    },
                     "condition": {
                         "type": "string",
                         "enum": [
@@ -62720,6 +62749,7 @@
                     "carId",
                     "gasCylinderId",
                     "gasCylinderType",
+                    "gasCylinderPhotoUrl",
                     "condition",
                     "quantity",
                     "updatedAt"
@@ -63108,6 +63138,11 @@
                         "type": "string",
                         "example": "10kg"
                     },
+                    "gasCylinderPhotoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene."
+                    },
                     "warehouses": {
                         "description": "En los depósitos",
                         "allOf": [
@@ -63145,6 +63180,7 @@
                 "required": [
                     "gasCylinderId",
                     "gasCylinderType",
+                    "gasCylinderPhotoUrl",
                     "warehouses",
                     "vehicles",
                     "physicalFull",
@@ -63789,6 +63825,11 @@
                         "type": "string",
                         "example": "10kg"
                     },
+                    "gasCylinderPhotoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene."
+                    },
                     "sellable": {
                         "type": "number",
                         "description": "`gas_cylinder.stock`"
@@ -63829,6 +63870,7 @@
                 "required": [
                     "gasCylinderId",
                     "gasCylinderType",
+                    "gasCylinderPhotoUrl",
                     "sellable",
                     "physicalFull",
                     "reserved",
@@ -63859,6 +63901,11 @@
                         "type": "string",
                         "example": "10kg"
                     },
+                    "gasCylinderPhotoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene."
+                    },
                     "quantity": {
                         "type": "number"
                     }
@@ -63868,6 +63915,7 @@
                     "deliveredAt",
                     "gasCylinderId",
                     "gasCylinderType",
+                    "gasCylinderPhotoUrl",
                     "quantity"
                 ]
             },
@@ -65259,6 +65307,11 @@
                     "description": {
                         "type": "string",
                         "nullable": true
+                    },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene."
                     }
                 },
                 "required": [
@@ -65266,7 +65319,8 @@
                     "type",
                     "weight",
                     "price",
-                    "description"
+                    "description",
+                    "photoUrl"
                 ]
             },
             "OrderItemResponseDto": {
@@ -68353,11 +68407,17 @@
                     "weight": {
                         "type": "number",
                         "example": 10
+                    },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene."
                     }
                 },
                 "required": [
                     "type",
-                    "weight"
+                    "weight",
+                    "photoUrl"
                 ]
             },
             "ClienteDelEnvaseDto": {
@@ -68429,6 +68489,11 @@
                         "type": "number",
                         "example": 15000
                     },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto del envase (se abre sin token, vence); `null` si no tiene."
+                    },
                     "gas_cylinder": {
                         "nullable": true,
                         "description": "Tipo y peso del producto (null si no tiene uno asignado)",
@@ -68486,6 +68551,7 @@
                     "current_customer_id",
                     "current_order_id",
                     "deposit",
+                    "photoUrl",
                     "gas_cylinder",
                     "current_customer",
                     "manufactured_at",
@@ -71412,6 +71478,11 @@
                         "example": 2,
                         "description": "Renglones (tipos de garrafa) de la carga"
                     },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto de la carga (se abre sin token, vence); `null` si no tiene."
+                    },
                     "items": {
                         "type": "array",
                         "items": {
@@ -71489,6 +71560,7 @@
                     "returnedAt",
                     "closedAt",
                     "itemsCount",
+                    "photoUrl",
                     "items",
                     "hayDiferencia",
                     "requiereVolverADeclarar",
@@ -71756,6 +71828,11 @@
                         "type": "number",
                         "example": 2,
                         "description": "Renglones (tipos de garrafa) de la carga"
+                    },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "URL firmada de la foto de la carga (se abre sin token, vence); `null` si no tiene."
                     }
                 },
                 "required": [
@@ -71775,7 +71852,8 @@
                     "departedAt",
                     "returnedAt",
                     "closedAt",
-                    "itemsCount"
+                    "itemsCount",
+                    "photoUrl"
                 ]
             },
             "TruckLoadPageDto": {

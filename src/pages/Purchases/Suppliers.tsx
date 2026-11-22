@@ -88,7 +88,12 @@ export const Suppliers = () => {
       minWidth: 240,
       sortable: false,
       renderCell: ({ row }) => (
-        <IdentityCell title={row.businessName} subtitle={`CUIT ${formatCuit(row.cuit)}`} icon={Building2} />
+        <IdentityCell
+          title={row.businessName}
+          subtitle={`CUIT ${formatCuit(row.cuit)}`}
+          icon={Building2}
+          photo={{ kind: 'supplier', id: row.supplierId, url: row.photoUrl }}
+        />
       ),
     },
     {
@@ -197,7 +202,12 @@ export const Suppliers = () => {
             }
             renderCard={(row) => (
               <>
-                <IdentityCell title={row.businessName} subtitle={`CUIT ${formatCuit(row.cuit)}`} icon={Building2} />
+                <IdentityCell
+                  title={row.businessName}
+                  subtitle={`CUIT ${formatCuit(row.cuit)}`}
+                  icon={Building2}
+                  photo={{ kind: 'supplier', id: row.supplierId, url: row.photoUrl }}
+                />
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge label={labelOf(SUPPLIER_KIND, row.kind)} />
                   {status(row)}

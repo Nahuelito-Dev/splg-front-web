@@ -15,6 +15,7 @@ import {
   ResponsiveTable,
   PageContainer,
   CardHeader,
+  ProductName,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
 import type { PurchaseReceiptItem } from '../../services/api/types';
@@ -26,7 +27,18 @@ import { ReceiptPayment } from './components/ReceiptPayment';
 import { VoidReceiptModal } from './components/VoidReceiptModal';
 
 const COLUMNS: GridColDef<PurchaseReceiptItem>[] = [
-  { field: 'gasCylinderType', headerName: 'Garrafa', flex: 1, minWidth: 120, sortable: false },
+  {
+    field: 'gasCylinderType',
+    headerName: 'Garrafa',
+    flex: 1,
+    minWidth: 120,
+    sortable: false,
+    renderCell: ({ row }) => (
+      <ProductName id={row.gasCylinderId} photoUrl={row.gasCylinderPhotoUrl}>
+        {row.gasCylinderType}
+      </ProductName>
+    ),
+  },
   { field: 'quantityFull', headerName: 'Llenas recibidas', width: 150, type: 'number', sortable: false },
   { field: 'quantityEmptyOut', headerName: 'Vacías a la planta', width: 160, type: 'number', sortable: false },
   {
@@ -175,7 +187,13 @@ export const PurchaseReceiptDetails = () => {
                 getRowId={(row) => row.itemId}
                 renderCard={(row) => (
                   <div className="space-y-1 text-sm">
-                    <p className="font-semibold text-ink">{row.gasCylinderType}</p>
+                    <ProductName
+                      id={row.gasCylinderId}
+                      photoUrl={row.gasCylinderPhotoUrl}
+                      className="font-semibold text-ink"
+                    >
+                      {row.gasCylinderType}
+                    </ProductName>
                     <p className="text-muted">
                       {row.quantityFull} llenas · {row.quantityEmptyOut} vacías a la planta
                     </p>

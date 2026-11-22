@@ -37,6 +37,7 @@ export * from './ImageInput';
 export * from './PhotoPicker';
 export * from './PersonAvatar';
 export * from './PhotoThumb';
+export * from './ProductName';
 export * from './ProfileTabs';
 export * from './ReasonModal';
 export * from './RowActions';
