@@ -103,6 +103,9 @@ export interface NavItem {
   supportBadge?: 'all' | 'chats' | 'tickets';
 }
 
+/** Con cualquiera de estos se ve el seguimiento en vivo (el mismo par que exige la API). */
+export const TRACKING_PERMISSIONS = ['pedidos.ver', 'despacho.gestionar'];
+
 export interface NavSection {
   title: string;
   items: NavItem[];
@@ -116,7 +119,13 @@ export const NAV_SECTIONS: NavSection[] = [
       { title: 'Tablero', path: '/home', icon: House },
       { title: 'Pedidos', path: '/orders', icon: ReceiptText, showPendingOrders: true },
       { title: 'Tablero de despacho', path: '/orders/dispatch', icon: Columns3 },
-      { title: 'Seguimiento en vivo', path: '/tracking', icon: Navigation },
+      {
+        title: 'Seguimiento en vivo',
+        path: '/tracking',
+        icon: Navigation,
+        // Lo que pide `GET /v2/tracking/vehicles`: alcanza con uno.
+        anyPermission: TRACKING_PERMISSIONS,
+      },
       { title: 'Recorridos', path: '/route-batches', icon: RouteIcon, module: 'route_batching' },
       {
         title: 'Hojas de ruta',

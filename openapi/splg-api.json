@@ -32437,6 +32437,43 @@
                 ]
             }
         },
+        "/api/v2/tracking/vehicles": {
+            "get": {
+                "description": "Los vehículos que un chofer tiene en uso en este momento, cada uno con su chofer (nombre, teléfono y foto), la ocupación (envases a bordo sobre la capacidad en garrafas, en por ciento), la carga abierta, la hoja de ruta de hoy de ese chofer con ese vehículo (avance y llegada estimada a la última parada), las paradas en su orden más los pedidos en curso fuera de una hoja, y la última posición conocida. `status` es `on_route` si la hoja ya se inició o hay un pedido aceptado o en camino, y `waiting` si no. Sólo lectura (sirve en modo soporte). Las fotos son URL firmadas de corta vigencia, o `null`. En vivo: `order:driver-location` y `route-sheet:*` en el socket del panel.",
+                "operationId": "LiveFleetController_vehiculos",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LiveFleetDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) ni para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Vehículos en uso ahora",
+                "tags": [
+                    "Tracking (v2)"
+                ]
+            }
+        },
         "/api/v1/ratings": {
             "post": {
                 "description": "Solo pedidos DELIVERED. El emisor sale del token; a quién califica se deriva del pedido. Una calificación por pedido y por lado.",
@@ -73465,6 +73502,373 @@
                     "durationSeconds",
                     "encodedPolyline",
                     "points"
+                ]
+            },
+            "LiveVehicleDriverDto": {
+                "type": "object",
+                "properties": {
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "userId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Usuario del chofer: el `driverId` de `order:driver-location` y el `driverUserId` de `route-sheet:driver-location`"
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "phone": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "+5493764123456"
+                    },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Foto del chofer: URL firmada de corta vigencia, o null"
+                    }
+                },
+                "required": [
+                    "deliveryId",
+                    "userId",
+                    "name",
+                    "phone",
+                    "photoUrl"
+                ]
+            },
+            "LiveVehicleLoadDto": {
+                "type": "object",
+                "properties": {
+                    "truckLoadId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Carga abierta del vehículo, si tiene"
+                    },
+                    "truckLoadNumber": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "truckLoadStatus": {
+                        "type": "string",
+                        "enum": [
+                            "loading",
+                            "on_route",
+                            "returned"
+                        ],
+                        "nullable": true
+                    },
+                    "fullUnits": {
+                        "type": "number",
+                        "description": "Garrafas llenas a bordo",
+                        "example": 20
+                    },
+                    "emptyUnits": {
+                        "type": "number",
+                        "description": "Envases vacíos a bordo",
+                        "example": 12
+                    },
+                    "defectiveUnits": {
+                        "type": "number",
+                        "description": "Envases defectuosos a bordo",
+                        "example": 0
+                    },
+                    "unitsOnBoard": {
+                        "type": "number",
+                        "description": "Envases a bordo: llenos, vacíos y defectuosos",
+                        "example": 32
+                    },
+                    "capacityUnits": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Garrafas que entran en el vehículo; null si no tiene la capacidad cargada",
+                        "example": 40
+                    },
+                    "percent": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Ocupación: envases a bordo sobre la capacidad, en por ciento (puede pasar de 100); null sin capacidad cargada",
+                        "example": 80
+                    }
+                },
+                "required": [
+                    "truckLoadId",
+                    "truckLoadNumber",
+                    "truckLoadStatus",
+                    "fullUnits",
+                    "emptyUnits",
+                    "defectiveUnits",
+                    "unitsOnBoard",
+                    "capacityUnits",
+                    "percent"
+                ]
+            },
+            "LiveVehicleSheetDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "number": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "confirmed",
+                            "assigned"
+                        ],
+                        "description": "`confirmed`: todavía no salió; `assigned`: en curso"
+                    },
+                    "planDate": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-11-21",
+                        "description": "Día de reparto de la hoja"
+                    },
+                    "plannedStartAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "startedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo el chofer inició el viaje"
+                    },
+                    "total": {
+                        "type": "number",
+                        "description": "Paradas visibles de la hoja"
+                    },
+                    "delivered": {
+                        "type": "number"
+                    },
+                    "failed": {
+                        "type": "number"
+                    },
+                    "pending": {
+                        "type": "number",
+                        "description": "Pendientes más la que está en camino"
+                    },
+                    "estimatedEndAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Llegada estimada a la última parada que falta; null si no queda ninguna con hora"
+                    }
+                },
+                "required": [
+                    "id",
+                    "number",
+                    "status",
+                    "planDate",
+                    "plannedStartAt",
+                    "startedAt",
+                    "total",
+                    "delivered",
+                    "failed",
+                    "pending",
+                    "estimatedEndAt"
+                ]
+            },
+            "LiveVehicleStopDto": {
+                "type": "object",
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "source": {
+                        "type": "string",
+                        "enum": [
+                            "route_sheet",
+                            "order"
+                        ],
+                        "description": "`route_sheet`: parada de la hoja; `order`: pedido en curso fuera de una hoja"
+                    },
+                    "sequence": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Orden en la hoja (1 = primera); null si salió de la hoja o no es de una hoja"
+                    },
+                    "progress": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "on_the_way",
+                            "delivered",
+                            "failed"
+                        ]
+                    },
+                    "customerName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "lat": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "lng": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "etaAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Llegada estimada vigente (sólo las paradas de una hoja la tienen)"
+                    }
+                },
+                "required": [
+                    "orderId",
+                    "source",
+                    "sequence",
+                    "progress",
+                    "customerName",
+                    "address",
+                    "lat",
+                    "lng",
+                    "etaAt"
+                ]
+            },
+            "LiveVehicleLocationDto": {
+                "type": "object",
+                "properties": {
+                    "lat": {
+                        "type": "number"
+                    },
+                    "lng": {
+                        "type": "number"
+                    },
+                    "at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo se registró la posición"
+                    }
+                },
+                "required": [
+                    "lat",
+                    "lng",
+                    "at"
+                ]
+            },
+            "LiveVehicleDto": {
+                "type": "object",
+                "properties": {
+                    "carId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "patent": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "AB104EJ"
+                    },
+                    "typeCar": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Camioneta"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Marca y modelo",
+                        "example": "Toyota Hilux"
+                    },
+                    "photoUrl": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Foto del vehículo: URL firmada de corta vigencia, o null"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "on_route",
+                            "waiting"
+                        ],
+                        "description": "`on_route`: la hoja de ruta ya se inició o el chofer tiene un pedido aceptado o en camino; `waiting`: en uso, sin viaje en curso"
+                    },
+                    "inUseSince": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Desde cuándo el chofer lo tiene en uso"
+                    },
+                    "driver": {
+                        "$ref": "#/components/schemas/LiveVehicleDriverDto"
+                    },
+                    "load": {
+                        "$ref": "#/components/schemas/LiveVehicleLoadDto"
+                    },
+                    "sheet": {
+                        "nullable": true,
+                        "description": "La hoja de ruta de hoy de este chofer con este vehículo (confirmada o en curso), si tiene",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/LiveVehicleSheetDto"
+                            }
+                        ]
+                    },
+                    "stops": {
+                        "description": "Las paradas de la hoja en su orden y, después, los pedidos en curso fuera de una hoja",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LiveVehicleStopDto"
+                        }
+                    },
+                    "location": {
+                        "nullable": true,
+                        "description": "Última posición conocida del chofer, o null",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/LiveVehicleLocationDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "carId",
+                    "patent",
+                    "typeCar",
+                    "description",
+                    "photoUrl",
+                    "status",
+                    "inUseSince",
+                    "driver",
+                    "load",
+                    "sheet",
+                    "stops",
+                    "location"
+                ]
+            },
+            "LiveFleetDto": {
+                "type": "object",
+                "properties": {
+                    "generatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "vehicles": {
+                        "description": "Primero los que están en ruta; después, por patente",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/LiveVehicleDto"
+                        }
+                    }
+                },
+                "required": [
+                    "generatedAt",
+                    "vehicles"
                 ]
             },
             "CreateRatingDto": {

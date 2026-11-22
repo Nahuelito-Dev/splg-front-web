@@ -116,6 +116,17 @@ describe('menú por alcance', () => {
     expect(paths).toContain('/orders');
   });
 
+  it('«Seguimiento en vivo» se ve con `pedidos.ver` o con `despacho.gestionar`; sin ninguno, no', () => {
+    expect(visiblePaths({ mode: 'company', permissions: ['pedidos.ver'] })).toContain('/tracking');
+    expect(visiblePaths({ mode: 'company', permissions: ['despacho.gestionar'] })).toContain('/tracking');
+    expect(visiblePaths({ mode: 'company', permissions: ['flota.ver', 'stock.ver'] })).not.toContain('/tracking');
+    expect(visiblePaths({ mode: 'company', permissions: [] })).not.toContain('/tracking');
+    // Sin saber los permisos, o con todos, no se esconde.
+    expect(visiblePaths({ mode: 'company', permissions: null })).toContain('/tracking');
+    expect(visiblePaths(ADMIN)).toContain('/tracking');
+    expect(visiblePaths(SUPPORT)).toContain('/tracking');
+  });
+
   it('mientras no se saben los permisos no esconde nada (la API decide)', () => {
     expect(visiblePaths({ mode: 'company', permissions: null })).toEqual(
       expect.arrayContaining(['/support-access', '/route-sheets']),

@@ -1,5 +1,6 @@
 import { CircleUser, MapPin, Truck } from 'lucide-react';
-import { Card, CardHeader, PersonAvatar, PhotoThumb } from '../../../../common/components/ui';
+import { Card, CardHeader, PersonAvatar } from '../../../../common/components/ui';
+import { VehicleCard } from '../../../../common/components/vehicle/VehicleCard';
 import type { Order } from '../../../../services/api/types';
 
 /** Cliente, entrega y chofer de un pedido (el pago está en el resumen de ítems): la "tarjeta lateral" de la ficha. */
@@ -50,23 +51,14 @@ export const OrderPartiesCard = ({ order }: { order: Order }) => (
             <p className="font-medium text-ink">{order.delivery_name}</p>
           </div>
           {order.vehicle ? (
-            <div className="mt-1 flex items-center gap-2">
-              <PhotoThumb
-                kind="car"
-                id={order.vehicle.car_id}
-                url={order.vehicle.photoUrl}
-                size="lg"
-                shape="square"
-                fallback={null}
-              />
-              <p className="min-w-0 text-sm text-muted">
-                <span className="font-mono font-semibold uppercase tracking-wide">
-                  {order.vehicle.patent ?? 's/patente'}
-                </span>
-                {' · '}
-                {[order.vehicle.brand, order.vehicle.model].filter(Boolean).join(' ') || 'Sin marca/modelo'}
-              </p>
-            </div>
+            <VehicleCard
+              variant="row"
+              carId={order.vehicle.car_id}
+              patent={order.vehicle.patent}
+              description={[order.vehicle.brand, order.vehicle.model].filter(Boolean).join(' ') || 'Sin marca/modelo'}
+              photoUrl={order.vehicle.photoUrl}
+              className="mt-2"
+            />
           ) : (
             <p className="mt-1 text-xs text-muted">Sin vehículo registrado al aceptar el pedido</p>
           )}

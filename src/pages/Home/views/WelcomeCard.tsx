@@ -4,6 +4,7 @@ import { Button, Card } from '../../../common/components/ui';
 import { useAppSelector, usePermissions } from '../../../hooks';
 import { useOrderStats } from '../../../services/queries/stats';
 import { formatLongDay, formatNumber } from '../../../utils/format';
+import { useTrackingAccess } from '../../Tracking/useTrackingAccess';
 import { greetingFor } from '../lib/dashboard';
 
 /** Saludo, el resumen del momento y los dos accesos que más se usan. */
@@ -11,6 +12,8 @@ export const WelcomeCard = () => {
   const navigate = useNavigate();
   const fullName = useAppSelector((state) => state.auth.fullName);
   const { canWrite, writeHint } = usePermissions();
+  // El atajo lleva al seguimiento en vivo: sin su permiso no se ofrece (el menú tampoco lo muestra).
+  const { forbidden: trackingForbidden } = useTrackingAccess();
   const { data: stats } = useOrderStats();
   const now = new Date();
   const firstName = fullName?.split(' ')[0];
@@ -40,9 +43,11 @@ export const WelcomeCard = () => {
         >
           Nuevo pedido telefónico
         </Button>
-        <Button variant="secondary" icon={<ClipboardList aria-hidden="true" />} onClick={() => navigate('/tracking')}>
-          Pedidos sin chofer
-        </Button>
+        {!trackingForbidden && (
+          <Button variant="secondary" icon={<ClipboardList aria-hidden="true" />} onClick={() => navigate('/tracking')}>
+            Pedidos sin chofer
+          </Button>
+        )}
       </div>
     </Card>
   );

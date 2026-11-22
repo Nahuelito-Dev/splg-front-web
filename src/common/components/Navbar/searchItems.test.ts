@@ -36,6 +36,14 @@ describe('screenResults', () => {
     expect(screenResults('distribuidoras', PLATFORM).map((r) => r.to)).toEqual(['/distributors']);
   });
 
+  it('«Seguimiento en vivo» no aparece para quien no tiene `pedidos.ver` ni `despacho.gestionar`', () => {
+    const found = (permissions: string[]) =>
+      screenResults('seguimiento', { mode: 'company', permissions }).map((r) => r.to);
+    expect(found(['flota.ver'])).toEqual([]);
+    expect(found(['pedidos.ver'])).toEqual(['/tracking']);
+    expect(found(['despacho.gestionar'])).toEqual(['/tracking']);
+  });
+
   it('en la plataforma no ofrece pantallas de empresa', () => {
     expect(screenResults('pedidos', PLATFORM)).toEqual([]);
     expect(screenResults('pedidos', SUPPORT).map((r) => r.to)).toContain('/orders');

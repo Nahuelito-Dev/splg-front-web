@@ -1,15 +1,8 @@
 import type { ReactNode } from 'react';
 import { CircleUser, MapPin, Truck, UserCheck, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Badge,
-  PersonAvatar,
-  PhotoThumb,
-  Button,
-  Card,
-  CardHeader,
-  UserRefLink,
-} from '../../../../common/components/ui';
+import { Badge, PersonAvatar, Button, Card, CardHeader, UserRefLink } from '../../../../common/components/ui';
+import { VehicleCard } from '../../../../common/components/vehicle/VehicleCard';
 import type { Order } from '../../../../services/api/types';
 import { useFindCustomerByUserId } from '../../../../services/queries/customers';
 import { useUser } from '../../../../services/queries/users';
@@ -149,29 +142,19 @@ const DriverSection = ({ order }: { order: Order }) => {
             <PersonAvatar name={order.delivery_name} deliveryId={order.delivery_id} size="lg" />
             <div className="min-w-0">
               <p className="break-words font-semibold text-ink">{order.delivery_name}</p>
-              {vehicle ? (
-                <div className="flex items-center gap-2">
-                  <PhotoThumb
-                    kind="car"
-                    id={vehicle.car_id}
-                    url={vehicle.photoUrl}
-                    size="lg"
-                    shape="square"
-                    fallback={null}
-                  />
-                  <p className="min-w-0 text-xs text-muted">
-                    <span className="font-mono font-semibold uppercase tracking-wide">
-                      {vehicle.patent ?? 's/patente'}
-                    </span>
-                    {' · '}
-                    {[vehicle.brand, vehicle.model].filter(Boolean).join(' ') || 'Sin marca/modelo'}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-xs text-muted">Sin vehículo registrado al aceptar el pedido</p>
-              )}
+              {!vehicle && <p className="text-xs text-muted">Sin vehículo registrado al aceptar el pedido</p>}
             </div>
           </div>
+          {vehicle && (
+            <VehicleCard
+              variant="row"
+              carId={vehicle.car_id}
+              patent={vehicle.patent}
+              description={[vehicle.brand, vehicle.model].filter(Boolean).join(' ') || 'Sin marca/modelo'}
+              photoUrl={vehicle.photoUrl}
+              className="mt-3"
+            />
+          )}
           {order.delivery_id && (
             <Button
               variant="secondary"

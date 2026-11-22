@@ -1,53 +1,108 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Badge, Card, PageHeader, Tabs, tabPanelProps, PageContainer } from '../../common/components/ui';
-import { useSocketContext } from '../../context/useSocketContext';
-import { DRIVER_LOCATION_EVENT } from '../../hooks/useSocket';
+import { useMediaQuery } from '@mui/material';
+import { Truck } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  Badge,
+  Card,
+  Drawer,
+  EmptyState,
+  PageContainer,
+  PageHeader,
+  Tabs,
+  tabPanelProps,
+} from '../../common/components/ui';
+import { vehicleName } from '../../common/components/vehicle/vehicleLabels';
+import { VehicleDetailPanel } from '../../features/vehicles/VehicleDetailPanel';
 import { AvailableOrdersPool } from './components/AvailableOrdersPool';
-import { TrackingList } from './components/TrackingList';
 import { TrackingMap } from './components/TrackingMap';
+import { VehicleList } from './components/VehicleList';
 import { useAvailablePool } from './useAvailablePool';
-import type { DriverLocationPayload, TrackedOrder } from './types';
+import { useLiveTracking } from './useLiveTracking';
+import { useTrackingAccess } from './useTrackingAccess';
 
-type PanelTab = 'live' | 'pool';
+type PanelTab = 'vehicles' | 'pool';
 const TABS_ID = 'tracking';
+/** Desde acá entran las tres zonas lado a lado (el `lg` de Tailwind). */
+const DESKTOP_QUERY = '(min-width: 1024px)';
+/** Cada cuánto se recalcula el tiempo restante. */
+const CLOCK_MS = 30_000;
 
+/**
+ * Seguimiento en vivo. Sin `pedidos.ver` ni `despacho.gestionar` (lo que exige la API) no se pide nada y se explica
+ * qué permiso falta; el menú tampoco muestra la pantalla, pero se puede llegar por la URL.
+ */
 export const Tracking = () => {
-  const { isOnline, subscribe } = useSocketContext();
-  const [trackedOrders, setTrackedOrders] = useState<Map<string, TrackedOrder>>(new Map());
-  const [focusPoint, setFocusPoint] = useState<{ lat: number; lng: number } | null>(null);
-  const [tab, setTab] = useState<PanelTab>('live');
-  const hasFocusedRef = useRef(false);
+  const { forbidden } = useTrackingAccess();
+  if (!forbidden) return <TrackingBoard />;
+  return (
+    <PageContainer size="full">
+      <PageHeader
+        title="Seguimiento en vivo"
+        description="Los vehículos en uso, dónde están y qué les falta entregar."
+      />
+      <Card className="p-6">
+        <EmptyState
+          icon={Truck}
+          title="No tenés permiso para el seguimiento en vivo"
+          description="Hace falta el permiso «Ver los pedidos» o «Gestionar el despacho». Pedíselo a quien administra los roles del personal."
+        />
+      </Card>
+    </PageContainer>
+  );
+};
 
-  const handleLocation = useCallback((payload: DriverLocationPayload) => {
-    setTrackedOrders((prev) => {
-      const next = new Map(prev);
-      next.set(payload.orderId, payload);
-      return next;
-    });
+/**
+ * Las tres zonas: las tarjetas de los vehículos en uso (y el pool de pedidos sin chofer), el mapa y el detalle del
+ * vehículo elegido. En pantallas chicas el detalle se abre en un panel lateral.
+ */
+const TrackingBoard = () => {
+  const tracking = useLiveTracking();
+  const { isOnline, needsDistributor, vehicles } = tracking;
+  const desktop = useMediaQuery(DESKTOP_QUERY);
+  const [tab, setTab] = useState<PanelTab>('vehicles');
+  const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
+  const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
-    // Solo centramos el mapa la primera vez que llega una posición (de
-    // cualquier pedido), para no pisarle la vista al admin después.
-    if (!hasFocusedRef.current) {
-      hasFocusedRef.current = true;
-      setFocusPoint({ lat: payload.lat, lng: payload.lng });
-    }
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), CLOCK_MS);
+    return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => subscribe<DriverLocationPayload>(DRIVER_LOCATION_EVENT, handleLocation), [subscribe, handleLocation]);
 
   const pool = useAvailablePool(isOnline);
   // El contador sale de la misma consulta que la lista; sin datos todavía, un guion y no un 0.
   const poolCount = pool.isLoading || pool.isError ? null : pool.total;
+  const vehicleCount = tracking.isLoading || tracking.isError || needsDistributor ? null : vehicles.length;
+  // El vehículo elegido puede dejar de estar en uso mientras se mira: el detalle se cierra solo.
+  const selected = vehicles.find((vehicle) => vehicle.carId === selectedCarId) ?? null;
 
-  const trackedOrdersList = Array.from(trackedOrders.values()).sort(
-    (a, b) => new Date(b.at).getTime() - new Date(a.at).getTime(),
+  const selectVehicle = (carId: string) => {
+    setSelectedStopId(null);
+    setSelectedCarId((current) => (current === carId && desktop ? null : carId));
+  };
+  const closeDetail = () => {
+    setSelectedCarId(null);
+    setSelectedStopId(null);
+  };
+
+  const detail = selected && (
+    <VehicleDetailPanel
+      // Otro vehículo arranca en «Envío».
+      key={selected.carId}
+      vehicle={selected}
+      now={now}
+      selectedStopId={selectedStopId}
+      onSelectStop={setSelectedStopId}
+      showTitle={desktop}
+      className="h-full"
+    />
   );
 
   return (
-    <PageContainer size="xl">
+    <PageContainer size="full">
       <PageHeader
         title="Seguimiento en vivo"
-        description="Ubicación en tiempo real de los choferes con entregas en curso."
+        description="Los vehículos en uso, dónde están, qué llevan y qué les falta entregar."
         actions={
           <Badge
             label={
@@ -59,27 +114,74 @@ export const Tracking = () => {
         }
       />
 
-      <section className="flex flex-col gap-4 lg:flex-row">
-        <Card className="w-full overflow-hidden lg:w-2/3" style={{ height: '70vh' }}>
-          <TrackingMap trackedOrders={trackedOrdersList} focusPoint={focusPoint} />
-        </Card>
-
-        <Card className="flex w-full flex-col overflow-hidden lg:w-1/3" style={{ height: '70vh' }}>
+      <section className="grid gap-4 lg:h-[calc(100vh-13rem)] lg:min-h-[32rem] lg:grid-cols-[340px_minmax(0,1fr)_380px]">
+        <Card className="flex max-h-[75vh] min-h-0 flex-col overflow-hidden lg:max-h-none">
           <Tabs
             items={[
-              { id: 'live', label: 'En curso', count: trackedOrdersList.length },
+              { id: 'vehicles', label: 'Vehículos', count: vehicleCount },
               { id: 'pool', label: 'Disponibles', count: poolCount },
             ]}
             value={tab}
             onChange={(id) => setTab(id as PanelTab)}
-            label="Pedidos del seguimiento"
+            label="Vehículos y pedidos del seguimiento"
             idPrefix={TABS_ID}
           />
-          <div className="min-h-0 flex-1" {...tabPanelProps(TABS_ID, tab)}>
-            {tab === 'live' ? <TrackingList trackedOrders={trackedOrdersList} /> : <AvailableOrdersPool pool={pool} />}
+          <div className="min-h-0 flex-1 overflow-y-auto" {...tabPanelProps(TABS_ID, tab)}>
+            {tab === 'vehicles' ? (
+              <VehicleList
+                vehicles={vehicles}
+                selectedCarId={selectedCarId}
+                onSelect={selectVehicle}
+                now={now}
+                isLoading={tracking.isLoading}
+                isError={tracking.isError}
+                error={tracking.error}
+                onRetry={tracking.refetch}
+                needsDistributor={needsDistributor}
+              />
+            ) : (
+              <AvailableOrdersPool pool={pool} />
+            )}
           </div>
         </Card>
+
+        <Card className="h-[60vh] min-h-[20rem] overflow-hidden lg:h-auto">
+          <TrackingMap
+            vehicles={vehicles}
+            selectedCarId={selectedCarId}
+            onSelectVehicle={selectVehicle}
+            selectedStopId={selectedStopId}
+            onSelectStop={setSelectedStopId}
+            looseOrders={tracking.looseOrders}
+          />
+        </Card>
+
+        {desktop && (
+          <Card className="min-h-0 overflow-hidden" data-testid="vehicle-detail-zone">
+            {detail || (
+              <div className="flex h-full items-center justify-center">
+                <EmptyState
+                  icon={Truck}
+                  title="Elegí un vehículo"
+                  description="Tocá una tarjeta o un vehículo del mapa para ver su carga, su recorrido y sus documentos."
+                />
+              </div>
+            )}
+          </Card>
+        )}
       </section>
+
+      {!desktop && (
+        <Drawer
+          open={Boolean(selected)}
+          onClose={closeDetail}
+          title={selected ? vehicleName(selected.patent) : 'Vehículo'}
+          description={selected?.driver.name ?? undefined}
+        >
+          {/* El panel trae su propio margen: se compensa el del `Drawer`. */}
+          <div className="-mx-5 -my-5">{detail}</div>
+        </Drawer>
+      )}
     </PageContainer>
   );
 };

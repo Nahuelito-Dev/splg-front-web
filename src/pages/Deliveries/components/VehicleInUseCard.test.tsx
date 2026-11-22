@@ -34,10 +34,10 @@ describe('VehicleInUseCard: foto del vehículo', () => {
     expect(container.querySelector('img[src="https://fotos.test/cargo.jpg"]')).not.toBeNull();
   });
 
-  it('sin foto queda el círculo con el ícono del tipo', () => {
+  it('sin foto queda el ícono del tipo', () => {
     state.vehicle = vehicle(null);
     const { container } = render(<VehicleInUseCard deliveryId="d-1" canWrite />);
     expect(container.querySelector('img')).toBeNull();
-    expect(container.querySelector('span.rounded-full svg')).not.toBeNull();
+    expect(container.querySelector('[data-testid="vehicle-photo-fallback"] svg')).not.toBeNull();
   });
 });

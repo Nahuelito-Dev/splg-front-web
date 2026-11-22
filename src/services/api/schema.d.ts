@@ -7869,6 +7869,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/tracking/vehicles': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Vehículos en uso ahora
+     * @description Los vehículos que un chofer tiene en uso en este momento, cada uno con su chofer (nombre, teléfono y foto), la ocupación (envases a bordo sobre la capacidad en garrafas, en por ciento), la carga abierta, la hoja de ruta de hoy de ese chofer con ese vehículo (avance y llegada estimada a la última parada), las paradas en su orden más los pedidos en curso fuera de una hoja, y la última posición conocida. `status` es `on_route` si la hoja ya se inició o hay un pedido aceptado o en camino, y `waiting` si no. Sólo lectura (sirve en modo soporte). Las fotos son URL firmadas de corta vigencia, o `null`. En vivo: `order:driver-location` y `route-sheet:*` en el socket del panel.
+     */
+    get: operations['LiveFleetController_vehiculos'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/ratings': {
     parameters: {
       query?: never;
@@ -23041,6 +23061,164 @@ export interface components {
       encodedPolyline: string;
       /** @description La misma polilínea ya decodificada */
       points: components['schemas']['RoutePointDto'][];
+    };
+    LiveVehicleDriverDto: {
+      /** Format: uuid */
+      deliveryId: string;
+      /**
+       * Format: uuid
+       * @description Usuario del chofer: el `driverId` de `order:driver-location` y el `driverUserId` de `route-sheet:driver-location`
+       */
+      userId: string;
+      name: string | null;
+      /** @example +5493764123456 */
+      phone: string | null;
+      /** @description Foto del chofer: URL firmada de corta vigencia, o null */
+      photoUrl: string | null;
+    };
+    LiveVehicleLoadDto: {
+      /**
+       * Format: uuid
+       * @description Carga abierta del vehículo, si tiene
+       */
+      truckLoadId: string | null;
+      truckLoadNumber: number | null;
+      /** @enum {string|null} */
+      truckLoadStatus: 'loading' | 'on_route' | 'returned' | null;
+      /**
+       * @description Garrafas llenas a bordo
+       * @example 20
+       */
+      fullUnits: number;
+      /**
+       * @description Envases vacíos a bordo
+       * @example 12
+       */
+      emptyUnits: number;
+      /**
+       * @description Envases defectuosos a bordo
+       * @example 0
+       */
+      defectiveUnits: number;
+      /**
+       * @description Envases a bordo: llenos, vacíos y defectuosos
+       * @example 32
+       */
+      unitsOnBoard: number;
+      /**
+       * @description Garrafas que entran en el vehículo; null si no tiene la capacidad cargada
+       * @example 40
+       */
+      capacityUnits: number | null;
+      /**
+       * @description Ocupación: envases a bordo sobre la capacidad, en por ciento (puede pasar de 100); null sin capacidad cargada
+       * @example 80
+       */
+      percent: number | null;
+    };
+    LiveVehicleSheetDto: {
+      /** Format: uuid */
+      id: string;
+      number: number | null;
+      /**
+       * @description `confirmed`: todavía no salió; `assigned`: en curso
+       * @enum {string}
+       */
+      status: 'confirmed' | 'assigned';
+      /**
+       * Format: date
+       * @description Día de reparto de la hoja
+       * @example 2026-11-21
+       */
+      planDate: string;
+      /** Format: date-time */
+      plannedStartAt: string | null;
+      /**
+       * Format: date-time
+       * @description Cuándo el chofer inició el viaje
+       */
+      startedAt: string | null;
+      /** @description Paradas visibles de la hoja */
+      total: number;
+      delivered: number;
+      failed: number;
+      /** @description Pendientes más la que está en camino */
+      pending: number;
+      /**
+       * Format: date-time
+       * @description Llegada estimada a la última parada que falta; null si no queda ninguna con hora
+       */
+      estimatedEndAt: string | null;
+    };
+    LiveVehicleStopDto: {
+      /** Format: uuid */
+      orderId: string;
+      /**
+       * @description `route_sheet`: parada de la hoja; `order`: pedido en curso fuera de una hoja
+       * @enum {string}
+       */
+      source: 'route_sheet' | 'order';
+      /** @description Orden en la hoja (1 = primera); null si salió de la hoja o no es de una hoja */
+      sequence: number | null;
+      /** @enum {string} */
+      progress: 'pending' | 'on_the_way' | 'delivered' | 'failed';
+      customerName: string | null;
+      address: string | null;
+      lat: number | null;
+      lng: number | null;
+      /**
+       * Format: date-time
+       * @description Llegada estimada vigente (sólo las paradas de una hoja la tienen)
+       */
+      etaAt: string | null;
+    };
+    LiveVehicleLocationDto: {
+      lat: number;
+      lng: number;
+      /**
+       * Format: date-time
+       * @description Cuándo se registró la posición
+       */
+      at: string | null;
+    };
+    LiveVehicleDto: {
+      /** Format: uuid */
+      carId: string;
+      /** @example AB104EJ */
+      patent: string | null;
+      /** @example Camioneta */
+      typeCar: string | null;
+      /**
+       * @description Marca y modelo
+       * @example Toyota Hilux
+       */
+      description: string | null;
+      /** @description Foto del vehículo: URL firmada de corta vigencia, o null */
+      photoUrl: string | null;
+      /**
+       * @description `on_route`: la hoja de ruta ya se inició o el chofer tiene un pedido aceptado o en camino; `waiting`: en uso, sin viaje en curso
+       * @enum {string}
+       */
+      status: 'on_route' | 'waiting';
+      /**
+       * Format: date-time
+       * @description Desde cuándo el chofer lo tiene en uso
+       */
+      inUseSince: string;
+      driver: components['schemas']['LiveVehicleDriverDto'];
+      load: components['schemas']['LiveVehicleLoadDto'];
+      /** @description La hoja de ruta de hoy de este chofer con este vehículo (confirmada o en curso), si tiene */
+      sheet: components['schemas']['LiveVehicleSheetDto'] | null;
+      /** @description Las paradas de la hoja en su orden y, después, los pedidos en curso fuera de una hoja */
+      stops: components['schemas']['LiveVehicleStopDto'][];
+      /** @description Última posición conocida del chofer, o null */
+      location: components['schemas']['LiveVehicleLocationDto'] | null;
+    };
+    LiveFleetDto: {
+      /** Format: date-time */
+      generatedAt: string;
+      /** @description Primero los que están en ruta; después, por patente */
+      vehicles: components['schemas']['LiveVehicleDto'][];
     };
     CreateRatingDto: {
       /** Format: uuid */
@@ -56581,6 +56759,46 @@ export interface operations {
       };
       /** @description No hay proveedor de rutas configurado */
       503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LiveFleetController_vehiculos: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LiveFleetDto'];
+        };
+      };
+      /** @description Falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) ni para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
         headers: {
           [name: string]: unknown;
         };

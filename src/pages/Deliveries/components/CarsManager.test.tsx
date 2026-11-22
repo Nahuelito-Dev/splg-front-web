@@ -38,6 +38,6 @@ describe('CarsManager: foto del vehículo', () => {
     state.cars = [car(null)];
     const { container } = render(<CarsManager userId="u-1" />);
     expect(container.querySelector('img')).toBeNull();
-    expect(container.querySelector('[data-testid="LocalShippingIcon"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="vehicle-photo-fallback"] svg.lucide-truck')).not.toBeNull();
   });
 });

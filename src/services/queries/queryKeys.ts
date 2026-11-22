@@ -79,6 +79,7 @@ export const queryKeys = {
   routeBatches: resource('routeBatches'),
   routePlans: resource('routePlans'),
   routeSheets: resource('routeSheets'),
+  liveFleet: resource('liveFleet'),
   search: resource('search'),
   stats: resource('stats'),
   stock: resource('stock'),
