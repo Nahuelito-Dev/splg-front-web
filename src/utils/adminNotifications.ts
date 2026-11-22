@@ -99,6 +99,9 @@ export const notificationTarget = (link: AdminNotification['link'] | undefined):
       return `/fleet/fines?fine=${id}`;
     case 'cylinder-recovery-case':
       return `/physical-cylinders/recovery?case=${id}`;
+    // Lleva a la pestaña Seguro del vehículo, pero el aviso sólo trae la cuota: lo resuelve `useInstallmentTarget`.
+    case 'insurance-installment':
+      return null;
     case 'maintenance-planner':
       return `/fleet/planner?case=${id}`;
     case 'car':
@@ -115,3 +118,7 @@ export const notificationTarget = (link: AdminNotification['link'] | undefined):
       return null;
   }
 };
+
+/** El aviso «¿Aprobar pago?» de una cuota del seguro: apunta a la cuota (no al vehículo) y se aprueba desde la bandeja. */
+export const approvalInstallmentId = (notification: Pick<AdminNotification, 'link'>): string | null =>
+  notification.link?.entity === 'insurance-installment' ? notification.link.id : null;

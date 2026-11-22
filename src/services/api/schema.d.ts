@@ -320,6 +320,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/insurance-installments/{id}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Aprobar el pago de una cuota
+     * @description Todo pago de una cuota requiere la aprobación del admin. El aviso de la cuota a 5 días deja `approvalStatus: awaiting` («¿Aprobar pago?»), pero se aprueba cualquier cuota pendiente que no esté aprobada (`none` o `awaiting`). Queda quién (`approvedByUserId`) y cuándo (`approvedAt`), con la auditoría de datos. No mueve plata ni registra el pago: eso es `POST /insurance-installments/:id/pay`, que responde 409 `INSTALLMENT_APPROVAL_REQUIRED` mientras la cuota no esté aprobada. Corregir el importe o el vencimiento de una cuota aprobada la devuelve a `awaiting`.
+     */
+    post: operations['InsuranceInstallmentController_approve'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/insurance-installments/{id}/pay': {
     parameters: {
       query?: never;
@@ -1654,7 +1674,7 @@ export interface paths {
     };
     /**
      * Cuánto acierta la fecha proyectada de los vencimientos
-     * @description De las tareas cerradas en el período que tenían fecha proyectada por kilometraje: cuántas se pudieron comparar, el error medio en días, el porcentaje hecho a ±7 días de lo proyectado y si tienden a hacerse antes o después. Por omisión, los últimos 180 días.
+     * @description De las tareas cerradas en el período que tenían fecha proyectada por kilometraje: cuántas se pudieron comparar, el error medio en días, el porcentaje hecho a ±7 días de lo proyectado y si tienden a hacerse antes o después. `accuracy` mide la proyección sin corregir y `calibratedAccuracy` la misma proyección con la corrección por el desvío del vehículo (autocalibración); las tareas cerradas antes de la autocalibración cuentan igual en las dos. Por omisión, los últimos 180 días.
      */
     get: operations['MaintenancePlannerController_acierto'];
     put?: never;
@@ -7805,7 +7825,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Health check del sistema */
+    /** Health check del sistema (JSON) y página de estado (HTML) */
     get: operations['HealthController_check'];
     put?: never;
     post?: never;
@@ -12835,6 +12855,17 @@ export interface components {
       cashMovementId: string | null;
       /** Format: uuid */
       receiptAttachmentId: string | null;
+      /**
+       * @description `none`: sin pedir aprobación; `awaiting`: el aviso de los 5 días la pidió («pendiente de aprobación»); `approved`: aprobada. Una cuota se paga sólo si está `approved`
+       * @enum {string}
+       */
+      approvalStatus: 'none' | 'awaiting' | 'approved';
+      /** Format: date-time */
+      approvalRequestedAt: string | null;
+      /** Format: date-time */
+      approvedAt: string | null;
+      /** Format: uuid */
+      approvedByUserId: string | null;
       /** Format: date-time */
       createdAt: string;
     };
@@ -13034,6 +13065,17 @@ export interface components {
       cashMovementId: string | null;
       /** Format: uuid */
       receiptAttachmentId: string | null;
+      /**
+       * @description `none`: sin pedir aprobación; `awaiting`: el aviso de los 5 días la pidió («pendiente de aprobación»); `approved`: aprobada. Una cuota se paga sólo si está `approved`
+       * @enum {string}
+       */
+      approvalStatus: 'none' | 'awaiting' | 'approved';
+      /** Format: date-time */
+      approvalRequestedAt: string | null;
+      /** Format: date-time */
+      approvedAt: string | null;
+      /** Format: uuid */
+      approvedByUserId: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: uuid */
@@ -14814,6 +14856,35 @@ export interface components {
        */
       status: 'negotiating' | 'awaiting_confirmation' | 'escalated' | 'confirmed' | 'cancelled';
     };
+    ForecastCalibrationResponseDto: {
+      /**
+       * @description Días que se sumaron a la fecha por kilometraje (negativo: se adelantó)
+       * @example 6
+       */
+      correctionDays: number;
+      /**
+       * @description Desvío medio de los cierres promediados, con signo: positivo = se hizo después de lo proyectado
+       * @example 6.4
+       */
+      averageDeviationDays: number;
+      /**
+       * @description Cierres promediados
+       * @example 5
+       */
+      samples: number;
+      /** @description El desvío medio superaba el tope y la corrección quedó en él */
+      capped: boolean;
+      /**
+       * @description De dónde sale: el historial de cierres de este vehículo en este tipo de tarea
+       * @enum {string}
+       */
+      source: 'vehicle_task_type';
+      /**
+       * Format: date-time
+       * @description La fecha por kilometraje antes de corregir
+       */
+      uncorrectedAt: string | null;
+    };
     ForecastItemResponseDto: {
       /** Format: uuid */
       taskId: string;
@@ -14848,6 +14919,8 @@ export interface components {
       caseId: string | null;
       /** @enum {string|null} */
       caseStatus: 'negotiating' | 'awaiting_confirmation' | 'escalated' | 'confirmed' | 'cancelled' | null;
+      /** @description La corrección que se le aplicó a `predictedByKmAt` por el desvío histórico del vehículo en este tipo de tarea; `null` si no hubo (menos de 3 cierres, autocalibración apagada o nada que corregir) */
+      calibration: components['schemas']['ForecastCalibrationResponseDto'] | null;
     };
     ForecastVehicleResponseDto: {
       /** Format: uuid */
@@ -14891,8 +14964,10 @@ export interface components {
       from: string;
       /** Format: date-time */
       to: string;
-      /** @description Primera fecha proyectada del vencimiento por kilometraje contra la fecha en que se hizo el trabajo, en las tareas cerradas del período */
+      /** @description Primera fecha proyectada del vencimiento por kilometraje, sin corregir, contra la fecha en que se hizo el trabajo, en las tareas cerradas del período */
       accuracy: components['schemas']['PredictionAccuracyDto'];
+      /** @description Lo mismo con la primera fecha ya corregida por el desvío del vehículo (autocalibración); igual a `accuracy` donde no hubo corrección */
+      calibratedAccuracy: components['schemas']['PredictionAccuracyDto'];
     };
     ProcessConfigFieldDto: {
       /** @example anticipationDays */
@@ -14977,6 +15052,10 @@ export interface components {
       anticipationKm?: number;
       /** @description Mandar también un correo al chofer con cada propuesta (0 no, 1 sí) */
       driverEmail?: number;
+      /** @description Cuántos de los últimos cierres de un vehículo y tipo de tarea se promedian para corregir la proyección */
+      calibrationClosures?: number;
+      /** @description Tope de la corrección de la fecha proyectada, en días y en uno y otro sentido (0 apaga la autocalibración) */
+      calibrationMaxDays?: number;
     };
     PlannerRunResponseDto: {
       vehicles: number;
@@ -15002,8 +15081,11 @@ export interface components {
       urgent: boolean;
       /** @description Entre las que se le ofrecen al chofer */
       offered: boolean;
-      /** @enum {string|null} */
-      discardReason: 'coverage' | 'not_selected' | null;
+      /**
+       * @description `coverage`: sin cobertura; `not_selected`: no entró entre las ofrecidas; `rejected`: se ofreció y el chofer la rechazó; `expired`: se ofreció y venció sin respuesta
+       * @enum {string|null}
+       */
+      discardReason: 'coverage' | 'not_selected' | 'rejected' | 'expired' | null;
     };
     PlanningCaseDetailResponseDto: {
       /** Format: uuid */
@@ -29711,6 +29793,8 @@ export interface operations {
         /** @description Texto a buscar */
         term?: string;
         status?: 'pending' | 'paid' | 'cancelled';
+        /** @description `awaiting` lista las cuotas pendientes de aprobación («¿Aprobar pago?») */
+        approvalStatus?: 'none' | 'awaiting' | 'approved';
         dueFrom?: string | null;
         dueTo?: string | null;
         carId?: string;
@@ -29941,6 +30025,56 @@ export interface operations {
       };
     };
   };
+  InsuranceInstallmentController_approve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cuota UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InsuranceInstallmentDetailDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuota ya está aprobada, o está paga o cancelada: `INSTALLMENT_NOT_APPROVABLE` */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   InsuranceInstallmentController_pay: {
     parameters: {
       query?: never;
@@ -29993,7 +30127,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuota ya está paga o cancelada, la caja está desactivada, exige sesión abierta o no tiene saldo */
+      /** @description La cuota ya está paga o cancelada, no está aprobada (`INSTALLMENT_APPROVAL_REQUIRED`), el importe supera el aprobado (`INSTALLMENT_AMOUNT_EXCEEDS_APPROVED`), la caja está desactivada, exige sesión abierta o no tiene saldo */
       409: {
         headers: {
           [name: string]: unknown;
@@ -56427,14 +56561,17 @@ export interface operations {
   };
   HealthController_check: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Con `json` fuerza el JSON aunque el cliente prefiera HTML. */
+        format?: 'json';
+      };
       header?: never;
       path?: never;
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description The Health Check is successful */
+      /** @description Todo sano. JSON de Terminus; con `Accept: text/html`, la página de estado. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -56443,46 +56580,35 @@ export interface operations {
           'application/json': {
             /** @example ok */
             status?: string;
-            /**
-             * @example {
-             *       "database": {
-             *         "status": "up"
-             *       }
-             *     }
-             */
             info?: {
               [key: string]: {
-                status: string;
+                /** @example up */
+                status?: string;
               } & {
-                [key: string]: unknown;
+                [key: string]: string;
               };
             } | null;
-            /** @example {} */
             error?: {
               [key: string]: {
-                status: string;
+                /** @example up */
+                status?: string;
               } & {
-                [key: string]: unknown;
+                [key: string]: string;
               };
             } | null;
-            /**
-             * @example {
-             *       "database": {
-             *         "status": "up"
-             *       }
-             *     }
-             */
             details?: {
               [key: string]: {
-                status: string;
+                /** @example up */
+                status?: string;
               } & {
-                [key: string]: unknown;
+                [key: string]: string;
               };
             };
           };
+          'text/html': string;
         };
       };
-      /** @description The Health Check is not successful */
+      /** @description Algo caído. JSON de Terminus con el detalle; con `Accept: text/html`, la página de estado. */
       503: {
         headers: {
           [name: string]: unknown;
@@ -56491,54 +56617,32 @@ export interface operations {
           'application/json': {
             /** @example error */
             status?: string;
-            /**
-             * @example {
-             *       "database": {
-             *         "status": "up"
-             *       }
-             *     }
-             */
             info?: {
               [key: string]: {
-                status: string;
+                /** @example up */
+                status?: string;
               } & {
-                [key: string]: unknown;
+                [key: string]: string;
               };
             } | null;
-            /**
-             * @example {
-             *       "redis": {
-             *         "status": "down",
-             *         "message": "Could not connect"
-             *       }
-             *     }
-             */
             error?: {
               [key: string]: {
-                status: string;
+                /** @example up */
+                status?: string;
               } & {
-                [key: string]: unknown;
+                [key: string]: string;
               };
             } | null;
-            /**
-             * @example {
-             *       "database": {
-             *         "status": "up"
-             *       },
-             *       "redis": {
-             *         "status": "down",
-             *         "message": "Could not connect"
-             *       }
-             *     }
-             */
             details?: {
               [key: string]: {
-                status: string;
+                /** @example up */
+                status?: string;
               } & {
-                [key: string]: unknown;
+                [key: string]: string;
               };
             };
           };
+          'text/html': string;
         };
       };
     };

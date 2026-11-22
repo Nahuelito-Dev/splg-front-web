@@ -3,18 +3,30 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { failed, loading, mutation, ok } from '../../../test/pageTest';
 
-const insurance = vi.hoisted(() => ({ result: undefined as unknown, cancel: undefined as unknown }));
+const insurance = vi.hoisted(() => ({
+  result: undefined as unknown,
+  cancel: undefined as unknown,
+  approve: undefined as unknown,
+}));
+const confirmDialog = vi.hoisted(() => vi.fn());
+const permiso = vi.hoisted(() => ({ value: { allowed: true, known: true } }));
+vi.mock('../../../hooks', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  usePermiso: () => permiso.value,
+}));
 const fileSource = vi.hoisted(() => ({ mutate: vi.fn<[unknown], void>(), isPending: false }));
 const openFileSource = vi.hoisted(() => vi.fn());
 const notifyWarn = vi.hoisted(() => vi.fn());
 vi.mock('../../../utils/notifications', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   notify: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warn: notifyWarn },
+  confirm: confirmDialog,
 }));
 
 vi.mock('../../../services/queries/insurance', () => ({
   useCarInsurance: () => insurance.result,
   useCancelInsurancePolicy: () => insurance.cancel,
+  useApproveInsuranceInstallment: () => insurance.approve,
 }));
 vi.mock('../../../services/queries/attachments', () => ({ useAttachmentFile: () => fileSource }));
 vi.mock('../../../utils/fileSource', () => ({ openFileSource }));
@@ -48,6 +60,8 @@ const installment = (over: Record<string, unknown>) => ({
   operationNumber: null,
   cashMovementId: null,
   receiptAttachmentId: null,
+  approvalStatus: 'approved',
+  approvedAt: null,
   ...over,
 });
 
@@ -108,6 +122,9 @@ const renderTab = (canWrite = true) =>
 
 beforeEach(() => {
   insurance.cancel = mutation();
+  insurance.approve = mutation();
+  permiso.value = { allowed: true, known: true };
+  confirmDialog.mockReset();
   fileSource.mutate.mockReset();
   openFileSource.mockReset();
 });
@@ -155,6 +172,94 @@ describe('CarInsuranceTab', () => {
     renderTab();
     fireEvent.click(screen.getAllByRole('button', { name: 'Registrar pago' })[3]);
     expect(screen.getByText('Modal de pago 5/6')).toBeInTheDocument();
+  });
+
+  describe('aprobación del pago', () => {
+    const withAwaiting = () => ({
+      carId: 'c-1',
+      current: {
+        ...POLICY,
+        installments: [
+          installment({
+            installmentId: 'q-espera',
+            label: '4/6',
+            dueDate: '2026-11-02',
+            graceUntil: '2026-11-07',
+            approvalStatus: 'awaiting',
+          }),
+        ],
+      },
+      history: [],
+    });
+
+    it('la cuota pendiente de aprobación muestra su estado y «Aprobar pago»; registrar el pago queda bloqueado', () => {
+      insurance.result = ok(withAwaiting());
+      renderTab();
+      expect(screen.getByText('Pendiente de aprobación · vence en 5 días')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Aprobar pago' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Registrar pago' })).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('sin el permiso flota.gestionar no se ofrece «Aprobar pago»', () => {
+      permiso.value = { allowed: false, known: true };
+      insurance.result = ok(withAwaiting());
+      renderTab();
+      expect(screen.queryByRole('button', { name: 'Aprobar pago' })).not.toBeInTheDocument();
+    });
+
+    it('aprobar pide confirmación y aprueba esa cuota', async () => {
+      confirmDialog.mockResolvedValue(true);
+      insurance.result = ok(withAwaiting());
+      renderTab();
+      fireEvent.click(screen.getByRole('button', { name: 'Aprobar pago' }));
+      await vi.waitFor(() =>
+        expect((insurance.approve as { mutate: unknown }).mutate).toHaveBeenCalledWith('q-espera', expect.anything()),
+      );
+    });
+
+    it('si se cancela la confirmación no aprueba nada', async () => {
+      confirmDialog.mockResolvedValue(false);
+      insurance.result = ok(withAwaiting());
+      renderTab();
+      fireEvent.click(screen.getByRole('button', { name: 'Aprobar pago' }));
+      await vi.waitFor(() => expect(confirmDialog).toHaveBeenCalled());
+      expect((insurance.approve as { mutate: { mock: { calls: unknown[] } } }).mutate.mock.calls).toHaveLength(0);
+    });
+
+    it('una cuota pendiente sin aprobación pedida también se aprueba (todo pago requiere aprobación)', () => {
+      insurance.result = ok({
+        carId: 'c-1',
+        current: {
+          ...POLICY,
+          installments: [installment({ installmentId: 'q-lejos', label: '5/6', approvalStatus: 'none' })],
+        },
+        history: [],
+      });
+      renderTab();
+      expect(screen.getByRole('button', { name: 'Aprobar pago' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Registrar pago' })).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('una cuota aprobada no ofrece «Aprobar pago», muestra quién la aprobó y se puede registrar', () => {
+      insurance.result = ok({
+        carId: 'c-1',
+        current: {
+          ...POLICY,
+          installments: [
+            installment({
+              installmentId: 'q-ok',
+              approvalStatus: 'approved',
+              approvedAt: '2026-10-27T12:00:00Z',
+            }),
+          ],
+        },
+        history: [],
+      });
+      renderTab();
+      expect(screen.queryByRole('button', { name: 'Aprobar pago' })).not.toBeInTheDocument();
+      expect(screen.getByText(/Pago aprobado el/)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Registrar pago' })).not.toHaveAttribute('aria-disabled');
+    });
   });
 
   it('la cuota paga ofrece el comprobante y el movimiento de caja, no Pagar', () => {

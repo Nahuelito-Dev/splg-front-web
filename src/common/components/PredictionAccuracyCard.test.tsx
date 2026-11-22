@@ -24,6 +24,25 @@ describe('PredictionAccuracyCard', () => {
     expect(screen.getByText(/Tiende a atrasarse: el cliente compra en promedio 1,5 días después/)).toBeInTheDocument();
   });
 
+  it('con la corrección aplicada muestra el acierto «después» y cuánto mejoró', () => {
+    render(
+      <PredictionAccuracyCard
+        {...base}
+        accuracy={ACCURACY}
+        calibrated={{ ...ACCURACY, meanAbsoluteErrorDays: 1, withinMarginRate: 0.9 }}
+      />,
+    );
+    expect(screen.getByText('Con la corrección por el desvío de cada vehículo')).toBeInTheDocument();
+    expect(screen.getByText('1 día')).toBeInTheDocument();
+    expect(screen.getByText('90 %')).toBeInTheDocument();
+    expect(screen.getByText('Mejora 1,5 días')).toBeInTheDocument();
+  });
+
+  it('sin acierto corregido la tarjeta es la de siempre', () => {
+    render(<PredictionAccuracyCard {...base} accuracy={ACCURACY} />);
+    expect(screen.queryByText(/Con la corrección/)).not.toBeInTheDocument();
+  });
+
   it('sin casos medidos dice que todavía no hay nada para comparar', () => {
     render(
       <PredictionAccuracyCard

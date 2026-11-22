@@ -378,6 +378,7 @@ export type FleetTaskV2 = S['FleetTaskV2ResponseDto'];
 export type FleetVehicleDocuments = S['FleetVehicleDocumentsResponseDto'];
 export type FleetVehicleExpirations = S['FleetVehicleExpirationsDto'];
 export type ForceWindowBody = S['ForceWindowDto'];
+export type ForecastCalibration = S['ForecastCalibrationResponseDto'];
 export type ForecastItem = S['ForecastItemResponseDto'];
 export type ForecastVehicle = S['ForecastVehicleResponseDto'];
 export type FranjaDeReserva = S['FranjaDeReservaDto'];

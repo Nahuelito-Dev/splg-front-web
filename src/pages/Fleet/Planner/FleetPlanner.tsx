@@ -82,10 +82,11 @@ export const FleetPlanner = () => {
         <>
           <PredictionAccuracyCard
             accuracy={accuracy.data?.accuracy}
+            calibrated={accuracy.data?.calibratedAccuracy}
             loading={accuracy.isPending}
             error={accuracy.error}
             onRetry={() => void accuracy.refetch()}
-            subtitle="Qué tan cerca estuvo la fecha proyectada del vencimiento de cuando se hizo el trabajo, en los últimos 180 días"
+            subtitle="Qué tan cerca estuvo la fecha proyectada del vencimiento de cuando se hizo el trabajo, en los últimos 180 días. Arriba, la proyección sin corregir; abajo, con la corrección por el desvío de cada vehículo"
             emptyHint="trabajos"
             tendencySubject="el trabajo se hace"
           />

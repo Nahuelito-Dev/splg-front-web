@@ -9,3 +9,14 @@ export const tendencyText = (bias: number | null, subject: string): string => {
     ? `Tiende a atrasarse: ${subject} en promedio ${days(bias)} después de lo estimado.`
     : `Tiende a adelantarse: ${subject} en promedio ${days(-bias)} antes de lo estimado.`;
 };
+
+/** Cómo cambió el error medio al corregir: «mejora 2,5 días», «igual» o «empeora 1 día». */
+export const improvementText = (
+  before: { meanAbsoluteErrorDays: number | null },
+  after: { meanAbsoluteErrorDays: number | null },
+): string => {
+  if (before.meanAbsoluteErrorDays === null || after.meanAbsoluteErrorDays === null) return '–';
+  const delta = Math.round((before.meanAbsoluteErrorDays - after.meanAbsoluteErrorDays) * 10) / 10;
+  if (delta === 0) return 'Igual';
+  return delta > 0 ? `Mejora ${days(delta)}` : `Empeora ${days(-delta)}`;
+};

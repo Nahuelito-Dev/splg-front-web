@@ -14,14 +14,14 @@ const toUtc = (day: string): number => {
 /** Días de calendario desde `from` hasta `to` (ambos `YYYY-MM-DD`); negativo si `to` ya pasó. */
 export const daysBetween = (from: string, to: string): number => Math.round((toUtc(to) - toUtc(from)) / MS_PER_DAY);
 
-type InstallmentDates = Pick<InsuranceInstallment, 'status' | 'dueDate' | 'graceUntil'>;
+type InstallmentDates = Pick<InsuranceInstallment, 'status' | 'dueDate' | 'graceUntil'> &
+  Partial<Pick<InsuranceInstallment, 'approvalStatus'>>;
 
-/**
- * Lo que ve el admin de una cuota: paga y cancelada tal cual; la pendiente, vencida (pasó la gracia: peligro),
- * en gracia, por vencer (hasta 5 días: aviso) o pendiente a secas. `today` es el día de Buenos Aires.
- */
-export const installmentLabel = (installment: InstallmentDates, today: string): Label => {
-  if (installment.status !== 'pending') return INSURANCE_INSTALLMENT_STATUS[installment.status];
+/** Todo pago requiere la aprobación del admin: la cuota pendiente que todavía no está aprobada la necesita (la haya pedido el aviso o no). */
+export const needsApproval = (installment: Pick<InsuranceInstallment, 'status' | 'approvalStatus'>): boolean =>
+  installment.status === 'pending' && installment.approvalStatus !== 'approved';
+
+const pendingLabel = (installment: InstallmentDates, today: string): Label => {
   if (daysBetween(installment.graceUntil, today) > 0) return { text: 'Vencida', tone: 'danger' };
   if (daysBetween(installment.dueDate, today) > 0) return { text: 'En gracia', tone: 'warn' };
   const left = daysBetween(today, installment.dueDate);
@@ -29,6 +29,19 @@ export const installmentLabel = (installment: InstallmentDates, today: string): 
     return { text: left === 0 ? 'Vence hoy' : left === 1 ? 'Vence mañana' : `Vence en ${left} días`, tone: 'warn' };
   }
   return { text: 'Pendiente', tone: 'neutral' };
+};
+
+/**
+ * Lo que ve el admin de una cuota: paga y cancelada tal cual; la pendiente, vencida (pasó la gracia: peligro),
+ * en gracia, por vencer (hasta 5 días: aviso) o pendiente a secas. `today` es el día de Buenos Aires.
+ */
+export const installmentLabel = (installment: InstallmentDates, today: string): Label => {
+  if (installment.status !== 'pending') return INSURANCE_INSTALLMENT_STATUS[installment.status];
+  const base = pendingLabel(installment, today);
+  // La cuota vencida sigue marcándose como vencida (peligro): la aprobación pendiente se dice aparte, con su botón.
+  if (installment.approvalStatus !== 'awaiting' || base.tone === 'danger') return base;
+  const when = base.text === 'Pendiente' ? '' : ` · ${base.text.charAt(0).toLowerCase()}${base.text.slice(1)}`;
+  return { text: `Pendiente de aprobación${when}`, tone: 'warn' };
 };
 
 export interface InstallmentPlan {

@@ -92,6 +92,7 @@ export const cancelInsurancePolicy = async (
 
 export interface InstallmentFilters {
   status?: InsuranceInstallment['status'];
+  approvalStatus?: InsuranceInstallment['approvalStatus'];
   dueFrom?: string;
   dueTo?: string;
   carId?: string;
@@ -142,5 +143,20 @@ export const payInsuranceInstallment = async (
     ...v2,
     headers: idempotencyHeaders(key),
   });
+  return data;
+};
+
+/** GET /v2/insurance-installments/:id: la cuota con su póliza y el vehículo (para abrir el aviso que apunta a ella). */
+export const getInsuranceInstallment = async (id: string): Promise<InsuranceInstallmentDetail> => {
+  const { data } = await http.get<InsuranceInstallmentDetail>(`/insurance-installments/${id}`, v2);
+  return data;
+};
+
+/**
+ * POST /v2/insurance-installments/:id/approve: aprueba el pago de una cuota «pendiente de aprobación» (queda quién y
+ * cuándo). No mueve plata: el pago se registra después con `payInsuranceInstallment`.
+ */
+export const approveInsuranceInstallment = async (id: string): Promise<InsuranceInstallmentDetail> => {
+  const { data } = await http.post<InsuranceInstallmentDetail>(`/insurance-installments/${id}/approve`, undefined, v2);
   return data;
 };

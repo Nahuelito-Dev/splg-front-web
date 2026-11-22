@@ -10,6 +10,7 @@ import { confirm, notify } from '../../../utils/notifications';
 import { FLEET_TASK_CRITICALITY, labelOf } from '../../../utils/statusLabels';
 import {
   PLANNING_CASE_STATUS,
+  calibrationText,
   daysLeftText,
   forecastState,
   formatWindow,
@@ -51,6 +52,12 @@ const ItemRow = ({
         {daysLeftText(item.daysLeft)}
       </p>
       <p className="text-xs text-muted">{projectionReason(item)}</p>
+      {item.calibration && (
+        <p className="text-xs text-ink-2" data-testid="calibration">
+          {calibrationText(item.calibration)}
+          {item.calibration.uncorrectedAt ? ` Sin corregir: ${formatDay(item.calibration.uncorrectedAt)}.` : ''}
+        </p>
+      )}
       {isFuture(item.scheduledAt) && (
         <p className="text-xs text-muted">Taller: {formatWindow(item.scheduledAt, null)}</p>
       )}

@@ -1,4 +1,10 @@
-import type { ForecastItem, ForecastVehicle, PlanningCase, WindowProposal } from '../../../services/api/types';
+import type {
+  EvaluatedWindow,
+  ForecastItem,
+  ForecastVehicle,
+  PlanningCase,
+  WindowProposal,
+} from '../../../services/api/types';
 import type { Label } from '../../../utils/statusLabels';
 import { formatDay, formatNumber } from '../../../utils/format';
 
@@ -29,10 +35,23 @@ export const WINDOW_SOURCE: Record<NonNullable<PlanningCase['chosenSource']>, st
   admin: 'Elegida por el administrador',
 };
 
-/** Por qué se descartó una ventana del cuadro. */
-export const DISCARD_REASON: Record<'coverage' | 'not_selected', string> = {
+/** Por qué se descartó una ventana del cuadro (las dos últimas: se ofrecieron al chofer y no la tomó). */
+export const DISCARD_REASON: Record<NonNullable<EvaluatedWindow['discardReason']>, string> = {
   coverage: 'Deja la zona bajo el mínimo de unidades',
   not_selected: 'Hay ventanas con menos demanda',
+  rejected: 'Rechazada por el chofer',
+  expired: 'Venció sin respuesta del chofer',
+};
+
+/** El estado de una ventana del cuadro: lo que le pasó si se descartó (aunque se haya ofrecido) o «Ofrecida». */
+export const windowOutcome = (w: Pick<EvaluatedWindow, 'offered' | 'discardReason'>): Label => {
+  if (w.discardReason) {
+    return {
+      text: DISCARD_REASON[w.discardReason],
+      tone: w.discardReason === 'coverage' ? 'warn' : 'neutral',
+    };
+  }
+  return w.offered ? { text: 'Ofrecida', tone: 'info' } : { text: DISCARD_REASON.not_selected, tone: 'neutral' };
 };
 
 /** Los casos que esperan una decisión del administrador. */
@@ -113,4 +132,23 @@ export const forecastState = (item: ForecastItem): Label => {
   if (isFuture(item.scheduledAt)) return { text: 'Programada', tone: 'success' };
   if (item.dueSoon) return { text: 'Por vencer', tone: 'warn' };
   return { text: 'En regla', tone: 'success' };
+};
+
+const daysText = (n: number): string =>
+  `${n.toLocaleString('es-AR', { maximumFractionDigits: 1 })} ${n === 1 ? 'día' : 'días'}`;
+
+/**
+ * La corrección por el desvío del vehículo que se le aplicó a la fecha de una tarea, con su fuente: cuántos cierres
+ * la explican y qué tanto se desvía lo real de lo proyectado. `null` si no se corrigió.
+ */
+export const calibrationText = (calibration: ForecastItem['calibration']): string | null => {
+  if (!calibration) return null;
+  const sense = calibration.correctionDays > 0 ? 'atrasó' : 'adelantó';
+  const when = calibration.averageDeviationDays > 0 ? 'después' : 'antes';
+  const capped = calibration.capped ? ' (corrección en el tope)' : '';
+  return (
+    `Fecha corregida: se ${sense} ${daysText(Math.abs(calibration.correctionDays))}${capped}. ` +
+    `En los últimos ${calibration.samples} cierres de este vehículo, esta tarea se hizo en promedio ` +
+    `${daysText(Math.abs(calibration.averageDeviationDays))} ${when} de lo proyectado.`
+  );
 };

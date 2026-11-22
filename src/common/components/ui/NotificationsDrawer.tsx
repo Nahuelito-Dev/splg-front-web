@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Drawer } from '@mui/material';
 import { BellRing, CheckCheck, X, type LucideIcon } from 'lucide-react';
 import { formatElapsed } from '../../../utils/format';
@@ -20,6 +20,8 @@ export interface NotificationsDrawerItem {
   /** Ícono del tipo de aviso, sobre un círculo del color de `tone`. */
   icon: LucideIcon;
   tone: Tone;
+  /** Una acción del aviso (por ejemplo «Aprobar»), debajo del texto y fuera del click que lo abre. */
+  action?: ReactNode;
 }
 
 interface Props {
@@ -180,6 +182,7 @@ export const NotificationsDrawer = ({
                         />
                       )}
                     </button>
+                    {notification.action && <div className="pb-3 pl-[3.75rem] pr-5">{notification.action}</div>}
                   </li>
                 );
               })}

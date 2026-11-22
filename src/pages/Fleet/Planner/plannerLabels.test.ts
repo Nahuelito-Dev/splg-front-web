@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { ForecastItem } from '../../../services/api/types';
-import { daysLeftText, forecastState, formatWindow, isOpenCase, projectionReason, usageText } from './plannerLabels';
+import {
+  calibrationText,
+  daysLeftText,
+  forecastState,
+  formatWindow,
+  isOpenCase,
+  projectionReason,
+  usageText,
+  windowOutcome,
+} from './plannerLabels';
 
 const item = (over: Partial<ForecastItem> = {}): ForecastItem =>
   ({
@@ -19,6 +28,7 @@ const item = (over: Partial<ForecastItem> = {}): ForecastItem =>
     scheduledAt: null,
     caseId: null,
     caseStatus: null,
+    calibration: null,
     ...over,
   }) as ForecastItem;
 
@@ -86,5 +96,42 @@ describe('plannerLabels', () => {
     expect(['negotiating', 'awaiting_confirmation', 'escalated'].every((s) => isOpenCase(s as never))).toBe(true);
     expect(isOpenCase('confirmed')).toBe(false);
     expect(isOpenCase('cancelled')).toBe(false);
+  });
+
+  it('la corrección por desvío dice cuánto movió la fecha y de cuántos cierres sale', () => {
+    expect(calibrationText(null)).toBeNull();
+    const texto = calibrationText({
+      correctionDays: 6,
+      averageDeviationDays: 6.4,
+      samples: 5,
+      capped: false,
+      source: 'vehicle_task_type',
+      uncorrectedAt: '2026-11-10T00:00:00Z',
+    });
+    expect(texto).toContain('se atrasó 6 días');
+    expect(texto).toContain('últimos 5 cierres');
+    expect(texto).toContain('6,4 días después');
+  });
+
+  it('una corrección hacia atrás y en el tope lo dice', () => {
+    const texto = calibrationText({
+      correctionDays: -14,
+      averageDeviationDays: -30,
+      samples: 3,
+      capped: true,
+      source: 'vehicle_task_type',
+      uncorrectedAt: null,
+    });
+    expect(texto).toContain('se adelantó 14 días');
+    expect(texto).toContain('en el tope');
+    expect(texto).toContain('30 días antes');
+  });
+
+  it('una ventana ofrecida que el chofer rechazó o dejó vencer lo dice (D-06)', () => {
+    expect(windowOutcome({ offered: true, discardReason: null }).text).toBe('Ofrecida');
+    expect(windowOutcome({ offered: true, discardReason: 'rejected' }).text).toBe('Rechazada por el chofer');
+    expect(windowOutcome({ offered: true, discardReason: 'expired' }).text).toBe('Venció sin respuesta del chofer');
+    expect(windowOutcome({ offered: false, discardReason: 'coverage' }).tone).toBe('warn');
+    expect(windowOutcome({ offered: false, discardReason: null }).text).toBe('Hay ventanas con menos demanda');
   });
 });

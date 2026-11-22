@@ -13,6 +13,7 @@ import {
   tabPanelProps,
   type TabItem,
 } from '../../common/components/ui';
+import { ApproveInstallmentButton } from '../../common/components/ApproveInstallmentButton';
 import { TONE_CLASSES } from '../../common/components/ui/toneClasses';
 import { useClampPage, useUrlPagedParams } from '../../hooks';
 import type { AdminNotification } from '../../services/api/types';
@@ -22,7 +23,9 @@ import {
   useMarkAdminNotificationRead,
   useMarkAllAdminNotificationsRead,
 } from '../../services/queries/adminNotifications';
-import { notificationTarget, notificationVisuals } from '../../utils/adminNotifications';
+import { useInstallmentTarget } from '../../services/queries/insurance';
+import { approvalInstallmentId, notificationTarget, notificationVisuals } from '../../utils/adminNotifications';
+import { notify } from '../../utils/notifications';
 import { formatDateTime } from '../../utils/format';
 
 const TABS_ID = 'notifications-page';
@@ -43,6 +46,7 @@ export const Notifications = () => {
   const { data: unread } = useAdminUnreadCount();
   const markRead = useMarkAdminNotificationRead();
   const markAllRead = useMarkAllAdminNotificationsRead();
+  const installmentTarget = useInstallmentTarget();
   useClampPage(pagination, data?.total, setPagination);
 
   const items = data?.items ?? [];
@@ -57,6 +61,11 @@ export const Notifications = () => {
 
   const open = (notification: AdminNotification) => {
     if (notification.readAt === null) markRead.mutate(notification.id);
+    const installmentId = approvalInstallmentId(notification);
+    if (installmentId) {
+      installmentTarget(installmentId).then(navigate, notify.error);
+      return;
+    }
     const target = notificationTarget(notification.link);
     if (target) navigate(target);
   };
@@ -117,6 +126,7 @@ export const Notifications = () => {
               {items.map((notification) => {
                 const { icon: Icon, tone } = notificationVisuals(notification.kind);
                 const read = notification.readAt !== null;
+                const installmentId = approvalInstallmentId(notification);
                 return (
                   <li key={notification.id}>
                     <button
@@ -147,6 +157,16 @@ export const Notifications = () => {
                         />
                       )}
                     </button>
+                    {installmentId && (
+                      <div className="px-5 pb-3.5 pl-[3.75rem]">
+                        <ApproveInstallmentButton
+                          installmentId={installmentId}
+                          onApproved={() => {
+                            if (!read) markRead.mutate(notification.id);
+                          }}
+                        />
+                      </div>
+                    )}
                   </li>
                 );
               })}

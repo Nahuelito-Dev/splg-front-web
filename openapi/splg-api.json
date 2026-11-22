@@ -1038,6 +1038,20 @@
                         }
                     },
                     {
+                        "name": "approvalStatus",
+                        "required": false,
+                        "in": "query",
+                        "description": "`awaiting` lista las cuotas pendientes de aprobación («¿Aprobar pago?»)",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "none",
+                                "awaiting",
+                                "approved"
+                            ]
+                        }
+                    },
+                    {
                         "name": "dueFrom",
                         "required": false,
                         "in": "query",
@@ -1289,6 +1303,56 @@
                 ]
             }
         },
+        "/api/v2/insurance-installments/{id}/approve": {
+            "post": {
+                "description": "Todo pago de una cuota requiere la aprobación del admin. El aviso de la cuota a 5 días deja `approvalStatus: awaiting` («¿Aprobar pago?»), pero se aprueba cualquier cuota pendiente que no esté aprobada (`none` o `awaiting`). Queda quién (`approvedByUserId`) y cuándo (`approvedAt`), con la auditoría de datos. No mueve plata ni registra el pago: eso es `POST /insurance-installments/:id/pay`, que responde 409 `INSTALLMENT_APPROVAL_REQUIRED` mientras la cuota no esté aprobada. Corregir el importe o el vencimiento de una cuota aprobada la devuelve a `awaiting`.",
+                "operationId": "InsuranceInstallmentController_approve",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Cuota UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InsuranceInstallmentDetailDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    },
+                    "404": {
+                        "description": "No existe o es de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "La cuota ya está aprobada, o está paga o cancelada: `INSTALLMENT_NOT_APPROVABLE`"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Aprobar el pago de una cuota",
+                "tags": [
+                    "Seguros · Cuotas"
+                ]
+            }
+        },
         "/api/v2/insurance-installments/{id}/pay": {
             "post": {
                 "description": "En una transacción con la cuota bloqueada: valida que esté pendiente y que el comprobante sea de ella, saca el egreso de la caja elegida (efectivo, banco o billetera; categoría «Seguros», referencia `insurance_installment`) y deja la cuota paga con el comprobante y el movimiento asociados. La descripción del egreso lleva vehículo, aseguradora y cuota: «Seguro OVQ621 — Seguros Rivadavia, cuota 5/6». Idempotente vía `Idempotency-Key`.",
@@ -1338,7 +1402,7 @@
                         "description": "La cuota o la caja no existen o son de otra distribuidora"
                     },
                     "409": {
-                        "description": "La cuota ya está paga o cancelada, la caja está desactivada, exige sesión abierta o no tiene saldo"
+                        "description": "La cuota ya está paga o cancelada, no está aprobada (`INSTALLMENT_APPROVAL_REQUIRED`), el importe supera el aprobado (`INSTALLMENT_AMOUNT_EXCEEDS_APPROVED`), la caja está desactivada, exige sesión abierta o no tiene saldo"
                     },
                     "422": {
                         "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
@@ -7493,7 +7557,7 @@
         },
         "/api/v2/fleet/maintenance-planner/accuracy": {
             "get": {
-                "description": "De las tareas cerradas en el período que tenían fecha proyectada por kilometraje: cuántas se pudieron comparar, el error medio en días, el porcentaje hecho a ±7 días de lo proyectado y si tienden a hacerse antes o después. Por omisión, los últimos 180 días.",
+                "description": "De las tareas cerradas en el período que tenían fecha proyectada por kilometraje: cuántas se pudieron comparar, el error medio en días, el porcentaje hecho a ±7 días de lo proyectado y si tienden a hacerse antes o después. `accuracy` mide la proyección sin corregir y `calibratedAccuracy` la misma proyección con la corrección por el desvío del vehículo (autocalibración); las tareas cerradas antes de la autocalibración cuentan igual en las dos. Por omisión, los últimos 180 días.",
                 "operationId": "MaintenancePlannerController_acierto",
                 "parameters": [
                     {
@@ -31997,10 +32061,23 @@
         "/api/v1/health": {
             "get": {
                 "operationId": "HealthController_check",
-                "parameters": [],
+                "parameters": [
+                    {
+                        "name": "format",
+                        "required": false,
+                        "in": "query",
+                        "description": "Con `json` fuerza el JSON aunque el cliente prefiera HTML.",
+                        "schema": {
+                            "enum": [
+                                "json"
+                            ],
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "The Health Check is successful",
+                        "description": "Todo sano. JSON de Terminus; con `Accept: text/html`, la página de estado.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -32012,69 +32089,63 @@
                                         },
                                         "info": {
                                             "type": "object",
-                                            "example": {
-                                                "database": {
-                                                    "status": "up"
-                                                }
-                                            },
                                             "additionalProperties": {
                                                 "type": "object",
-                                                "required": [
-                                                    "status"
-                                                ],
                                                 "properties": {
                                                     "status": {
-                                                        "type": "string"
+                                                        "type": "string",
+                                                        "example": "up"
                                                     }
                                                 },
-                                                "additionalProperties": true
+                                                "additionalProperties": {
+                                                    "type": "string"
+                                                }
                                             },
                                             "nullable": true
                                         },
                                         "error": {
                                             "type": "object",
-                                            "example": {},
                                             "additionalProperties": {
                                                 "type": "object",
-                                                "required": [
-                                                    "status"
-                                                ],
                                                 "properties": {
                                                     "status": {
-                                                        "type": "string"
+                                                        "type": "string",
+                                                        "example": "up"
                                                     }
                                                 },
-                                                "additionalProperties": true
+                                                "additionalProperties": {
+                                                    "type": "string"
+                                                }
                                             },
                                             "nullable": true
                                         },
                                         "details": {
                                             "type": "object",
-                                            "example": {
-                                                "database": {
-                                                    "status": "up"
-                                                }
-                                            },
                                             "additionalProperties": {
                                                 "type": "object",
-                                                "required": [
-                                                    "status"
-                                                ],
                                                 "properties": {
                                                     "status": {
-                                                        "type": "string"
+                                                        "type": "string",
+                                                        "example": "up"
                                                     }
                                                 },
-                                                "additionalProperties": true
+                                                "additionalProperties": {
+                                                    "type": "string"
+                                                }
                                             }
                                         }
                                     }
+                                }
+                            },
+                            "text/html": {
+                                "schema": {
+                                    "type": "string"
                                 }
                             }
                         }
                     },
                     "503": {
-                        "description": "The Health Check is not successful",
+                        "description": "Algo caído. JSON de Terminus con el detalle; con `Accept: text/html`, la página de estado.",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -32086,78 +32157,63 @@
                                         },
                                         "info": {
                                             "type": "object",
-                                            "example": {
-                                                "database": {
-                                                    "status": "up"
-                                                }
-                                            },
                                             "additionalProperties": {
                                                 "type": "object",
-                                                "required": [
-                                                    "status"
-                                                ],
                                                 "properties": {
                                                     "status": {
-                                                        "type": "string"
+                                                        "type": "string",
+                                                        "example": "up"
                                                     }
                                                 },
-                                                "additionalProperties": true
+                                                "additionalProperties": {
+                                                    "type": "string"
+                                                }
                                             },
                                             "nullable": true
                                         },
                                         "error": {
                                             "type": "object",
-                                            "example": {
-                                                "redis": {
-                                                    "status": "down",
-                                                    "message": "Could not connect"
-                                                }
-                                            },
                                             "additionalProperties": {
                                                 "type": "object",
-                                                "required": [
-                                                    "status"
-                                                ],
                                                 "properties": {
                                                     "status": {
-                                                        "type": "string"
+                                                        "type": "string",
+                                                        "example": "up"
                                                     }
                                                 },
-                                                "additionalProperties": true
+                                                "additionalProperties": {
+                                                    "type": "string"
+                                                }
                                             },
                                             "nullable": true
                                         },
                                         "details": {
                                             "type": "object",
-                                            "example": {
-                                                "database": {
-                                                    "status": "up"
-                                                },
-                                                "redis": {
-                                                    "status": "down",
-                                                    "message": "Could not connect"
-                                                }
-                                            },
                                             "additionalProperties": {
                                                 "type": "object",
-                                                "required": [
-                                                    "status"
-                                                ],
                                                 "properties": {
                                                     "status": {
-                                                        "type": "string"
+                                                        "type": "string",
+                                                        "example": "up"
                                                     }
                                                 },
-                                                "additionalProperties": true
+                                                "additionalProperties": {
+                                                    "type": "string"
+                                                }
                                             }
                                         }
                                     }
+                                }
+                            },
+                            "text/html": {
+                                "schema": {
+                                    "type": "string"
                                 }
                             }
                         }
                     }
                 },
-                "summary": "Health check del sistema",
+                "summary": "Health check del sistema (JSON) y página de estado (HTML)",
                 "tags": [
                     "Health"
                 ]
@@ -49228,6 +49284,30 @@
                         "format": "uuid",
                         "nullable": true
                     },
+                    "approvalStatus": {
+                        "type": "string",
+                        "enum": [
+                            "none",
+                            "awaiting",
+                            "approved"
+                        ],
+                        "description": "`none`: sin pedir aprobación; `awaiting`: el aviso de los 5 días la pidió («pendiente de aprobación»); `approved`: aprobada. Una cuota se paga sólo si está `approved`"
+                    },
+                    "approvalRequestedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "approvedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "approvedByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
                     "createdAt": {
                         "type": "string",
                         "format": "date-time"
@@ -49249,6 +49329,10 @@
                     "paidByUserId",
                     "cashMovementId",
                     "receiptAttachmentId",
+                    "approvalStatus",
+                    "approvalRequestedAt",
+                    "approvedAt",
+                    "approvedByUserId",
                     "createdAt"
                 ]
             },
@@ -49789,6 +49873,30 @@
                         "format": "uuid",
                         "nullable": true
                     },
+                    "approvalStatus": {
+                        "type": "string",
+                        "enum": [
+                            "none",
+                            "awaiting",
+                            "approved"
+                        ],
+                        "description": "`none`: sin pedir aprobación; `awaiting`: el aviso de los 5 días la pidió («pendiente de aprobación»); `approved`: aprobada. Una cuota se paga sólo si está `approved`"
+                    },
+                    "approvalRequestedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "approvedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "approvedByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
                     "createdAt": {
                         "type": "string",
                         "format": "date-time"
@@ -49835,6 +49943,10 @@
                     "paidByUserId",
                     "cashMovementId",
                     "receiptAttachmentId",
+                    "approvalStatus",
+                    "approvalRequestedAt",
+                    "approvedAt",
+                    "approvedByUserId",
                     "createdAt",
                     "carId",
                     "carPatent",
@@ -54038,6 +54150,51 @@
                     "status"
                 ]
             },
+            "ForecastCalibrationResponseDto": {
+                "type": "object",
+                "properties": {
+                    "correctionDays": {
+                        "type": "number",
+                        "description": "Días que se sumaron a la fecha por kilometraje (negativo: se adelantó)",
+                        "example": 6
+                    },
+                    "averageDeviationDays": {
+                        "type": "number",
+                        "description": "Desvío medio de los cierres promediados, con signo: positivo = se hizo después de lo proyectado",
+                        "example": 6.4
+                    },
+                    "samples": {
+                        "type": "number",
+                        "description": "Cierres promediados",
+                        "example": 5
+                    },
+                    "capped": {
+                        "type": "boolean",
+                        "description": "El desvío medio superaba el tope y la corrección quedó en él"
+                    },
+                    "source": {
+                        "type": "string",
+                        "enum": [
+                            "vehicle_task_type"
+                        ],
+                        "description": "De dónde sale: el historial de cierres de este vehículo en este tipo de tarea"
+                    },
+                    "uncorrectedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "La fecha por kilometraje antes de corregir"
+                    }
+                },
+                "required": [
+                    "correctionDays",
+                    "averageDeviationDays",
+                    "samples",
+                    "capped",
+                    "source",
+                    "uncorrectedAt"
+                ]
+            },
             "ForecastItemResponseDto": {
                 "type": "object",
                 "properties": {
@@ -54117,6 +54274,15 @@
                             "cancelled"
                         ],
                         "nullable": true
+                    },
+                    "calibration": {
+                        "nullable": true,
+                        "description": "La corrección que se le aplicó a `predictedByKmAt` por el desvío histórico del vehículo en este tipo de tarea; `null` si no hubo (menos de 3 cierres, autocalibración apagada o nada que corregir)",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ForecastCalibrationResponseDto"
+                            }
+                        ]
                     }
                 },
                 "required": [
@@ -54134,7 +54300,8 @@
                     "underObservation",
                     "scheduledAt",
                     "caseId",
-                    "caseStatus"
+                    "caseStatus",
+                    "calibration"
                 ]
             },
             "ForecastVehicleResponseDto": {
@@ -54272,7 +54439,15 @@
                         "format": "date-time"
                     },
                     "accuracy": {
-                        "description": "Primera fecha proyectada del vencimiento por kilometraje contra la fecha en que se hizo el trabajo, en las tareas cerradas del período",
+                        "description": "Primera fecha proyectada del vencimiento por kilometraje, sin corregir, contra la fecha en que se hizo el trabajo, en las tareas cerradas del período",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/PredictionAccuracyDto"
+                            }
+                        ]
+                    },
+                    "calibratedAccuracy": {
+                        "description": "Lo mismo con la primera fecha ya corregida por el desvío del vehículo (autocalibración); igual a `accuracy` donde no hubo corrección",
                         "allOf": [
                             {
                                 "$ref": "#/components/schemas/PredictionAccuracyDto"
@@ -54283,7 +54458,8 @@
                 "required": [
                     "from",
                     "to",
-                    "accuracy"
+                    "accuracy",
+                    "calibratedAccuracy"
                 ]
             },
             "ProcessConfigFieldDto": {
@@ -54473,6 +54649,18 @@
                         "description": "Mandar también un correo al chofer con cada propuesta (0 no, 1 sí)",
                         "minimum": 0,
                         "maximum": 1
+                    },
+                    "calibrationClosures": {
+                        "type": "number",
+                        "description": "Cuántos de los últimos cierres de un vehículo y tipo de tarea se promedian para corregir la proyección",
+                        "minimum": 3,
+                        "maximum": 20
+                    },
+                    "calibrationMaxDays": {
+                        "type": "number",
+                        "description": "Tope de la corrección de la fecha proyectada, en días y en uno y otro sentido (0 apaga la autocalibración)",
+                        "minimum": 0,
+                        "maximum": 60
                     }
                 }
             },
@@ -54545,9 +54733,12 @@
                         "type": "string",
                         "enum": [
                             "coverage",
-                            "not_selected"
+                            "not_selected",
+                            "rejected",
+                            "expired"
                         ],
-                        "nullable": true
+                        "nullable": true,
+                        "description": "`coverage`: sin cobertura; `not_selected`: no entró entre las ofrecidas; `rejected`: se ofreció y el chofer la rechazó; `expired`: se ofreció y venció sin respuesta"
                     }
                 },
                 "required": [
