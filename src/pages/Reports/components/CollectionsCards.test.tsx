@@ -31,7 +31,7 @@ describe('CollectionsCards', () => {
     expect(screen.getByText(/12\.500/)).toBeInTheDocument();
   });
 
-  it('muestra las transferencias por confirmar y las no recibidas con cantidad e importe', () => {
+  it('muestra las transferencias viejas sin confirmar y las no recibidas con cantidad e importe', () => {
     state.value = {
       isLoading: false,
       data: {
@@ -44,13 +44,29 @@ describe('CollectionsCards', () => {
       },
     };
     render(<CollectionsCards range={RANGE} />);
-    expect(screen.getByText('Transferencias por confirmar')).toBeInTheDocument();
+    expect(screen.getByText('Transferencias sin confirmar (pedidos viejos)')).toBeInTheDocument();
     expect(screen.getByText('4 pedidos')).toBeInTheDocument();
     expect(screen.getByText(/64\.000/)).toBeInTheDocument();
-    expect(screen.getByText('Requiere confirmación')).toBeInTheDocument();
-    expect(screen.getByText('Transferencias no recibidas')).toBeInTheDocument();
+    expect(screen.queryByText('Requiere confirmación')).not.toBeInTheDocument();
+    expect(screen.getByText('Transferencias no recibidas (pedidos viejos)')).toBeInTheDocument();
     expect(screen.getByText('1 pedido')).toBeInTheDocument();
     expect(screen.getByText(/9\.300/)).toBeInTheDocument();
+  });
+
+  it('sin transferencias viejas no muestra esas tarjetas', () => {
+    state.value = {
+      isLoading: false,
+      data: {
+        pendingCash: { totalOrders: 0, totalAmount: 0 },
+        unpaid: { totalOrders: 0, totalAmount: 0 },
+        writtenOff: { totalOrders: 0, totalAmount: 0 },
+        pendingTransfer: { totalOrders: 0, totalAmount: 0 },
+        notReceivedTransfer: { totalOrders: 0, totalAmount: 0 },
+        pendingRefund: { totalOrders: 0, totalAmount: 0 },
+      },
+    };
+    render(<CollectionsCards range={RANGE} />);
+    expect(screen.queryByText(/Transferencias/)).not.toBeInTheDocument();
   });
 
   it('muestra el reintegro pendiente y avisa que la devolución es de la distribuidora', () => {

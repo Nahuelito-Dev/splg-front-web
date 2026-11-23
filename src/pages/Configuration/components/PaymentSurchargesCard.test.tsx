@@ -25,7 +25,6 @@ vi.mock('../../../services/queries/users', () => ({ useUser: () => ({ data: unde
 vi.mock('../../../utils/notifications', () => ({ notify, confirm }));
 
 const defaults = {
-  transferPercentage: 10,
   mercadoPagoPercentage: 10,
   cashPercentage: 0,
   isDefault: true,
@@ -53,7 +52,7 @@ const save = () => screen.getByRole('button', { name: 'Guardar recargos' });
 
 describe('PaymentSurchargesCard', () => {
   it('muestra los porcentajes de Mercado Pago y efectivo, sin el de transferencia, y no deja guardar sin cambios', () => {
-    setup({ ...defaults, transferPercentage: 7.5, mercadoPagoPercentage: 12, isDefault: false });
+    setup({ ...defaults, mercadoPagoPercentage: 12, isDefault: false });
     expect(screen.queryByLabelText('Transferencia (%)')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Mercado Pago (%)')).toHaveValue('12');
     expect(screen.getByLabelText('Efectivo (%)')).toHaveValue('0');

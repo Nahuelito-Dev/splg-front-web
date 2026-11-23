@@ -10,11 +10,13 @@ const orders = (figure: CifraDeCobro | undefined): string | undefined =>
 
 /**
  * Estado de los cobros del período: el efectivo que el chofer todavía no confirmó, lo que quedó impago y lo dado por
- * perdido, y las transferencias que el administrador todavía no confirmó o marcó como no recibidas. Nada de esto suma
- * a las ventas.
+ * perdido. De pedidos viejos pagados por transferencia, las que quedaron sin confirmar o como no recibidas (sólo se
+ * muestran si hay alguna). Nada de esto suma a las ventas.
  */
 export const CollectionsCards = ({ range }: { range: DayRange }) => {
   const { data, isLoading, error, refetch } = useCollections(range);
+  const pendingTransfers = data?.pendingTransfer.totalOrders ?? 0;
+  const notReceivedTransfers = data?.notReceivedTransfer.totalOrders ?? 0;
   if (error) return <ErrorState error={error} resource="Los cobros" onRetry={() => void refetch()} />;
 
   return (
@@ -47,23 +49,24 @@ export const CollectionsCards = ({ range }: { range: DayRange }) => {
           loading={isLoading}
           hint={orders(data?.writtenOff)}
         />
-        <KpiCard
-          title="Transferencias por confirmar"
-          icon={Landmark}
-          value={formatCurrency(data?.pendingTransfer.totalAmount ?? 0)}
-          loading={isLoading}
-          pill={
-            data && data.pendingTransfer.totalOrders > 0 ? { text: 'Requiere confirmación', trend: 'warn' } : undefined
-          }
-          hint={orders(data?.pendingTransfer)}
-        />
-        <KpiCard
-          title="Transferencias no recibidas"
-          icon={Ban}
-          value={formatCurrency(data?.notReceivedTransfer.totalAmount ?? 0)}
-          loading={isLoading}
-          hint={orders(data?.notReceivedTransfer)}
-        />
+        {pendingTransfers > 0 && (
+          <KpiCard
+            title="Transferencias sin confirmar (pedidos viejos)"
+            icon={Landmark}
+            value={formatCurrency(data?.pendingTransfer.totalAmount ?? 0)}
+            loading={isLoading}
+            hint={orders(data?.pendingTransfer)}
+          />
+        )}
+        {notReceivedTransfers > 0 && (
+          <KpiCard
+            title="Transferencias no recibidas (pedidos viejos)"
+            icon={Ban}
+            value={formatCurrency(data?.notReceivedTransfer.totalAmount ?? 0)}
+            loading={isLoading}
+            hint={orders(data?.notReceivedTransfer)}
+          />
+        )}
         <KpiCard
           title="Reintegro pendiente"
           icon={Undo2}

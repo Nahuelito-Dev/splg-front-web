@@ -3,7 +3,6 @@ import { paymentSurchargeSchema, toPaymentSurchargeBody, valuesOf } from './paym
 
 const base = { mercadoPago: '10', cash: '0' };
 const config = {
-  transferPercentage: 7.5,
   mercadoPagoPercentage: 12.34,
   cashPercentage: 0,
   isDefault: false,

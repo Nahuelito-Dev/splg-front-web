@@ -12,7 +12,7 @@ import type {
 
 const v2 = { baseURL: env.apiUrlV2 };
 
-/** GET /v2/cash-settings: las cajas a las que entra lo cobrado por Mercado Pago y por transferencia. */
+/** GET /v2/cash-settings: la caja a la que entra lo cobrado por Mercado Pago. */
 export const getCashSettings = async (): Promise<CashCollectionSettings> => {
   const { data } = await http.get<CashCollectionSettings>('/cash-settings', v2);
   return data;
@@ -45,7 +45,7 @@ export const settlePendingCollections = async (body: SettlePendingBody, key: str
   return data;
 };
 
-/** GET /v2/orders/:orderId/cash-settlement: a qué caja entró lo cobrado del pedido por Mercado Pago o transferencia. */
+/** GET /v2/orders/:orderId/cash-settlement: a qué caja entró lo cobrado del pedido por Mercado Pago (o, en un pedido viejo, por transferencia). */
 export const getOrderCashSettlement = async (orderId: string): Promise<OrderCashSettlement> => {
   const { data } = await http.get<OrderCashSettlement>(`/orders/${orderId}/cash-settlement`, v2);
   return data;

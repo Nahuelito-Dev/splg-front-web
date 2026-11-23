@@ -17,7 +17,7 @@ interface Props {
   confirming: boolean;
 }
 
-/** Todo lo que la API devuelve de una reserva, y la confirmación de la seña recibida en efectivo o por transferencia. */
+/** Todo lo que la API devuelve de una reserva, y la confirmación de la seña recibida en efectivo (o de una transferencia anterior). */
 export const ReservationDetailDrawer = ({ reservation, onClose, onConfirmDeposit, confirming }: Props) => {
   const navigate = useNavigate();
   const [cashBoxId, setCashBoxId] = useState('');
@@ -85,8 +85,8 @@ export const ReservationDetailDrawer = ({ reservation, onClose, onConfirmDeposit
         )}
         {canConfirm && reservation.paymentMethod === 'transfer' && (
           <p className="rounded-lg border border-outline bg-surface-hover p-3 text-xs text-muted">
-            La seña entra a la caja de transferencias que elegiste en «Cajas de cobro». Sin caja elegida, queda sin
-            asentar.
+            Es una seña pedida por transferencia, que ya no se ofrece. Confirmala si el dinero se acreditó (no entra a
+            ninguna caja) o cancelá la reserva con un motivo desde «Ver pedido».
           </p>
         )}
         {!reservation.depositPaid && reservation.paymentMethod === 'mercadopago' && (

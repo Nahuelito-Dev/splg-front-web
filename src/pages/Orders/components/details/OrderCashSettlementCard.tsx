@@ -1,17 +1,16 @@
 import { Link } from 'react-router-dom';
 import { Landmark } from 'lucide-react';
 import { Badge, Card, CardHeader, Skeleton } from '../../../../common/components/ui';
-import type { OrderCollectionEntry } from '../../../../services/api/types';
 import { useOrderCashSettlement } from '../../../../services/queries/cashSettings';
 import { formatCurrency, formatDateTime } from '../../../../utils/format';
 
-const KIND_LABEL: Record<OrderCollectionEntry['kind'], string> = {
+// El back ya no devuelve entradas de transferencia (un pedido viejo por transferencia no se asentó en ninguna caja).
+const KIND_LABEL: Record<string, string> = {
   mercadopago: 'Mercado Pago',
-  transfer: 'Transferencia',
   deposit: 'Seña de la reserva',
 };
 
-/** «Ingresó a <caja>» o «Cobrado sin asentar», de cada cobro del pedido por Mercado Pago o transferencia. */
+/** «Ingresó a <caja>» o «Cobrado sin asentar», de cada cobro del pedido por Mercado Pago o seña. */
 export const OrderCashSettlementCard = ({ orderId }: { orderId: string }) => {
   const { data, isPending, isError } = useOrderCashSettlement(orderId);
   // Es un dato de apoyo: si falla o no hay cobros todavía, el detalle del pedido sigue sin esta tarjeta.
@@ -29,7 +28,7 @@ export const OrderCashSettlementCard = ({ orderId }: { orderId: string }) => {
               className="flex flex-wrap items-center gap-x-3 gap-y-1"
             >
               <span className="text-sm font-medium text-ink">
-                {KIND_LABEL[entry.kind]} · {formatCurrency(entry.amount)}
+                {KIND_LABEL[entry.kind] ?? entry.kind} · {formatCurrency(entry.amount)}
               </span>
               {entry.settled ? (
                 <Badge label={{ text: `Ingresó a ${entry.cashBoxName ?? 'una caja'}`, tone: 'success' }} />

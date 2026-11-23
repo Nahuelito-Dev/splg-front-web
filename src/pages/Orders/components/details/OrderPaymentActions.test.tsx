@@ -9,7 +9,6 @@ const permissions = vi.hoisted(() => vi.fn());
 const api = vi.hoisted(() => ({
   registerCashPayment: vi.fn(),
   registerUnpaidPayment: vi.fn(),
-  confirmTransfer: vi.fn(),
 }));
 const finance = vi.hoisted(() => ({ listCashBoxes: vi.fn() }));
 const notify = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }));
@@ -34,11 +33,6 @@ afterEach(cleanup);
 beforeEach(() => {
   permissions.mockReturnValue({ canOperate: true, operateHint: undefined });
   api.registerCashPayment
-    .mockReset()
-    .mockImplementation((_id: string, body: { reason: string }) =>
-      Promise.resolve({ order_id: 'abcdef123456', paymentResolutionNote: body.reason }),
-    );
-  api.confirmTransfer
     .mockReset()
     .mockImplementation((_id: string, body: { reason: string }) =>
       Promise.resolve({ order_id: 'abcdef123456', paymentResolutionNote: body.reason }),
@@ -88,23 +82,34 @@ describe('OrderPaymentActions: qué se ofrece', () => {
     expect(screen.queryByRole('button', { name: /transferencia/i })).not.toBeInTheDocument();
   });
 
-  it('transferencia entregada y pendiente: recibida y no recibida', () => {
+  it('un pedido viejo por transferencia entregado y pendiente ofrece sólo resolverlo, con su rótulo', () => {
     renderActions({ paymentMethodDetail: 'transfer' });
-    expect(screen.getByRole('button', { name: 'Confirmar transferencia recibida' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Marcar como no recibida' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Registrar impago' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Registrar cobro de transferencia anterior' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Registrar impago de transferencia anterior' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Registrar cobro en efectivo' })).not.toBeInTheDocument();
   });
 
-  it('transferencia rechazada: sólo «recibida» (llegó tarde)', () => {
-    renderActions({ paymentMethodDetail: 'transfer', paymentStatus: 'failed' });
-    expect(screen.getByRole('button', { name: 'Confirmar transferencia recibida' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Marcar como no recibida' })).not.toBeInTheDocument();
+  it('el cobro de una transferencia anterior no pide ni manda caja de efectivo', async () => {
+    renderActions({ paymentMethodDetail: 'transfer' });
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro de transferencia anterior' }));
+    expect(screen.queryByRole('combobox', { name: /Caja/ })).not.toBeInTheDocument();
+    writeReason();
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro' }));
+    await waitFor(() =>
+      expect(api.registerCashPayment).toHaveBeenCalledWith('abcdef123456', { reason: REASON }, expect.any(String)),
+    );
+    expect(finance.listCashBoxes).not.toHaveBeenCalled();
   });
 
-  it('transferencia antes de entregar: «recibida» sí, «no recibida» no', () => {
-    renderActions({ paymentMethodDetail: 'transfer', status: 'out_for_delivery' });
-    expect(screen.getByRole('button', { name: 'Confirmar transferencia recibida' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Marcar como no recibida' })).not.toBeInTheDocument();
+  it('un pedido viejo por transferencia no ofrece nada si no se entregó o el pago no está pendiente', () => {
+    for (const over of [
+      { paymentMethodDetail: 'transfer' as const, paymentStatus: 'failed' as const },
+      { paymentMethodDetail: 'transfer' as const, status: 'out_for_delivery' as const },
+    ]) {
+      const { container, unmount } = renderActions(over);
+      expect(container).toBeEmptyDOMElement();
+      unmount();
+    }
   });
 
   it('nada si ya está cobrado, es MercadoPago o el pedido se canceló', () => {
@@ -198,41 +203,14 @@ describe('OrderPaymentActions: envío', () => {
     );
   });
 
-  it('confirmar la transferencia manda received: true', async () => {
-    renderActions({ paymentMethodDetail: 'transfer' });
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmar transferencia recibida' }));
-    writeReason();
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmar transferencia' }));
-    await waitFor(() =>
-      expect(api.confirmTransfer).toHaveBeenCalledWith(
-        'abcdef123456',
-        { received: true, reason: REASON },
-        expect.any(String),
-      ),
-    );
-  });
-
-  it('marcarla no recibida manda received: false', async () => {
-    renderActions({ paymentMethodDetail: 'transfer' });
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar como no recibida' }));
-    writeReason();
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar como no recibida', hidden: false }));
-    await waitFor(() =>
-      expect(api.confirmTransfer).toHaveBeenCalledWith(
-        'abcdef123456',
-        { received: false, reason: REASON },
-        expect.any(String),
-      ),
-    );
-  });
-
   it('el 409 del back queda en el modal y se limpia al editar el motivo', async () => {
-    api.confirmTransfer.mockRejectedValue(new ApiError(409, ['La transferencia ya se confirmó: no se cambia']));
-    renderActions({ paymentMethodDetail: 'transfer' });
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar como no recibida' }));
+    api.registerCashPayment.mockRejectedValue(new ApiError(409, ['El pedido ya se cobró: no se cambia']));
+    renderActions({});
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro en efectivo' }));
     writeReason();
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar como no recibida', hidden: false }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('La transferencia ya se confirmó');
+    await pickBox();
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('El pedido ya se cobró');
     writeReason('Otro motivo distinto del anterior');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(notify.success).not.toHaveBeenCalled();
@@ -266,7 +244,7 @@ describe('OrderPaymentActions: envío', () => {
     expect(notify.success).not.toHaveBeenCalled();
   });
 
-  it('el impago y la transferencia repetidos también avisan', async () => {
+  it('el impago repetido también avisa', async () => {
     api.registerUnpaidPayment.mockResolvedValue({ incident: { description: 'informado: Otro motivo' } });
     renderActions({});
     fireEvent.click(screen.getByRole('button', { name: 'Registrar impago' }));
@@ -278,22 +256,23 @@ describe('OrderPaymentActions: envío', () => {
   });
 
   it('si otro admin ya decidió y el pedido se refresca, el modal sigue y muestra el 409', async () => {
-    api.confirmTransfer.mockRejectedValue(new ApiError(409, ['La transferencia ya se confirmó: no se cambia']));
+    api.registerCashPayment.mockRejectedValue(new ApiError(409, ['El pedido ya se cobró: no se cambia']));
     const client = new QueryClient();
     const { rerender } = render(
       <QueryClientProvider client={client}>
-        <OrderPaymentActions order={order({ paymentMethodDetail: 'transfer' })} />
+        <OrderPaymentActions order={order({})} />
       </QueryClientProvider>,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar como no recibida' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro en efectivo' }));
     writeReason();
+    await pickBox();
     // El refetch trae el pedido ya cobrado antes de que llegue el error.
     rerender(
       <QueryClientProvider client={client}>
-        <OrderPaymentActions order={order({ paymentMethodDetail: 'transfer', paymentStatus: 'paid' })} />
+        <OrderPaymentActions order={order({ paymentStatus: 'paid' })} />
       </QueryClientProvider>,
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Marcar como no recibida' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('La transferencia ya se confirmó');
+    fireEvent.click(screen.getByRole('button', { name: 'Registrar cobro' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('El pedido ya se cobró');
   });
 });

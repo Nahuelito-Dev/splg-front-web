@@ -1129,7 +1129,7 @@ export interface paths {
     put?: never;
     /**
      * Subir un adjunto a un dueño (PDF, JPG, PNG, WEBP, Word .docx, Excel .xlsx, CSV)
-     * @description Admin y super admin: PDF, JPG, PNG, WEBP, Word (.docx), Excel (.xlsx) y CSV (UTF-8 o Windows-1252; también se acepta `application/vnd.ms-excel` si el archivo se llama `.csv`), hasta 10 MB. Se valida el contenido por su estructura, no sólo el tipo declarado: un docx/xlsx con macros, ejecutables u objetos incrustados se rechaza. Chofer: sólo PDF y imágenes. Word, Excel y CSV se entregan siempre como descarga. Dueños (`ownerType`): employee, fuel_load, traffic_fine, vehicle_accident, purchase_receipt, stock_adjustment, driver_settlement, cash_movement, customer_account_entry, order, insurance_policy e insurance_installment. Los de `insurance_installment` (comprobante de una cuota de seguro) no se suben ni se dan de baja por acá: entran sólo por `POST /api/v2/insurance-installments/:id/receipt`.
+     * @description Admin y super admin: PDF, JPG, PNG, WEBP, Word (.docx), Excel (.xlsx) y CSV (UTF-8 o Windows-1252; también se acepta `application/vnd.ms-excel` si el archivo se llama `.csv`), hasta 10 MB. Se valida el contenido por su estructura, no sólo el tipo declarado: un docx/xlsx con macros, ejecutables u objetos incrustados se rechaza. Chofer: sólo PDF y imágenes. Word, Excel y CSV se entregan siempre como descarga. Dueños (`ownerType`): employee, fuel_load, traffic_fine, vehicle_accident, purchase_receipt, stock_adjustment, driver_settlement, cash_movement, customer_account_entry, insurance_policy e insurance_installment. Los de `insurance_installment` (comprobante de una cuota de seguro) no se suben ni se dan de baja por acá: entran sólo por `POST /api/v2/insurance-installments/:id/receipt`.
      */
     post: operations['AttachmentController_upload'];
     delete?: never;
@@ -2820,30 +2820,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v2/distributor/bank-details': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Datos bancarios de la distribuidora
-     * @description CBU, alias y titular que ve el cliente cuando paga por transferencia. Cada dato es `null` si no se cargó.
-     */
-    get: operations['DistributorBankController_obtener'];
-    /**
-     * Cargar o cambiar los datos bancarios
-     * @description Reemplaza los tres datos: el que no se manda (o va `null` o vacío) queda sin cargar. El CBU se valida con sus dos dígitos verificadores; el alias lleva de 6 a 20 caracteres entre letras, números, punto y guion.
-     */
-    put: operations['DistributorBankController_guardar'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/v1/module-config/express_dispatch': {
     parameters: {
       query?: never;
@@ -2877,12 +2853,12 @@ export interface paths {
     };
     /**
      * Recargos por medio de pago de la distribuidora
-     * @description Porcentaje que se suma al total del pedido según el medio de pago (Mercado Pago, efectivo). Sin configuración rigen los de omisión: Mercado Pago 10, efectivo 0 (`isDefault: true`). `transferPercentage` queda sólo por compatibilidad (la transferencia ya no se acepta).
+     * @description Porcentaje que se suma al total del pedido según el medio de pago (Mercado Pago, efectivo). Sin configuración rigen los de omisión: Mercado Pago 10, efectivo 0 (`isDefault: true`).
      */
     get: operations['PaymentSurchargeConfigController_get'];
     /**
      * Cambiar los recargos por medio de pago
-     * @description Reemplaza la configuración: `mercadoPagoPercentage` y `cashPercentage` son obligatorios; omitir uno o mandar `null` es 400. Mandar `transferPercentage` también es 400 porque la transferencia ya no se acepta. Para volver a los valores por omisión del sistema mandá 10 y 0.
+     * @description Reemplaza la configuración: `mercadoPagoPercentage` y `cashPercentage` son obligatorios; omitir uno o mandar `null` es 400. Para volver a los valores por omisión del sistema mandá 10 y 0.
      */
     put: operations['PaymentSurchargeConfigController_put'];
     post?: never;
@@ -5436,26 +5412,6 @@ export interface paths {
     patch: operations['OrderController_registerCash'];
     trace?: never;
   };
-  '/api/v1/orders/{id}/payment/confirm-transfer': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /**
-     * El admin confirma (o marca como no recibida) una transferencia
-     * @description Sólo pedidos con medio `transfer`, no cancelados, con el pago `pending`. `received: true` pasa el pago a `paid` (registra `paymentConfirmedAt/By`) y recién ahí el pedido entregado cuenta como venta en los reportes; `received: false` lo deja en `failed` (aparece en `GET /reports/collections` como `notReceivedTransfer`). `reason` obligatorio (10 a 500 caracteres): queda en `paymentResolutionNote`, en el historial de estados y en la auditoría. Repetir la misma decisión devuelve el pedido tal cual; la contraria sobre algo ya decidido es 409. `X-Distributor` es obligatorio para el super admin.
-     */
-    patch: operations['OrderController_confirmTransfer'];
-    trace?: never;
-  };
   '/api/v1/orders/{id}/assign/{deliveryId}': {
     parameters: {
       query?: never;
@@ -5627,8 +5583,8 @@ export interface paths {
     options?: never;
     head?: never;
     /**
-     * Confirmar la seña de una reserva cobrada en efectivo o por transferencia
-     * @description Marca deposit_paid=true para una seña recibida en efectivo o por transferencia. Habilita la activación AUTOMÁTICA de la reserva (el cron la despacha el día agendado). La seña por MercadoPago se confirma sola vía webhook: confirmarla a mano es 400.
+     * Confirmar la seña de una reserva cobrada en efectivo
+     * @description Marca deposit_paid=true para una seña recibida en efectivo o una seña anterior por transferencia o cuenta corriente (sin asentarla en caja). Habilita la activación AUTOMÁTICA de la reserva (el cron la despacha el día agendado). La seña por MercadoPago se confirma sola vía webhook: confirmarla a mano es 400.
      */
     patch: operations['OrderController_confirmDeposit'];
     trace?: never;
@@ -5642,50 +5598,6 @@ export interface paths {
     };
     /** Get sales chart data (Last 7 days, scopeado por distribuidora) */
     get: operations['OrderController_getChartData'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v2/orders/{id}/transfer-receipt': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Los comprobantes del pedido con su URL firmada
-     * @description Del más nuevo al más viejo. Admin y super admin (con `X-Distributor`) ven todos los adjuntos del pedido de su distribuidora, con `uploadedByUserId`. El cliente ve sólo los comprobantes de transferencia de sus pedidos (los que subió él o los que el admin adjuntó con `label` "Comprobante de transferencia" por `POST /attachments/order/:id`), sin `uploadedByUserId`. Cada `url` vence en `expiresAt`.
-     */
-    get: operations['OrderTransferReceiptController_listar'];
-    put?: never;
-    /**
-     * El cliente sube el comprobante de su transferencia
-     * @description Multipart con el campo `file` (imagen JPG, PNG, WEBP o PDF, hasta 10 MB). Sólo en un pedido propio que se paga por transferencia, no cancelado y con el pago `pending` o `failed` (marcado como no recibido: el comprobante sirve para corregirlo). Deja una nota en el historial del pedido y avisa al panel por socket (`order:transfer-receipt-uploaded` con `{ orderId, distributorId, customerId, attachmentId, uploadedAt }`). Hasta 5 comprobantes por pedido. Idempotente vía `Idempotency-Key`.
-     */
-    post: operations['OrderTransferReceiptController_subir'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v2/orders/{id}/bank-details': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Datos bancarios para pagar el pedido por transferencia
-     * @description CBU, alias y titular de la distribuidora de ese pedido (nunca los de otra). Cada dato es `null` si la distribuidora no lo cargó.
-     */
-    get: operations['OrderTransferReceiptController_datosBancarios'];
     put?: never;
     post?: never;
     delete?: never;
@@ -5709,7 +5621,7 @@ export interface paths {
     head?: never;
     /**
      * Confirmar la seña de una reserva y asentarla en una caja
-     * @description Como `PATCH /orders/:id/confirm-deposit` (v1), y la seña entra a una caja en la misma transacción: por transferencia, a la caja de transferencias de `/v2/cash-settings` (sin caja configurada la confirmación sigue y queda «sin asentar», con aviso a la bandeja); en efectivo, a la caja de efectivo `cashBoxId`, obligatoria si hay alguna caja de efectivo activa. Repetirlo no asienta otra vez. La seña por Mercado Pago la confirma la pasarela.
+     * @description Como `PATCH /orders/:id/confirm-deposit` (v1), y la seña entra a la caja de efectivo `cashBoxId` en la misma transacción (obligatoria si hay alguna caja de efectivo activa). Una seña anterior por transferencia o a cuenta corriente se confirma sin asentarla en caja (indicar `cashBoxId` es 400). Repetirlo no asienta otra vez. La seña por Mercado Pago la confirma la pasarela.
      */
     patch: operations['ReservationV2Controller_confirmDeposit'];
     trace?: never;
@@ -7587,7 +7499,7 @@ export interface paths {
     };
     /**
      * Cobros fuera de las ventas
-     * @description Días en hora argentina; `to` es inclusivo; por fecha de entrega. Cifras que NO suman a las ventas: efectivo entregado pendiente de confirmar por el chofer (`pendingCash`), impagos sin resolver (`unpaid`, por lo que falta cobrar: el total menos la seña ya paga) y pérdidas (`writtenOff`); y transferencias entregadas que un admin todavía no confirmó (`pendingTransfer`) o marcó como no recibidas (`notReceivedTransfer`).
+     * @description Días en hora argentina; `to` es inclusivo; por fecha de entrega. Cifras que NO suman a las ventas: efectivo entregado pendiente de confirmar por el chofer (`pendingCash`), impagos sin resolver (`unpaid`, por lo que falta cobrar: el total menos la seña ya paga) y pérdidas (`writtenOff`); y, sólo de pedidos viejos, transferencias que quedaron sin confirmar (`pendingTransfer`) o marcadas como no recibidas (`notReceivedTransfer`).
      */
     get: operations['ReportsController_getCollections'];
     put?: never;
@@ -9663,7 +9575,7 @@ export interface paths {
     };
     /**
      * Ver las cajas de cobro
-     * @description La caja (billetera) de Mercado Pago y la caja (banco) de las transferencias. Sin caja configurada el cobro se confirma igual y queda sin asentar.
+     * @description La caja (billetera) de Mercado Pago. Sin caja configurada el cobro se confirma igual y queda sin asentar.
      */
     get: operations['CashCollectionSettingsController_ver'];
     put?: never;
@@ -9672,8 +9584,8 @@ export interface paths {
     options?: never;
     head?: never;
     /**
-     * Elegir las cajas de cobro
-     * @description `mercadoPagoCashBoxId` tiene que ser una caja de clase billetera y `transferCashBoxId` una de clase banco, ambas de la distribuidora y activas. `null` quita la caja; omitir el campo lo deja como está. Elegir una caja NO asienta cobros anteriores: eso lo pide `POST /cash-settings/settle-pending`.
+     * Elegir la caja de cobro
+     * @description `mercadoPagoCashBoxId` tiene que ser una caja de clase billetera de la distribuidora y activa. `null` quita la caja; omitir el campo lo deja como está. Elegir una caja NO asienta cobros anteriores: eso lo pide `POST /cash-settings/settle-pending`.
      */
     patch: operations['CashCollectionSettingsController_actualizar'];
     trace?: never;
@@ -9687,7 +9599,7 @@ export interface paths {
     };
     /**
      * Cobros de ventas sin asentar
-     * @description Pagos aprobados de Mercado Pago y transferencias confirmadas desde `from` (por omisión, los últimos 30 días) que no tienen movimiento de caja.
+     * @description Pagos aprobados de Mercado Pago (y sus devoluciones) desde `from` (por omisión, los últimos 30 días) que no tienen movimiento de caja.
      */
     get: operations['CashCollectionSettingsController_pendientes'];
     put?: never;
@@ -9709,7 +9621,7 @@ export interface paths {
     put?: never;
     /**
      * Asentar los cobros pendientes
-     * @description Asienta en las cajas configuradas los cobros de Mercado Pago (con su comisión y devoluciones) y las transferencias confirmadas desde `from` que no tienen movimiento. Idempotente: lo que ya está asentado no se repite. Nada anterior a `from` se toca.
+     * @description Asienta en las cajas configuradas los cobros de Mercado Pago (con su comisión y devoluciones) desde `from` que no tienen movimiento. Idempotente: lo que ya está asentado no se repite. Nada anterior a `from` se toca.
      */
     post: operations['CashCollectionSettingsController_asentarPendientes'];
     delete?: never;
@@ -9727,7 +9639,7 @@ export interface paths {
     };
     /**
      * A qué caja entró lo cobrado de un pedido
-     * @description Los cobros del pedido por Mercado Pago o transferencia, cada uno con su movimiento de caja o `settled: false` si quedó sin asentar.
+     * @description Los cobros del pedido por Mercado Pago (y, en pedidos viejos, por transferencia), cada uno con su movimiento de caja o `settled: false` si quedó sin asentar.
      */
     get: operations['CashCollectionSettingsController_delPedido'];
     put?: never;
@@ -16295,31 +16207,6 @@ export interface components {
       status?: 'active' | 'suspended';
       plan?: string;
     };
-    BankDetailsResponseDto: {
-      /** @example 0170099220000067797370 */
-      cbu: string | null;
-      /** @example garrafas.splg */
-      alias: string | null;
-      /** @example Distribuidora Demo S.A. */
-      holder: string | null;
-    };
-    BankDetailsDto: {
-      /**
-       * @description CBU: 22 dígitos con los dígitos verificadores válidos
-       * @example 0170099220000067797370
-       */
-      cbu?: string | null;
-      /**
-       * @description Alias: 6 a 20 caracteres entre letras, números, punto y guion
-       * @example garrafas.splg
-       */
-      alias?: string | null;
-      /**
-       * @description Titular de la cuenta
-       * @example Distribuidora Demo S.A.
-       */
-      holder?: string | null;
-    };
     ExpressConfigResponseDto: {
       /** @example false */
       enabled: boolean;
@@ -16390,12 +16277,6 @@ export interface components {
       standardEstimatedMinutes?: number;
     };
     PaymentSurchargeConfigResponseDto: {
-      /**
-       * @deprecated
-       * @description Sin uso: la transferencia ya no se acepta. Se conserva lo guardado y los pedidos viejos que la tienen
-       * @example 10
-       */
-      transferPercentage: number;
       /** @example 10 */
       mercadoPagoPercentage: number;
       /** @example 0 */
@@ -19830,13 +19711,13 @@ export interface components {
        */
       cashToCollect: number | null;
       /**
-       * @description Tipo de pago: efectivo, online (MercadoPago, transferencia) o cuenta corriente (`account`: no se cobra en la entrega)
+       * @description Tipo de pago: efectivo, online (MercadoPago; transferencia sólo en pedidos viejos) o cuenta corriente (`account`: no se cobra en la entrega)
        * @enum {string}
        */
       payment_method: 'cash' | 'online' | 'account';
       /**
        * @description Medio de pago real del pedido (`payment_method` agrupa como online todo lo que no es efectivo)
-       * @example transfer
+       * @example cash
        * @enum {string}
        */
       paymentMethodDetail: 'cash' | 'mercadopago' | 'transfer' | 'account';
@@ -19858,7 +19739,7 @@ export interface components {
       paymentConfirmedBy: string | null;
       /**
        * Format: date-time
-       * @description Cuándo un admin resolvió el impago (`paid` o `written_off`), o registró el cobro manual (`register-cash`, `confirm-transfer`). Con `paymentStatus: unpaid` es cuándo el admin lo registró (`register-unpaid`); `resolve-unpaid` lo reemplaza. `null` si nadie lo tocó.
+       * @description Cuándo un admin resolvió el impago (`paid` o `written_off`), o registró el cobro manual (`register-cash`). Con `paymentStatus: unpaid` es cuándo el admin lo registró (`register-unpaid`); `resolve-unpaid` lo reemplaza. `null` si nadie lo tocó.
        */
       paymentResolvedAt: string | null;
       /**
@@ -20124,7 +20005,7 @@ export interface components {
        * @example 17600
        */
       balanceDue: number;
-      /** @description Enlace de pago de MercadoPago de la seña mientras esté pendiente; `null` si la seña es en efectivo o por transferencia, ya está paga o no se generó */
+      /** @description Enlace de pago de MercadoPago de la seña mientras esté pendiente; `null` si la seña es en efectivo, ya está paga o no se generó */
       paymentUrl: string | null;
       /** @description Franja de entrega elegida; `null` si la reserva es sólo por día */
       timeSlot: components['schemas']['FranjaDeReservaDto'] | null;
@@ -20156,7 +20037,7 @@ export interface components {
        * @enum {string}
        */
       toStatus: 'reserved' | 'pending' | 'accepted' | 'out_for_delivery' | 'delivered' | 'cancelled';
-      /** @description `true` si es una anotación y no un cambio de estado (origen = destino): los cobros manuales del admin (`register-cash`, `register-unpaid`, `confirm-transfer`) y la reasignación de un pedido aceptado a otro chofer (`accepted → accepted`, motivo «Reasignación de chofer»). Mostrarla como nota. */
+      /** @description `true` si es una anotación y no un cambio de estado (origen = destino): los cobros manuales del admin (`register-cash`, `register-unpaid`) y la reasignación de un pedido aceptado a otro chofer (`accepted → accepted`, motivo «Reasignación de chofer»). Mostrarla como nota. */
       isNote: boolean;
       /** @description Motivo: cancelación, entrega manual o texto del cobro manual. */
       reason: string | null;
@@ -20264,13 +20145,13 @@ export interface components {
        */
       cashToCollect: number | null;
       /**
-       * @description Tipo de pago: efectivo, online (MercadoPago, transferencia) o cuenta corriente (`account`: no se cobra en la entrega)
+       * @description Tipo de pago: efectivo, online (MercadoPago; transferencia sólo en pedidos viejos) o cuenta corriente (`account`: no se cobra en la entrega)
        * @enum {string}
        */
       payment_method: 'cash' | 'online' | 'account';
       /**
        * @description Medio de pago real del pedido (`payment_method` agrupa como online todo lo que no es efectivo)
-       * @example transfer
+       * @example cash
        * @enum {string}
        */
       paymentMethodDetail: 'cash' | 'mercadopago' | 'transfer' | 'account';
@@ -20292,7 +20173,7 @@ export interface components {
       paymentConfirmedBy: string | null;
       /**
        * Format: date-time
-       * @description Cuándo un admin resolvió el impago (`paid` o `written_off`), o registró el cobro manual (`register-cash`, `confirm-transfer`). Con `paymentStatus: unpaid` es cuándo el admin lo registró (`register-unpaid`); `resolve-unpaid` lo reemplaza. `null` si nadie lo tocó.
+       * @description Cuándo un admin resolvió el impago (`paid` o `written_off`), o registró el cobro manual (`register-cash`). Con `paymentStatus: unpaid` es cuándo el admin lo registró (`register-unpaid`); `resolve-unpaid` lo reemplaza. `null` si nadie lo tocó.
        */
       paymentResolvedAt: string | null;
       /**
@@ -20387,18 +20268,6 @@ export interface components {
        * @description Caja de EFECTIVO donde entra lo cobrado. Obligatoria si la distribuidora tiene alguna caja de efectivo activa (400 si falta o si la caja no es de efectivo); la de otra distribuidora es 404 y una que exige sesión sin sesión abierta, 409. Se asienta una entrada por el saldo a cobrar (total menos la seña ya paga; si es 0 no se asienta), con categoría de sistema `order_payment`. Si la rendición del chofer ya tomó el pedido, 409.
        */
       cashBoxId?: string;
-    };
-    ConfirmTransferDto: {
-      /**
-       * @description Por qué lo registra el administrador y no el chofer (10 a 500 caracteres). Queda en el pedido, en el historial de estados y en la auditoría.
-       * @example El chofer fue dado de baja antes de rendir el efectivo
-       */
-      reason: string;
-      /**
-       * @description `true`: la transferencia llegó (el pago pasa a `paid` y el pedido cuenta como venta). `false`: no llegó (queda `failed`).
-       * @example true
-       */
-      received: boolean;
     };
     UpdateLocationDto: {
       /**
@@ -20553,36 +20422,10 @@ export interface components {
       /** @example 576300 */
       sales: number;
     };
-    OrderReceiptFileDto: {
-      /** Format: uuid */
-      attachmentId: string;
-      ownerType: components['schemas']['AttachmentOwnerType'];
-      /** Format: uuid */
-      ownerId: string;
-      /** @example Comprobante de transferencia */
-      label: string | null;
-      /** @example comprobante.jpg */
-      originalName: string;
-      /** @example image/jpeg */
-      mimeType: string;
-      /** @example 245678 */
-      sizeBytes: number;
-      /** Format: date-time */
-      uploadedAt: string;
-      /**
-       * Format: uuid
-       * @description Quién lo subió. Sólo lo ven admin y super admin.
-       */
-      uploadedByUserId?: string;
-      /** @description URL firmada de S3, se abre sin token. Los PDF y las imágenes se muestran en el navegador; cualquier otro tipo se descarga. `null` en modo soporte sin el alcance «Archivos». */
-      url: string | null;
-      /** Format: date-time */
-      expiresAt: string | null;
-    };
     ConfirmDepositV2Dto: {
       /**
        * Format: uuid
-       * @description Caja de EFECTIVO donde entra la seña recibida en efectivo. Obligatoria si la distribuidora tiene alguna caja de efectivo activa (400 si falta o no es de efectivo); la de otra distribuidora es 404 y una que exige sesión sin sesión abierta, 409. En una seña por transferencia no se manda: entra a la caja de transferencias configurada en `/v2/cash-settings`.
+       * @description Caja de EFECTIVO donde entra la seña recibida en efectivo. Obligatoria si la distribuidora tiene alguna caja de efectivo activa (400 si falta o no es de efectivo); la de otra distribuidora es 404 y una que exige sesión sin sesión abierta, 409.
        */
       cashBoxId?: string;
     };
@@ -21837,10 +21680,11 @@ export interface components {
       /** @example 35000 */
       amount: number;
       /**
-       * @example transfer
+       * @description Medio con que paga el cliente. La transferencia ya no se acepta: 400 `PAYMENT_METHOD_NOT_ACCEPTED`
+       * @example cash
        * @enum {string}
        */
-      method: 'cash' | 'transfer' | 'card' | 'mercadopago' | 'check';
+      method: 'cash' | 'card' | 'mercadopago' | 'check';
       /** @description Caja donde entra el dinero. Obligatoria para el administrador; el chofer NO la manda (el dinero entra a su rendición). */
       cashBoxId?: string;
       /** @example Pago de las facturas de octubre */
@@ -23190,9 +23034,9 @@ export interface components {
       unpaid: components['schemas']['CifraDeCobroDto'];
       /** @description Impagos que un admin dio por perdidos (`written_off`) */
       writtenOff: components['schemas']['CifraDeCobroDto'];
-      /** @description Transferencias de pedidos entregados que un admin todavía no confirmó (`paymentStatus: pending`). Se confirman con `PATCH /orders/{id}/payment/confirm-transfer` */
+      /** @description Sólo pedidos viejos: transferencias de pedidos entregados que quedaron sin confirmar (`paymentStatus: pending`). La confirmación ya no existe */
       pendingTransfer: components['schemas']['CifraDeCobroDto'];
-      /** @description Transferencias que un admin marcó como no recibidas (`paymentStatus: failed`). Sólo se marcan sobre pedidos entregados; si el dinero llega después, `confirm-transfer` con `received: true` lo corrige */
+      /** @description Sólo pedidos viejos: transferencias que un admin marcó como no recibidas (`paymentStatus: failed`) */
       notReceivedTransfer: components['schemas']['CifraDeCobroDto'];
       /** @description Pedidos COBRADOS (`paymentStatus: paid`: transferencia o MercadoPago) y luego CANCELADOS en el rango (por fecha de la última modificación): el dinero hay que devolverlo. Dato informativo, el sistema no gestiona el reintegro */
       pendingRefund: components['schemas']['CifraDeCobroDto'];
@@ -25286,13 +25130,6 @@ export interface components {
       /** @example Mercado Pago */
       mercadoPagoCashBoxName: string | null;
       /**
-       * Format: uuid
-       * @description Banco al que entran las transferencias confirmadas
-       */
-      transferCashBoxId: string | null;
-      /** @example Banco Nación */
-      transferCashBoxName: string | null;
-      /**
        * Format: date-time
        * @description Null mientras nunca se configuró
        */
@@ -25304,11 +25141,6 @@ export interface components {
        * @description Caja de clase billetera (`wallet`) de la distribuidora. `null` la quita: los cobros de Mercado Pago quedan sin asentar. Omitirla la deja como está.
        */
       mercadoPagoCashBoxId?: string | null;
-      /**
-       * Format: uuid
-       * @description Caja de clase banco (`bank`) de la distribuidora. `null` la quita: las transferencias confirmadas quedan sin asentar. Omitirla la deja como está.
-       */
-      transferCashBoxId?: string | null;
     };
     PendingCollectionsDetailDto: {
       /** @example 3 */
@@ -25324,9 +25156,6 @@ export interface components {
       /** @example 78300 */
       amount: number;
       mercadoPago: components['schemas']['PendingCollectionsDetailDto'];
-      transfer: components['schemas']['PendingCollectionsDetailDto'];
-      /** @description Señas de reservas confirmadas por transferencia sin asentar */
-      deposits: components['schemas']['PendingCollectionsDetailDto'];
       /** @description Devoluciones de Mercado Pago ya hechas cuyo egreso de caja falta (el cobro sí entró) */
       refunds: components['schemas']['PendingCollectionsDetailDto'];
       /**
@@ -25376,10 +25205,10 @@ export interface components {
     };
     OrderCollectionEntryDto: {
       /**
-       * @description `deposit` es la seña de una reserva recibida a mano
+       * @description `deposit` es la seña de una reserva recibida a mano. Los pedidos viejos por transferencia no tienen entradas
        * @enum {string}
        */
-      kind: 'mercadopago' | 'transfer' | 'deposit';
+      kind: 'mercadopago' | 'deposit';
       /** @example 12000 */
       amount: number;
       /** Format: date-time */
@@ -25396,7 +25225,7 @@ export interface components {
     OrderCashSettlementResponseDto: {
       /** Format: uuid */
       orderId: string;
-      /** @description Los cobros del pedido por Mercado Pago o transferencia; vacío si no tiene (efectivo, cuenta corriente o todavía sin cobrar) */
+      /** @description Los cobros del pedido por Mercado Pago, la seña recibida a mano y, en pedidos viejos, la transferencia; vacío si no tiene (efectivo, cuenta corriente o todavía sin cobrar) */
       entries: components['schemas']['OrderCollectionEntryDto'][];
     };
     CreateMpReconciliationDto: {
@@ -39763,90 +39592,6 @@ export interface operations {
       };
     };
   };
-  DistributorBankController_obtener: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BankDetailsResponseDto'];
-        };
-      };
-      /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la configuración (`configuracion.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  DistributorBankController_guardar: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['BankDetailsDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BankDetailsResponseDto'];
-        };
-      };
-      /** @description CBU, alias o titular inválidos, o Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la configuración (`configuracion.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   ExpressConfigController_get: {
     parameters: {
       query?: never;
@@ -48969,73 +48714,6 @@ export interface operations {
       };
     };
   };
-  OrderController_confirmTransfer: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ConfirmTransferDto'];
-      };
-    };
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['OrderResponseDto'];
-        };
-      };
-      /** @description Datos inválidos, el pedido no es una transferencia o está cancelado, o falta la distribuidora */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los pedidos (`pedidos.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Pedido no encontrado */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La transferencia ya se resolvió con la decisión contraria */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   OrderController_assignDelivery: {
     parameters: {
       query?: never;
@@ -49571,191 +49249,6 @@ export interface operations {
       };
       /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  OrderTransferReceiptController_listar: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Order UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['OrderReceiptFileDto'][];
-        };
-      };
-      /** @description El super admin no mandó `X-Distributor` */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Pedido no encontrado */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  OrderTransferReceiptController_subir: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Order UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'multipart/form-data': {
-          /** Format: binary */
-          file: string;
-        };
-      };
-    };
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['AttachmentResponseDto'];
-        };
-      };
-      /** @description Falta el archivo o el pedido no se paga por transferencia */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: customer */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El pedido no existe o no es del cliente */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El pedido está cancelado, el pago ya se resolvió (`paid`, `unpaid`, `written_off`) o ya tiene 5 comprobantes */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El archivo supera el máximo permitido (10 MB) */
-      413: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description No es una imagen (JPG, PNG, WEBP) ni un PDF, o el contenido no coincide con el tipo declarado */
-      415: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro archivo u otros datos. */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  OrderTransferReceiptController_datosBancarios: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Order UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BankDetailsResponseDto'];
-        };
-      };
-      /** @description El pedido no se paga por transferencia */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: customer */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El pedido no existe o no es del cliente */
-      404: {
         headers: {
           [name: string]: unknown;
         };

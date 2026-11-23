@@ -24,9 +24,6 @@ vi.mock('../PhysicalCylinders/components/CylinderLinksCard', () => ({ CylinderLi
 vi.mock('./components/details/OrderCashSettlementCard', () => ({
   OrderCashSettlementCard: ({ orderId }: { orderId: string }) => <div>Cobro en caja de {orderId}</div>,
 }));
-vi.mock('./components/details/OrderTransferReceipts', () => ({
-  OrderTransferReceipts: ({ orderId }: { orderId: string }) => <div>Comprobantes de {orderId}</div>,
-}));
 
 import { OrderDetails } from './OrderDetails';
 
@@ -53,21 +50,6 @@ describe('OrderDetails', () => {
     renderPage();
     expect(screen.getByText('Elegí una distribuidora')).toBeInTheDocument();
     expect(useOrder).toHaveBeenCalledWith('o-1', expect.objectContaining({ enabled: false }));
-  });
-
-  it.each([
-    ['transfer', true],
-    ['cash', false],
-  ])('con pago %s, los comprobantes de transferencia se muestran: %s', (metodo, visibles) => {
-    permissions.mockReturnValue({ needsDistributor: false, canWrite: true, canOperate: true });
-    useOrder.mockReturnValue({
-      data: { order_id: 'o-1', status: 'pending', paymentMethodDetail: metodo },
-      isPending: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-    renderPage();
-    expect(screen.queryByText('Comprobantes de o-1') !== null).toBe(visibles);
   });
 
   it.each([

@@ -31,6 +31,8 @@ interface Props {
   hint?: string;
   /** Por qué no se puede escribir ahora (p. ej. falta elegir una distribuidora). */
   blockedReason?: string;
+  /** El texto cuando no hay adjuntos (por defecto «Sin adjuntos. <hint> (<límites>)»). */
+  emptyText?: string;
 }
 
 /**
@@ -44,6 +46,7 @@ export const AttachmentsPanel = ({
   title = 'Adjuntos',
   hint = 'DNI, licencia, contrato…',
   blockedReason,
+  emptyText,
 }: Props) => {
   const [label, setLabel] = useState('');
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -145,7 +148,7 @@ export const AttachmentsPanel = ({
         />
       ) : attachments.length === 0 ? (
         <p className="rounded-xl border border-dashed border-outline p-4 text-center text-sm text-muted">
-          Sin adjuntos. {hint} ({ATTACHMENT_LIMITS_TEXT}).
+          {emptyText ?? `Sin adjuntos. ${hint} (${ATTACHMENT_LIMITS_TEXT}).`}
         </p>
       ) : (
         <ul className="space-y-2">

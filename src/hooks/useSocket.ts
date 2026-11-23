@@ -159,21 +159,6 @@ export interface PaymentRefundedPayload {
 }
 
 /**
- * Evento que emite el back a los admins de la distribuidora cuando el cliente sube el comprobante de una
- * transferencia (API v2).
- */
-export const TRANSFER_RECEIPT_UPLOADED_EVENT = 'order:transfer-receipt-uploaded';
-
-/** Payload de TRANSFER_RECEIPT_UPLOADED_EVENT. */
-export interface TransferReceiptUploadedPayload {
-  orderId: string;
-  customerId: string;
-  attachmentId: string;
-  uploadedAt: string;
-  distributorId?: string | null;
-}
-
-/**
  * Evento que emite el back a los admins de la distribuidora cuando un pedido express pasa al reparto común.
  */
 export const EXPRESS_DEGRADED_EVENT = 'order:express-degraded';

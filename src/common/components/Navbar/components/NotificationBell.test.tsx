@@ -379,35 +379,6 @@ describe('NotificationBell: order:express-degraded', () => {
   });
 });
 
-describe('NotificationBell: order:transfer-receipt-uploaded', () => {
-  const payload = {
-    orderId: 'dddddddd-4444',
-    customerId: 'c1',
-    attachmentId: 'a1',
-    uploadedAt: '2026-10-28T17:00:00.000Z',
-    distributorId: 'd1',
-  };
-
-  it('refresca el pedido y no agrega ítem local', () => {
-    const spy = setup();
-    act(() => {
-      handlers.get('order:transfer-receipt-uploaded')?.(payload);
-    });
-    const keys = spy.mock.calls.map(([filters]) => filters?.queryKey as string[]);
-    expect(keys).toContainEqual(['orders', 'detail', 'dddddddd-4444']);
-    expect(screen.queryByRole('button', { name: /sin leer/ })).toBeNull();
-  });
-
-  it('ignora el de otra distribuidora', () => {
-    scope.viewing = 'd-elegida';
-    setup();
-    act(() => {
-      handlers.get('order:transfer-receipt-uploaded')?.({ ...payload, distributorId: 'otra' });
-    });
-    expect(screen.queryByRole('button', { name: /sin leer/ })).not.toBeInTheDocument();
-  });
-});
-
 describe('NotificationBell: bandeja guardada', () => {
   it('mezcla guardados y de sesión ordenados por fecha, sin duplicar', () => {
     bandeja.items = [saved('a', { createdAt: '2026-10-28T10:00:00.000Z' })];

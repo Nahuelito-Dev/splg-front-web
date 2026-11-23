@@ -28,7 +28,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   /** El pedido impago que se resuelve; `null` mantiene el modal cerrado. */
-  order: { order_id: string; total_amount: number } | null;
+  order: { order_id: string; total_amount: number; paymentMethodDetail?: string | null } | null;
 }
 
 /**
@@ -43,7 +43,9 @@ export const ResolveUnpaidModal = ({ open, onClose, order }: Props) => {
   const [touched, setTouched] = useState(false);
   const [cashBoxId, setCashBoxId] = useState('');
   const [idempotencyKey, setIdempotencyKey] = useState(() => newUuid());
-  const cashBoxes = useOrderCashBoxes(open && resolution === 'paid');
+  // Una transferencia anterior entró al banco: cobrarla después no entra a una caja de efectivo.
+  const legacyTransfer = order?.paymentMethodDetail === 'transfer';
+  const cashBoxes = useOrderCashBoxes(open && resolution === 'paid' && !legacyTransfer);
 
   useEffect(() => {
     if (open) {
@@ -59,13 +61,13 @@ export const ResolveUnpaidModal = ({ open, onClose, order }: Props) => {
   const resolutionError = touched && !resolution ? 'Elegí cómo se resolvió' : undefined;
   const noteError = touched && !trimmed ? 'Escribí la nota: queda registrada con el cobro' : undefined;
 
-  const needsBox = resolution === 'paid' && cashBoxes.required;
+  const needsBox = resolution === 'paid' && !legacyTransfer && cashBoxes.required;
   const boxError = touched && needsBox && !cashBoxId ? 'Elegí la caja donde entra el efectivo' : undefined;
 
   const submit = () => {
     setTouched(true);
     if (!order || !resolution || !trimmed) return;
-    if (resolution === 'paid' && (cashBoxes.loading || cashBoxes.failed)) {
+    if (resolution === 'paid' && !legacyTransfer && (cashBoxes.loading || cashBoxes.failed)) {
       notify.error(new Error('No se pudieron cargar las cajas: cerrá y volvé a abrir el diálogo'));
       return;
     }
@@ -73,7 +75,11 @@ export const ResolveUnpaidModal = ({ open, onClose, order }: Props) => {
     resolve.mutate(
       {
         id: order.order_id,
-        body: { resolution, note: trimmed, cashBoxId: resolution === 'paid' && cashBoxId ? cashBoxId : undefined },
+        body: {
+          resolution,
+          note: trimmed,
+          cashBoxId: resolution === 'paid' && !legacyTransfer && cashBoxId ? cashBoxId : undefined,
+        },
         idempotencyKey,
       },
       {
@@ -96,7 +102,11 @@ export const ResolveUnpaidModal = ({ open, onClose, order }: Props) => {
       title="Resolver impago"
       description={
         order
-          ? `Pedido ${formatShortId(order.order_id)} · ${formatCurrency(order.total_amount)}. El chofer informó que no pudo cobrarlo en efectivo.`
+          ? `Pedido ${formatShortId(order.order_id)} · ${formatCurrency(order.total_amount)}. ${
+              legacyTransfer
+                ? 'Se pagó por una transferencia anterior que no se acreditó.'
+                : 'El chofer informó que no pudo cobrarlo en efectivo.'
+            }`
           : undefined
       }
       footer={
@@ -147,7 +157,7 @@ export const ResolveUnpaidModal = ({ open, onClose, order }: Props) => {
             </p>
           )}
         </fieldset>
-        {resolution === 'paid' && (
+        {resolution === 'paid' && !legacyTransfer && (
           <CashBoxField
             boxes={cashBoxes.boxes}
             value={cashBoxId}

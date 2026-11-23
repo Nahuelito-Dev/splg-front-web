@@ -25,7 +25,7 @@ describe('countPendingManualDeposits', () => {
     expect(countPendingManualDeposits([])).toBe(0);
   });
 
-  it('cuenta las señas en efectivo o por transferencia sin cobrar, no las de MercadoPago', () => {
+  it('cuenta las señas en efectivo sin cobrar y las de una reserva vieja por transferencia (para cerrarlas), no las de MercadoPago', () => {
     const reservations = [
       reserva({ id: 'a', paymentMethod: 'cash', depositPaid: false }),
       reserva({ id: 'b', paymentMethod: 'cash', depositPaid: true }),

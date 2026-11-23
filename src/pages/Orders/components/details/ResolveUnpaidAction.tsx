@@ -5,7 +5,7 @@ import { usePermissions } from '../../../../hooks';
 import { ResolveUnpaidModal } from '../ResolveUnpaidModal';
 
 interface Props {
-  order: { order_id: string; total_amount: number };
+  order: { order_id: string; total_amount: number; paymentMethodDetail?: string | null };
   size?: 'sm' | 'md';
 }
 

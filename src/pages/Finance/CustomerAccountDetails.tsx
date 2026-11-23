@@ -292,7 +292,7 @@ export const CustomerAccountDetails = () => {
             onClose={() => setAttaching(null)}
             canWrite={canWrite}
             blockedReason={writeHint}
-            hint="El recibo del pago, el comprobante de la transferencia…"
+            hint="El recibo del pago, el remito…"
           />
           <CustomerAdjustmentModal open={adjusting} onClose={() => setAdjusting(false)} account={account} />
         </div>

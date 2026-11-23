@@ -64,7 +64,7 @@ export const Reservations = () => {
     <PageContainer>
       <PageHeader
         title="Reservas"
-        description={`Pedidos agendados con seña. Confirmá la seña recibida en efectivo o por transferencia para que se despachen solos el día agendado${
+        description={`Pedidos agendados con seña. Confirmá la seña recibida en efectivo para que se despachen solos el día agendado${
           pendingCount > 0 ? ` · ${pendingCount} seña(s) pendiente(s)` : ''
         }.`}
         actions={

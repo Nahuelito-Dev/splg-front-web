@@ -6,19 +6,15 @@ import { boxesOf, canSettle, pendingSentence, settleSummary, toSettingsBody } fr
 const settings = (over: Partial<CashCollectionSettings> = {}): CashCollectionSettings => ({
   mercadoPagoCashBoxId: 'w-1',
   mercadoPagoCashBoxName: 'Mercado Pago',
-  transferCashBoxId: 'b-1',
-  transferCashBoxName: 'Banco',
   updatedAt: '2026-10-30T12:00:00.000Z',
   ...over,
 });
 
 const pending = (over: Partial<PendingCollections> = {}): PendingCollections => ({
   from: '2026-10-01T03:00:00.000Z',
-  count: 3,
-  amount: 45000.5,
+  count: 2,
+  amount: 30000.5,
   mercadoPago: { count: 2, amount: 30000.5 },
-  transfer: { count: 1, amount: 15000 },
-  deposits: { count: 0, amount: 0 },
   refunds: { count: 0, amount: 0 },
   oldestAt: '2026-10-02T12:00:00.000Z',
   ...over,
@@ -26,57 +22,36 @@ const pending = (over: Partial<PendingCollections> = {}): PendingCollections => 
 
 describe('boxesOf / toSettingsBody', () => {
   it('sin caja guardada el formulario arranca vacío y el cuerpo manda null para quitarla', () => {
-    expect(boxesOf(settings({ mercadoPagoCashBoxId: null, transferCashBoxId: null }))).toEqual({
-      mercadoPago: '',
-      transfer: '',
-    });
-    expect(toSettingsBody({ mercadoPago: '', transfer: 'b-2' })).toEqual({
-      mercadoPagoCashBoxId: null,
-      transferCashBoxId: 'b-2',
-    });
+    expect(boxesOf(settings({ mercadoPagoCashBoxId: null }))).toEqual({ mercadoPago: '' });
+    expect(toSettingsBody({ mercadoPago: '' })).toEqual({ mercadoPagoCashBoxId: null });
+    expect(toSettingsBody({ mercadoPago: 'w-2' })).toEqual({ mercadoPagoCashBoxId: 'w-2' });
+  });
+
+  it('el cuerpo ya no lleva caja de transferencias', () => {
+    expect(toSettingsBody({ mercadoPago: 'w-2' })).not.toHaveProperty('transferCashBoxId');
   });
 });
 
 describe('pendingSentence', () => {
-  it('cuenta los cobros sin asentar desde la fecha, con el importe y el detalle por medio', () => {
+  it('cuenta los cobros sin asentar desde la fecha, con el importe y el detalle', () => {
     expect(pendingSentence(pending(), '2026-10-01')).toBe(
-      `Hay 3 movimientos de ventas sin asentar desde el 1 oct 2026 (${formatCurrency(45000.5)} netos): 2 de Mercado Pago, 1 transferencia.`,
+      `Hay 2 movimientos de ventas sin asentar desde el 1 oct 2026 (${formatCurrency(30000.5)} netos): 2 de Mercado Pago.`,
     );
   });
 
-  it('un solo medio y singular', () => {
+  it('suma las devoluciones sin egreso', () => {
     expect(
       pendingSentence(
-        pending({ count: 1, amount: 100, mercadoPago: { count: 0, amount: 0 }, transfer: { count: 1, amount: 100 } }),
+        pending({ count: 3, mercadoPago: { count: 1, amount: 0 }, refunds: { count: 2, amount: 600 } }),
         '2026-10-01',
       ),
-    ).toBe(
-      `Hay 1 movimiento de ventas sin asentar desde el 1 oct 2026 (${formatCurrency(100)} netos): 1 transferencia.`,
-    );
-  });
-
-  it('suma las señas y las devoluciones sin egreso', () => {
-    expect(
-      pendingSentence(
-        pending({
-          count: 3,
-          mercadoPago: { count: 0, amount: 0 },
-          transfer: { count: 0, amount: 0 },
-          deposits: { count: 1, amount: 1000 },
-          refunds: { count: 2, amount: 600 },
-        }),
-        '2026-10-01',
-      ),
-    ).toContain('1 seña, 2 devoluciones sin su egreso');
+    ).toContain('1 de Mercado Pago, 2 devoluciones sin su egreso');
   });
 
   it('sin pendientes lo dice', () => {
-    expect(
-      pendingSentence(
-        pending({ count: 0, amount: 0, mercadoPago: { count: 0, amount: 0 }, transfer: { count: 0, amount: 0 } }),
-        '2026-10-01',
-      ),
-    ).toBe('No hay cobros sin asentar desde el 1 oct 2026.');
+    expect(pendingSentence(pending({ count: 0, amount: 0, mercadoPago: { count: 0, amount: 0 } }), '2026-10-01')).toBe(
+      'No hay cobros sin asentar desde el 1 oct 2026.',
+    );
   });
 });
 
@@ -115,20 +90,15 @@ describe('settleSummary', () => {
 });
 
 describe('canSettle', () => {
-  it('las devoluciones sin egreso se asientan sin elegir caja; las señas piden la de transferencias', () => {
-    const sinCajas = settings({ mercadoPagoCashBoxId: null, transferCashBoxId: null });
-    const base = { mercadoPago: { count: 0, amount: 0 }, transfer: { count: 0, amount: 0 } };
-    expect(canSettle(sinCajas, pending({ ...base, refunds: { count: 1, amount: 5 } }))).toBe(true);
-    expect(canSettle(sinCajas, pending({ ...base, deposits: { count: 1, amount: 5 } }))).toBe(false);
-    expect(canSettle(settings(), pending({ ...base, deposits: { count: 1, amount: 5 } }))).toBe(true);
+  it('las devoluciones sin egreso se asientan sin elegir caja', () => {
+    const sinCaja = settings({ mercadoPagoCashBoxId: null });
+    const base = { mercadoPago: { count: 0, amount: 0 } };
+    expect(canSettle(sinCaja, pending({ ...base, refunds: { count: 1, amount: 5 } }))).toBe(true);
+    expect(canSettle(sinCaja, pending({ ...base }))).toBe(false);
   });
 
-  it('hace falta la caja del medio de los cobros pendientes', () => {
+  it('hace falta la caja de Mercado Pago para sus cobros pendientes', () => {
     expect(canSettle(settings(), pending())).toBe(true);
-    expect(canSettle(settings({ mercadoPagoCashBoxId: null }), pending({ transfer: { count: 0, amount: 0 } }))).toBe(
-      false,
-    );
-    expect(canSettle(settings({ mercadoPagoCashBoxId: null }), pending())).toBe(true);
-    expect(canSettle(settings({ mercadoPagoCashBoxId: null, transferCashBoxId: null }), pending())).toBe(false);
+    expect(canSettle(settings({ mercadoPagoCashBoxId: null }), pending())).toBe(false);
   });
 });

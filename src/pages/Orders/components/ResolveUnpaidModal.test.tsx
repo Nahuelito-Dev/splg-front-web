@@ -58,6 +58,20 @@ describe('ResolveUnpaidModal', () => {
     expect(mutate).not.toHaveBeenCalled();
   });
 
+  it('una transferencia anterior cobrada después no pide ni manda caja de efectivo', () => {
+    render(<ResolveUnpaidModal open onClose={vi.fn()} order={{ ...ORDER, paymentMethodDetail: 'transfer' }} />);
+    fireEvent.click(screen.getByRole('radio', { name: /Lo cobramos después/ }));
+    expect(screen.queryByRole('combobox', { name: /Caja/ })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Nota/), { target: { value: 'Se acreditó al día siguiente' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar cobro' }));
+    expect(mutate).toHaveBeenCalledTimes(1);
+    expect(mutate.mock.calls[0][0].body).toEqual({
+      resolution: 'paid',
+      note: 'Se acreditó al día siguiente',
+      cashBoxId: undefined,
+    });
+  });
+
   it('una nota en blanco no alcanza', () => {
     renderModal();
     fireEvent.click(screen.getByRole('radio', { name: /Lo cobramos después/ }));

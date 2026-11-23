@@ -42,19 +42,15 @@ import { CashCollectionSettings } from './CashCollectionSettings';
 const settings = (over: Record<string, unknown> = {}) => ({
   mercadoPagoCashBoxId: null,
   mercadoPagoCashBoxName: null,
-  transferCashBoxId: 'b-1',
-  transferCashBoxName: 'Banco Nación',
   updatedAt: '2026-10-30T12:00:00.000Z',
   ...over,
 });
 
 const pending = (over: Record<string, unknown> = {}) => ({
   from: '2026-10-01T03:00:00.000Z',
-  count: 3,
-  amount: 45000,
+  count: 2,
+  amount: 30000,
   mercadoPago: { count: 2, amount: 30000 },
-  transfer: { count: 1, amount: 15000 },
-  deposits: { count: 0, amount: 0 },
   refunds: { count: 0, amount: 0 },
   oldestAt: '2026-10-02T12:00:00.000Z',
   ...over,
@@ -79,22 +75,18 @@ afterEach(() => {
 describe('CashCollectionSettings', () => {
   it('muestra las cajas vigentes y el aviso de cobros sin asentar', () => {
     setup();
-    expect(screen.getByLabelText('Caja de transferencias')).toHaveValue('b-1');
+    expect(screen.queryByLabelText('Caja de transferencias')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Caja de Mercado Pago')).toHaveValue('');
-    expect(screen.getByText(/Hay 3 movimientos de ventas sin asentar desde el/)).toBeInTheDocument();
+    expect(screen.getByText(/Hay 2 movimientos de ventas sin asentar desde el/)).toBeInTheDocument();
   });
 
-  it('guarda las dos cajas; «sin caja» manda null', () => {
+  it('guarda la caja; «sin caja» manda null', () => {
     const { update } = setup();
     const guardar = screen.getByRole('button', { name: 'Guardar cajas' });
     expect(guardar).toBeDisabled();
     fireEvent.change(screen.getByLabelText('Caja de Mercado Pago'), { target: { value: 'w-1' } });
-    fireEvent.change(screen.getByLabelText('Caja de transferencias'), { target: { value: '' } });
     fireEvent.click(guardar);
-    expect(update.mutate).toHaveBeenCalledWith(
-      { mercadoPagoCashBoxId: 'w-1', transferCashBoxId: null },
-      expect.anything(),
-    );
+    expect(update.mutate).toHaveBeenCalledWith({ mercadoPagoCashBoxId: 'w-1' }, expect.anything());
   });
 
   it('asienta los pendientes con la fecha elegida, previa confirmación, e informa el resultado', async () => {
@@ -118,9 +110,9 @@ describe('CashCollectionSettings', () => {
   });
 
   it('sin la caja del medio de los cobros pendientes no se puede asentar', () => {
-    setup(settings({ transferCashBoxId: null }), pending({ transfer: { count: 0, amount: 0 }, count: 2 }));
+    setup(settings());
     expect(screen.getByRole('button', { name: 'Asentar cobros pendientes' })).toBeDisabled();
-    expect(screen.getByText(/Elegí y guardá la caja del medio/)).toBeInTheDocument();
+    expect(screen.getByText(/Elegí y guardá la caja de Mercado Pago/)).toBeInTheDocument();
   });
 
   it('sin permiso de escritura todo queda deshabilitado', () => {

@@ -36,11 +36,10 @@ interface FormProps {
 
 const SettingsForm = ({ settings, canWrite, writeHint }: FormProps) => {
   const wallets = useCashBoxes({ page: 0, pageSize: 100 }, { kind: 'wallet' });
-  const banks = useCashBoxes({ page: 0, pageSize: 100 }, { kind: 'bank' });
   const update = useUpdateCashSettings();
   const saved = boxesOf(settings);
   const [values, setValues] = useState(saved);
-  const dirty = values.mercadoPago !== saved.mercadoPago || values.transfer !== saved.transfer;
+  const dirty = values.mercadoPago !== saved.mercadoPago;
 
   const optionsOf = (query: typeof wallets) => [
     NO_BOX,
@@ -57,7 +56,7 @@ const SettingsForm = ({ settings, canWrite, writeHint }: FormProps) => {
     <Card className="p-6">
       <CardHeader
         title="Dónde entra lo cobrado"
-        subtitle="Los pagos aprobados de Mercado Pago (menos su comisión) y las transferencias que confirmás entran solos a estas cajas. Sin caja, el cobro se confirma igual pero queda sin asentar."
+        subtitle="Los pagos aprobados de Mercado Pago (menos su comisión) entran solos a esta caja. Sin caja, el cobro se confirma igual pero queda sin asentar."
       />
       <div className="grid gap-4 sm:grid-cols-2">
         <Select
@@ -69,18 +68,9 @@ const SettingsForm = ({ settings, canWrite, writeHint }: FormProps) => {
           disabled={!canWrite || wallets.isPending}
           title={writeHint}
         />
-        <Select
-          label="Caja de transferencias"
-          value={values.transfer}
-          onChange={(e) => setValues({ ...values, transfer: e.target.value })}
-          options={optionsOf(banks)}
-          hint="Una cuenta de banco. Entra al confirmar que la transferencia llegó."
-          disabled={!canWrite || banks.isPending}
-          title={writeHint}
-        />
       </div>
       <p className="mt-4 text-sm text-muted">
-        Elegir una caja no asienta cobros anteriores: eso lo pedís abajo, con la fecha desde la que querés.
+        Elegir la caja no asienta cobros anteriores: eso lo pedís abajo, con la fecha desde la que querés.
       </p>
       <div className="mt-4">
         <Button loading={update.isPending} disabled={!canWrite || !dirty} title={writeHint} onClick={save}>
@@ -121,7 +111,7 @@ const PendingCard = ({ settings, canWrite, writeHint }: FormProps) => {
     <Card className="p-6">
       <CardHeader
         title="Cobros sin asentar"
-        subtitle="Cobros por Mercado Pago o transferencia que no entraron a ninguna caja, por ejemplo porque todavía no habías elegido una."
+        subtitle="Cobros por Mercado Pago que no entraron a ninguna caja, por ejemplo porque todavía no habías elegido una."
       />
       <div className="flex flex-wrap items-end gap-4">
         <DayFilter label="Desde" value={from} onChange={(day) => day && setFrom(day)} maxDay={daysAgo(0)} />
@@ -145,9 +135,7 @@ const PendingCard = ({ settings, canWrite, writeHint }: FormProps) => {
         )}
       </div>
       {pending.data && pending.data.count > 0 && !canSettle(settings, pending.data) && (
-        <p className="mt-2 text-sm text-muted">
-          Elegí y guardá la caja del medio de esos cobros para poder asentarlos.
-        </p>
+        <p className="mt-2 text-sm text-muted">Elegí y guardá la caja de Mercado Pago para poder asentarlos.</p>
       )}
     </Card>
   );
@@ -159,10 +147,7 @@ export const CashCollectionSettings = () => {
   const { data, isPending, error, refetch } = useCashSettings({ enabled: !needsDistributor });
   return (
     <PageContainer size="sm">
-      <PageHeader
-        title="Cajas de cobro"
-        description="A qué caja entra lo que se cobra por Mercado Pago y por transferencia."
-      />
+      <PageHeader title="Cajas de cobro" description="A qué caja entra lo que se cobra por Mercado Pago." />
       {needsDistributor ? (
         <DistributorRequired />
       ) : error ? (

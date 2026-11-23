@@ -29,8 +29,6 @@ import {
   ORDER_SOCKET_EVENTS,
   ORDER_UPDATED_EVENT,
   PAYMENT_REFUNDED_EVENT,
-  TRANSFER_RECEIPT_UPLOADED_EVENT,
-  type TransferReceiptUploadedPayload,
   REFUND_FAILED_EVENT,
   type AdminNotificationPayload,
   type ClaimCreatedPayload,
@@ -276,15 +274,6 @@ export const NotificationBell = () => {
         });
         notify.info(`Se reintegró el pago del pedido ${formatShortId(payload.orderId)}`);
         void queryClient.invalidateQueries({ queryKey: queryKeys.refunds.all });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(payload.orderId) });
-      }),
-    );
-
-    // El cliente subió el comprobante de su transferencia: toast y se refresca el pedido (el aviso queda en la bandeja).
-    unsubscribers.push(
-      subscribe<TransferReceiptUploadedPayload>(TRANSFER_RECEIPT_UPLOADED_EVENT, (payload) => {
-        if (!belongsToView(payload)) return;
-        notify.info(`El cliente subió el comprobante del pedido ${formatShortId(payload.orderId)}`);
         void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(payload.orderId) });
       }),
     );
