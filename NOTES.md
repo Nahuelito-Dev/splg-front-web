@@ -1,15 +1,24 @@
-## v2.2.0 - 2026-11-17
+## v2.3.0 - 2026-11-23
 
 ### Funcionalidades
 
-- **chat:** ✨ asignación automática en el panel: estado en línea, equipo de mensajes, topes y aviso de colisión (8b) (4e4dd20)
-- **roles:** ✨ roles del personal, cambiar rol y alta de admins con su rol (e07ce20)
-- **chat:** ✨ etiquetas de la bandeja, tiempo de respuesta esperado y cierre por inactividad en el panel (7c) (34d682d)
-- **observabilidad:** ✨ errores y trazas del panel en Sentry (7845702)
-- **assistant:** ✨ probador del asistente, preguntas sin respuesta y lote de pruebas en el panel (7b) (3b0afc8)
+- **efectivo:** ✨ efectivo cobrado y no rendido por chofer en el panel (e930c13)
+- **pedidos:** ✨ dónde y cuándo se confirmó la entrega en el detalle del pedido (a45458c)
+- **taller:** ✨ acierto antes y después de la corrección y «Aprobar pago» en las cuotas de seguro (57d63c9)
+- **pagos:** ✨ el panel deja de ofrecer la transferencia y su recargo para lo nuevo (8bcff57)
+- **seguimiento:** ✨ rediseño de las vistas de vehículos (4476e1e)
+- **plataforma:** ✨ logo de la empresa y foto de las personas en las pantallas de plataforma (8ebb23c)
+- **catalogo:** ✨ foto de proveedores, envases, cargas y productos en el panel (6f70e69)
+- **vehiculos:** ✨ foto del vehículo en pedidos, chofer, hojas de ruta y tablero de flota (02c0600)
+- **panel:** ✨ fotos de vehículos y personas donde el dato ya llegaba (6f91207)
+- **distribuidoras:** ✨ logo de la empresa en la tabla de plataforma (8cc0a55)
+- **flota:** ✨ tablero de tareas de flota tipo Trello con arrastrar y soltar (2eb54f4)
+- **despacho:** ✨ sección «Cómo viene el despacho» con las métricas de M1 (e5a13ab)
+- **modulos:** ✨ tarjeta «Acierto de la predicción» en recompra y planificador de taller (4fc29d2)
 
 ### Mantenimiento
 
-- **marca:** 🔧 aclarar que OrixTech es Nahuel Wagner en el pie del menú (8f8be5c)
-- **release:** 👷 el release nocturno despacha el deploy y corre fuera de la hora en punto (97e84d1)
+- **mensajes:** ✅ esperar el hilo antes de buscar la lista en el test de la conversación (a7cd2e1)
+- 🔧 licencia propietaria de OrixTech (e54b19a)
+- ✅ datos de ejemplo con un nombre de distribuidora neutro (e62fb88)
 
