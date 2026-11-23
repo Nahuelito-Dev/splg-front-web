@@ -4,6 +4,7 @@ import type { StockAdjustment, StockBalance, StockMovement, StockThreshold } fro
 export interface ConditionRow {
   gasCylinderId: string;
   gasCylinderType: string;
+  gasCylinderPhotoUrl: string | null;
   full: number;
   empty: number;
   defective: number;
@@ -16,6 +17,7 @@ export const pivotBalances = (balances: StockBalance[]): ConditionRow[] => {
     const row = rows.get(b.gasCylinderId) ?? {
       gasCylinderId: b.gasCylinderId,
       gasCylinderType: b.gasCylinderType,
+      gasCylinderPhotoUrl: b.gasCylinderPhotoUrl,
       full: 0,
       empty: 0,
       defective: 0,
@@ -45,6 +47,7 @@ export const pivotByLocation = (balances: StockBalance[]): LocationRow[] => {
       locationKind: b.locationKind,
       gasCylinderId: b.gasCylinderId,
       gasCylinderType: b.gasCylinderType,
+      gasCylinderPhotoUrl: b.gasCylinderPhotoUrl,
       full: 0,
       empty: 0,
       defective: 0,

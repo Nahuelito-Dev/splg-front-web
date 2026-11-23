@@ -51,7 +51,7 @@ const session = (over: Record<string, unknown> = {}) => ({
   id: 's1',
   distributorId: 'c1',
   distributorName: 'Gas del Norte',
-  requestedBy: { userId: 'u-ana', fullName: 'Ana Plataforma' },
+  requestedBy: { userId: 'u-ana', fullName: 'Ana Plataforma', photoUrl: null },
   kind: 'consented',
   status: 'active',
   reason: 'Revisar por qué no salen los pedidos de la zona norte',
@@ -59,7 +59,7 @@ const session = (over: Record<string, unknown> = {}) => ({
   scope: [],
   requestedMinutes: 60,
   requestExpiresAt: null,
-  decidedBy: { userId: 'u-adm', fullName: 'Admin Norte' },
+  decidedBy: { userId: 'u-adm', fullName: 'Admin Norte', photoUrl: null },
   decidedAt: '2026-11-14T15:00:00.000Z',
   decisionNote: null,
   startedAt: '2026-11-14T15:00:00.000Z',
@@ -338,5 +338,18 @@ describe('Sesiones de soporte', () => {
     expect(dialog.getByText('Consultó · Pedidos')).toBeInTheDocument();
     expect(dialog.getByText(/12 registros · con datos ocultos/)).toBeInTheDocument();
     expect(dialog.queryByText(/GET|\/api\//)).toBeNull();
+  });
+
+  it('quien pidió la sesión, con su foto si la API la manda', () => {
+    const PHOTO = 'https://fotos.test/ana.jpg';
+    state.list = list([session({ requestedBy: { userId: 'u-ana', fullName: 'Ana Plataforma', photoUrl: PHOTO } })]);
+    const { container } = renderPage(<SupportSessions />, { url: URL });
+    expect(container.querySelector(`img[src="${PHOTO}"]`)).not.toBeNull();
+  });
+
+  it('sin foto quedan las iniciales de quien la pidió', () => {
+    const { container } = renderPage(<SupportSessions />, { url: URL });
+    expect(container.querySelector('img')).toBeNull();
+    expect(screen.getByText('AP')).toBeInTheDocument();
   });
 });

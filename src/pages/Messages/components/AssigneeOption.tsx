@@ -1,25 +1,5 @@
-import { useState, type ReactNode } from 'react';
-import { Avatar, cx } from '../../../common/components/ui';
-
-interface AvatarProps {
-  name: string;
-  photoUrl?: string;
-}
-
-/** La foto que trae la API (URL firmada); si no tiene o no carga, las iniciales. */
-const AssigneeAvatar = ({ name, photoUrl }: AvatarProps) => {
-  const [failed, setFailed] = useState(false);
-  if (!photoUrl || failed) return <Avatar name={name} size="md" />;
-  return (
-    <img
-      src={photoUrl}
-      alt=""
-      loading="lazy"
-      onError={() => setFailed(true)}
-      className="h-[30px] w-[30px] shrink-0 rounded-full border border-outline-soft bg-bg object-cover"
-    />
-  );
-};
+import type { ReactNode } from 'react';
+import { Avatar, cx, PhotoThumb } from '../../../common/components/ui';
 
 interface Props {
   /** El nombre de la persona (las iniciales de la foto). */
@@ -28,7 +8,10 @@ interface Props {
   label?: string;
   /** Lo que va debajo del nombre («Vos», «Vuelve a la cola»). */
   detail?: string;
+  /** La foto firmada que mandó la API; si venció, se pide otra con `userId`. */
   photoUrl?: string;
+  /** Id de usuario de la persona, para renovar su foto. */
+  userId?: string;
   /** En lugar de la foto (la cola no es una persona). */
   icon?: ReactNode;
   value: string;
@@ -38,7 +21,18 @@ interface Props {
 }
 
 /** Una opción del modal de asignar: un radio con la foto y el nombre, toda la fila es el blanco del clic. */
-export const AssigneeOption = ({ name, label, detail, photoUrl, icon, value, checked, onSelect, disabled }: Props) => (
+export const AssigneeOption = ({
+  name,
+  label,
+  detail,
+  photoUrl,
+  userId,
+  icon,
+  value,
+  checked,
+  onSelect,
+  disabled,
+}: Props) => (
   <label
     className={cx(
       'flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/40',
@@ -55,7 +49,12 @@ export const AssigneeOption = ({ name, label, detail, photoUrl, icon, value, che
       onChange={() => onSelect(value)}
       className="sr-only"
     />
-    {icon ?? <AssigneeAvatar name={name} photoUrl={photoUrl} />}
+    {icon ??
+      (userId ? (
+        <PhotoThumb kind="user" id={userId} url={photoUrl} fallback={<Avatar name={name} size="md" />} />
+      ) : (
+        <Avatar name={name} size="md" />
+      ))}
     <span className="grid min-w-0 flex-1">
       <span className="truncate text-sm font-medium text-ink">{label ?? name}</span>
       {detail && <span className="truncate text-xs text-muted">{detail}</span>}

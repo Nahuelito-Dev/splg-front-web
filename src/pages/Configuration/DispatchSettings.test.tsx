@@ -20,6 +20,7 @@ vi.mock('../../services/queries/moduleConfig', () => ({
   },
   useUpdateDispatchConfig: () => state.update,
 }));
+vi.mock('./components/DispatchMetricsSection', () => ({ DispatchMetricsSection: () => null }));
 vi.mock('../../services/queries/users', () => ({
   useUser: () => ({ data: { full_name: 'Ana Admin' }, isPending: false }),
 }));

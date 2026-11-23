@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { daysBetween, installmentLabel, previewInstallments } from './insuranceState';
+import { needsApproval, daysBetween, installmentLabel, previewInstallments } from './insuranceState';
 
 const TODAY = '2026-10-28';
 const pending = (dueDate: string, graceUntil: string) => ({ status: 'pending' as const, dueDate, graceUntil });
@@ -31,6 +31,44 @@ describe('installmentLabel', () => {
       text: 'Pendiente',
       tone: 'neutral',
     });
+  });
+});
+
+describe('aprobación del pago', () => {
+  it('una cuota por vencer que espera la aprobación lo dice, con cuándo vence', () => {
+    expect(installmentLabel({ ...pending('2026-11-02', '2026-11-07'), approvalStatus: 'awaiting' }, TODAY)).toEqual({
+      text: 'Pendiente de aprobación · vence en 5 días',
+      tone: 'warn',
+    });
+    expect(installmentLabel({ ...pending('2026-10-29', '2026-11-03'), approvalStatus: 'awaiting' }, TODAY).text).toBe(
+      'Pendiente de aprobación · vence mañana',
+    );
+    expect(installmentLabel({ ...pending('2026-10-26', '2026-10-31'), approvalStatus: 'awaiting' }, TODAY).text).toBe(
+      'Pendiente de aprobación · en gracia',
+    );
+  });
+
+  it('ya aprobada o sin pedir sigue con su rótulo de siempre', () => {
+    expect(installmentLabel({ ...pending('2026-11-02', '2026-11-07'), approvalStatus: 'approved' }, TODAY).text).toBe(
+      'Vence en 5 días',
+    );
+    expect(installmentLabel({ ...pending('2026-11-02', '2026-11-07'), approvalStatus: 'none' }, TODAY).text).toBe(
+      'Vence en 5 días',
+    );
+  });
+
+  it('una cuota vencida sigue marcándose como vencida aunque espere la aprobación', () => {
+    expect(installmentLabel({ ...pending('2026-10-20', '2026-10-25'), approvalStatus: 'awaiting' }, TODAY).text).toBe(
+      'Vencida',
+    );
+  });
+
+  it('todo pago requiere aprobación: la pendiente sin aprobar la necesita, pida o no el aviso', () => {
+    expect(needsApproval({ status: 'pending', approvalStatus: 'awaiting' })).toBe(true);
+    expect(needsApproval({ status: 'pending', approvalStatus: 'none' })).toBe(true);
+    expect(needsApproval({ status: 'pending', approvalStatus: 'approved' })).toBe(false);
+    expect(needsApproval({ status: 'cancelled', approvalStatus: 'awaiting' })).toBe(false);
+    expect(needsApproval({ status: 'paid', approvalStatus: 'approved' })).toBe(false);
   });
 });
 

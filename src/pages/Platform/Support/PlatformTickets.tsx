@@ -47,6 +47,16 @@ const TAB_QUERY: Record<QueueTab, Pick<PlatformTicketsByQuery, 'group' | 'assign
 const isTab = (value: string): value is QueueTab => value in TAB_QUERY;
 const isPriority = (value: string): value is TicketPriority => value in TICKET_PRIORITY;
 
+/** El ticket con el logo de su empresa (`distributorLogoUrl` firmada de la API); sin logo, las iniciales de la empresa. */
+const TicketIdentity = ({ row, withCompany = true }: { row: Ticket; withCompany?: boolean }) => (
+  <IdentityCell
+    title={row.subject}
+    subtitle={withCompany ? `${row.number} · ${row.distributorName}` : undefined}
+    avatarName={row.distributorName}
+    photo={{ kind: 'distributor', id: row.distributorId, url: row.distributorLogoUrl }}
+  />
+);
+
 const FILTERS = { tab: 'active', company: '', priority: '', overdue: '', q: '' };
 const PRIORITY_OPTIONS = [{ value: '', label: 'Todas' }, ...statusOptions(TICKET_PRIORITY)];
 
@@ -89,13 +99,7 @@ export const PlatformTickets = () => {
       flex: 1.4,
       minWidth: 240,
       sortable: false,
-      renderCell: ({ row }) => (
-        <IdentityCell
-          title={row.subject}
-          subtitle={`${row.number} · ${row.distributorName}`}
-          avatarName={row.distributorName}
-        />
-      ),
+      renderCell: ({ row }) => <TicketIdentity row={row} />,
     },
     {
       field: 'status',
@@ -212,7 +216,7 @@ export const PlatformTickets = () => {
                 className="grid w-full gap-1.5 text-left"
                 aria-label={`Ver el ticket ${row.number}`}
               >
-                <span className="min-w-0 truncate font-medium text-ink">{row.subject}</span>
+                <TicketIdentity row={row} withCompany={false} />
                 <TicketBadges ticket={row} />
                 <span className="text-xs text-muted">
                   {row.number} · {row.distributorName} · {row.assignedTo?.fullName ?? 'Sin asignar'}

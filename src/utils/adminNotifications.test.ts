@@ -120,3 +120,10 @@ describe('Ronda 3 de Mercado Pago: avisos de pagos', () => {
     expect(notificationTarget({ entity: 'order', id: 'o-1' })).toBe('/orders/o-1');
   });
 });
+
+describe('C4: efectivo cobrado y sin rendir', () => {
+  it('el aviso es una advertencia y lleva a las rendiciones', () => {
+    expect(notificationVisuals('driver_cash_unreported').tone).toBe('warn');
+    expect(notificationTarget({ entity: 'driver-settlement-cash', id: 'd-1' })).toBe('/finance/settlements');
+  });
+});

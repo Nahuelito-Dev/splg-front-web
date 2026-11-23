@@ -286,7 +286,7 @@ describe('Mensajes: una conversación', () => {
     });
     show('/messages/conv-1');
     expect(await screen.findByRole('heading', { name: /Lucía Benítez/ })).toBeInTheDocument();
-    expect(await within(screen.getByRole('log', { name: 'Mensajes' })).findByText('hola 1')).toBeInTheDocument();
+    expect(await within(await screen.findByRole('log', { name: 'Mensajes' })).findByText('hola 1')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Tomar' }));
     await waitFor(() => expect(api.assignConversation).toHaveBeenCalledWith('conv-1', 'u-me'));
     expect(await screen.findByText(/La atendés vos/)).toBeInTheDocument();

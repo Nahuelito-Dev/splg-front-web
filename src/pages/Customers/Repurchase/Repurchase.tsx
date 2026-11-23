@@ -13,6 +13,7 @@ import {
   tabPanelProps,
   type TabItem,
 } from '../../../common/components/ui';
+import { PredictionAccuracyCard } from '../../../common/components/PredictionAccuracyCard';
 import { usePermissions, useUrlParam } from '../../../hooks';
 import type { RepurchaseRun } from '../../../services/api/types';
 import { useProcessConfigs } from '../../../services/queries/moduleConfig';
@@ -151,6 +152,13 @@ export const Repurchase = () => {
               />
             </KpiGrid>
           )}
+          <PredictionAccuracyCard
+            accuracy={s?.accuracy}
+            loading={stats.isPending}
+            subtitle="Qué tan cerca estuvo la fecha estimada de la compra real, en los últimos 90 días"
+            emptyHint="compras"
+            tendencySubject="el cliente compra"
+          />
           <Card>
             <Tabs items={TABS} value={active} onChange={setTab} label="Secciones de la recompra" idPrefix={TABS_ID} />
             <div {...tabPanelProps(TABS_ID, active)} className="p-4">

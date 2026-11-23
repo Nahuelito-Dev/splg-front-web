@@ -214,11 +214,11 @@ describe('NewOrder: administrador general sin distribuidora elegida', () => {
       };
       renderPage();
       fillForm();
-      fireEvent.change(screen.getByLabelText('Método de pago'), { target: { value: 'transfer' } });
+      fireEvent.change(screen.getByLabelText('Método de pago'), { target: { value: 'mercadopago' } });
       expect(quote.body).toHaveBeenLastCalledWith({
         customerId: 'u-1',
         addressId: 'a-1',
-        paymentMethod: 'transfer',
+        paymentMethod: 'mercadopago',
         deliveryMode: 'standard',
         items: [{ gasCylinderId: 'g-1', quantity: 1, unitPrice: 100 }],
       });
@@ -226,6 +226,14 @@ describe('NewOrder: administrador general sin distribuidora elegida', () => {
       expect(screen.getByText('Recargo por medio de pago')).toBeInTheDocument();
       expect(screen.queryByText('Recargo express')).not.toBeInTheDocument();
       expect(screen.getByText('Total').nextElementSibling).toHaveTextContent('115');
+    });
+    it('no ofrece la transferencia como medio de pago', () => {
+      renderPage();
+      const opciones = Array.from(screen.getByLabelText('Método de pago').querySelectorAll('option')).map(
+        (o) => o.value,
+      );
+      expect(opciones).toContain('mercadopago');
+      expect(opciones).not.toContain('transfer');
     });
     it('sin distribuidora elegida no cotiza y muestra el aviso', () => {
       permissions.mockReturnValue({ canWrite: false, writeHint: WRITE_HINT });

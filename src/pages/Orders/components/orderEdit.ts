@@ -6,7 +6,7 @@ import { argentinaDay } from '../../../utils/format';
  * Por qué un pedido no se puede editar de antemano (la API contesta 409), o `null` si se puede intentar.
  *
  * El back también rechaza si el medio de pago es MercadoPago o el pago no está pendiente. El pedido ya trae
- * `paymentMethodDetail` (`cash | mercadopago | transfer`) y `paymentStatus`, pero acá sólo se bloquea de antemano lo
+ * `paymentMethodDetail` (`cash | mercadopago | transfer`, esta última sólo en pedidos viejos) y `paymentStatus`, pero acá sólo se bloquea de antemano lo
  * que no depende de ellos (pedido no pendiente, con chofer, o con un checkout de MercadoPago en `payment_url`); el
  * resto se intenta y el 409 del back se muestra con su mensaje.
  */
@@ -29,7 +29,7 @@ export interface OrderEditValues {
   /** YYYY-MM-DD; `''` no toca la fecha. */
   scheduledDate: string;
   /** `''` no toca el medio de pago. */
-  paymentMethod: '' | 'cash' | 'transfer';
+  paymentMethod: '' | 'cash';
   notes: string;
   items: OrderEditItem[];
 }
@@ -81,7 +81,7 @@ export const orderEditSchema = (initialScheduledDate: string) =>
       addressId: z.string(),
       timeSlotId: z.string(),
       scheduledDate: z.string(),
-      paymentMethod: z.enum(['', 'cash', 'transfer']),
+      paymentMethod: z.enum(['', 'cash']),
       notes: z.string(),
       items: z
         .array(

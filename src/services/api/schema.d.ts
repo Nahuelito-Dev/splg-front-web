@@ -320,6 +320,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/insurance-installments/{id}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Aprobar el pago de una cuota
+     * @description Todo pago de una cuota requiere la aprobación del admin. El aviso de la cuota a 5 días deja `approvalStatus: awaiting` («¿Aprobar pago?»), pero se aprueba cualquier cuota pendiente que no esté aprobada (`none` o `awaiting`). Queda quién (`approvedByUserId`) y cuándo (`approvedAt`), con la auditoría de datos. No mueve plata ni registra el pago: eso es `POST /insurance-installments/:id/pay`, que responde 409 `INSTALLMENT_APPROVAL_REQUIRED` mientras la cuota no esté aprobada. Corregir el importe o el vencimiento de una cuota aprobada la devuelve a `awaiting`.
+     */
+    post: operations['InsuranceInstallmentController_approve'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/insurance-installments/{id}/pay': {
     parameters: {
       query?: never;
@@ -764,7 +784,10 @@ export interface paths {
     delete: operations['UsersController_remove'];
     options?: never;
     head?: never;
-    /** Update user by ID */
+    /**
+     * Update user by ID
+     * @description Cada uno edita su nombre y teléfono. Un administrador edita además la cuenta de otro (nombre, teléfono, bloqueo y contraseña) con el permiso del rol de esa cuenta: chofer `personal.gestionar`, administrador `administradores.gestionar` y todos los permisos de su rol. La contraseña de otro administrador sólo la cambia el super admin (403 `ADMIN_PASSWORD_NOT_CHANGEABLE`): la cambia él con el enlace de `POST /email/password-reset`.
+     */
     patch: operations['UsersController_update'];
     trace?: never;
   };
@@ -1313,6 +1336,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v2/fleet/tasks/board': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Tablero de tareas: columnas por estado
+     * @description Columnas `forecast`, `scheduled`, `in_progress` y `done` (las hechas desde `doneSince`, 30 días por omisión, la más reciente primero); las demás ordenadas por `position`. Las vencidas quedan en su columna con `isOverdue: true`. Las canceladas sólo se cuentan. Los cambios llegan por el socket del panel en el evento `fleet:task` (`{ id, change, card }`)
+     */
+    get: operations['FleetTaskV2Controller_boardView'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/fleet/tasks': {
     parameters: {
       query?: never;
@@ -1323,7 +1366,11 @@ export interface paths {
     /** Listar tareas, con su estado de pago */
     get: operations['FleetTaskV2Controller_findAll'];
     put?: never;
-    post?: never;
+    /**
+     * Crear una tarea, con su responsable
+     * @description Igual que `POST /fleet/tasks` (v1) más `assigneeEmployeeId`. La tarea entra al final de su columna del tablero
+     */
+    post: operations['FleetTaskV2Controller_create'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1341,6 +1388,30 @@ export interface paths {
     get: operations['FleetTaskV2Controller_findOne'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Editar una tarea abierta, con su responsable
+     * @description Igual que `PATCH /fleet/tasks/:id` (v1) más el responsable (`assigneeEmployeeId`, `null` lo quita) y la precondición (`expectedUpdatedAt` o `If-Match`)
+     */
+    patch: operations['FleetTaskV2Controller_update'];
+    trace?: never;
+  };
+  '/api/v2/fleet/tasks/{id}/move': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mover una tarjeta del tablero
+     * @description Transiciones: `forecast → scheduled` (con `scheduledAt`), `scheduled → forecast` (borra el turno y cancela la ventana confirmada del planificador), `scheduled ↔ in_progress`. A la misma columna sólo reordena. A «hecha» se llega con `POST /v2/fleet/tasks/:id/close`; cancelar, con `PATCH /fleet/tasks/:id/cancel`. Responde la tarjeta como quedó
+     */
+    post: operations['FleetTaskV2Controller_move'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1586,6 +1657,26 @@ export interface paths {
      * @description Por vehículo: el consumo diario estimado y de dónde sale (su historial o el promedio de su tipo), y cada tarea abierta con su vencimiento proyectado —por fecha, por kilometraje o el primero de los dos—, si entró en su anticipación y el caso de planificación si lo hay. `nextWindow` es la próxima ventana de taller del vehículo.
      */
     get: operations['MaintenancePlannerController_forecast'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/fleet/maintenance-planner/accuracy': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cuánto acierta la fecha proyectada de los vencimientos
+     * @description De las tareas cerradas en el período que tenían fecha proyectada por kilometraje: cuántas se pudieron comparar, el error medio en días, el porcentaje hecho a ±7 días de lo proyectado y si tienden a hacerse antes o después. `accuracy` mide la proyección sin corregir y `calibratedAccuracy` la misma proyección con la corrección por el desvío del vehículo (autocalibración); las tareas cerradas antes de la autocalibración cuentan igual en las dos. Por omisión, los últimos 180 días.
+     */
+    get: operations['MaintenancePlannerController_acierto'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1970,14 +2061,14 @@ export interface paths {
     post?: never;
     /**
      * Dar de baja a un administrador (baja lógica)
-     * @description Es la baja del usuario (`DELETE /users/:id`): queda con `deletedAt`, su cuenta de acceso se deshabilita y nada se borra. Mismos permisos que la edición, y nadie se da de baja a sí mismo. No se puede dar de baja al último administrador activo de una distribuidora ni al último super administrador. El administrador de una distribuidora dada de baja lo da de baja el super admin sin `X-Distributor` (con ella en el header responde 401), y ahí no se exige que quede otro administrador.
+     * @description Es la baja del usuario (`DELETE /users/:id`): queda con `deletedAt`, su cuenta de acceso se deshabilita y nada se borra. Mismos permisos que la edición, y nadie se da de baja a sí mismo. No se puede dar de baja al último administrador activo de una distribuidora ni al último super administrador. El administrador de una distribuidora dada de baja lo da de baja el super admin sin `X-Distributor` (con ella en el header responde 401), y ahí no se exige que quede otro administrador. Un admin de empresa sólo da de baja a quien no tiene permisos que él no tenga (el rol de sistema pide todos).
      */
     delete: operations['AdminController_remove'];
     options?: never;
     head?: never;
     /**
      * Editar los datos de un administrador
-     * @description Nombre y teléfono (`fullName`, `phoneNumber`). El correo cambia por `POST /email/change-email`; el bloqueo por `PATCH /users/:id/block`. El super admin edita a cualquiera; un admin de empresa sólo a los de su distribuidora, nunca a sí mismo (sus datos van por `PATCH /users/:id`) ni a un super admin.
+     * @description Nombre y teléfono (`fullName`, `phoneNumber`). El correo cambia por `POST /email/change-email`; el bloqueo por `PATCH /users/:id/block`. El super admin edita a cualquiera; un admin de empresa sólo a los de su distribuidora, nunca a sí mismo (sus datos van por `PATCH /users/:id`) ni a un super admin, y sólo si tiene todos los permisos del rol de personal de ese administrador (el de sistema pide todos): nadie sube ni baja a quien tiene más permisos.
      */
     patch: operations['AdminController_update'];
     trace?: never;
@@ -2786,12 +2877,12 @@ export interface paths {
     };
     /**
      * Recargos por medio de pago de la distribuidora
-     * @description Porcentaje que se suma al total del pedido según el medio de pago (transferencia, Mercado Pago, efectivo). Sin configuración rigen los de omisión: transferencia 10, Mercado Pago 10, efectivo 0 (`isDefault: true`).
+     * @description Porcentaje que se suma al total del pedido según el medio de pago (Mercado Pago, efectivo). Sin configuración rigen los de omisión: Mercado Pago 10, efectivo 0 (`isDefault: true`). `transferPercentage` queda sólo por compatibilidad (la transferencia ya no se acepta).
      */
     get: operations['PaymentSurchargeConfigController_get'];
     /**
      * Cambiar los recargos por medio de pago
-     * @description Reemplaza la configuración: los tres porcentajes (`transferPercentage`, `mercadoPagoPercentage`, `cashPercentage`) son obligatorios; omitir uno o mandar `null` es 400. Para volver a los valores por omisión del sistema mandá 10, 10 y 0. Rige para los pedidos que se cotizan o crean desde ese momento; los pedidos ya creados conservan el porcentaje con que se crearon. El cliente ve el recargo en la cotización antes de confirmar.
+     * @description Reemplaza la configuración: `mercadoPagoPercentage` y `cashPercentage` son obligatorios; omitir uno o mandar `null` es 400. Mandar `transferPercentage` también es 400 porque la transferencia ya no se acepta. Para volver a los valores por omisión del sistema mandá 10 y 0.
      */
     put: operations['PaymentSurchargeConfigController_put'];
     post?: never;
@@ -4668,7 +4759,7 @@ export interface paths {
     };
     /**
      * Medios de pago y su recargo, sin iniciar sesión
-     * @description Público. Efectivo, transferencia y Mercado Pago con el recargo (%) que la distribuidora cobra hoy con cada uno. Es informativo: el monto exacto de un pedido lo da `POST /orders/quote`.
+     * @description Público. Efectivo y Mercado Pago (la transferencia ya no se acepta) con el recargo (%) que la distribuidora cobra hoy con cada uno. Es informativo: el monto exacto de un pedido lo da `POST /orders/quote`.
      */
     get: operations['PublicCatalogController_mediosDePago'];
     put?: never;
@@ -4727,7 +4818,7 @@ export interface paths {
     put?: never;
     /**
      * Otorgar una cuenta de acceso a un empleado, con el rol que le corresponde a su puesto (CU-182)
-     * @description Sólo los empleados de categoría driver tienen cuenta (rol chofer, con su perfil de reparto). Cualquier otra categoría responde 400.
+     * @description Sólo los empleados de categoría driver tienen cuenta (rol chofer, con su perfil de reparto). Cualquier otra categoría responde 400. Pide `personal.gestionar` (403 `PERMISSION_DENIED`).
      */
     post: operations['EmployeeAccountController_grantAccount'];
     delete?: never;
@@ -5008,7 +5099,7 @@ export interface paths {
     put?: never;
     /**
      * Cotizar un pedido
-     * @description Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (`paymentSurchargePercentage` % sobre subtotal + zona: parámetro de la distribuidora por medio de pago, por omisión 10 en `mercadopago` y `transfer` y 0 en `cash`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta. Con `orderId` cotiza la EDICIÓN de ese pedido (mismas reglas que `PATCH /orders/:id`): pedido ajeno o inexistente 404, no editable 409, stock por diferencia contra lo ya reservado, franja y fecha sólo si cambian.
+     * @description Mismo cuerpo que `POST /orders` (sólo `items` y `paymentMethod` son obligatorios). Devuelve el desglose que cobrará el alta: renglones con la promoción por volumen, `subtotal`, recargo de zona (con `addressId`; el admin además manda `customerId`), recargo por medio de pago (`paymentSurchargePercentage` % sobre subtotal + zona: parámetro de la distribuidora por medio de pago, por omisión 10 en `mercadopago` y 0 en `cash`; la transferencia ya no se acepta: 400 `PAYMENT_METHOD_NOT_ACCEPTED`), `deposit` (si `isReservation`), `total` y `balance` (`total - deposit`). El `total` es exactamente el del pedido que se crea con el mismo cuerpo. No escribe nada ni reserva stock; sí rechaza lo que el alta rechazaría (producto de otra distribuidora, sin stock, dirección fuera de cobertura). Cliente sin `X-Distributor`: distribuidora por defecto, igual que el alta. Con `orderId` cotiza la EDICIÓN de ese pedido (mismas reglas que `PATCH /orders/:id`): pedido ajeno o inexistente 404, no editable 409, stock por diferencia contra lo ya reservado, franja y fecha sólo si cambian.
      */
     post: operations['OrderController_quote'];
     delete?: never;
@@ -5172,7 +5263,7 @@ export interface paths {
     head?: never;
     /**
      * Editar un pedido pendiente (sin chofer asignado)
-     * @description Admin, super admin y el CLIENTE DUEÑO del pedido (uno ajeno es 404). Idempotente vía `Idempotency-Key`. Los precios y recargos los calcula SIEMPRE el servidor. El cliente deja una anotación en el historial de estados. Dirección, franja/fecha, medio de pago, notas y renglones. Si vienen `items` reemplazan a los actuales: se devuelve el stock viejo y se reserva el nuevo con los precios y recargos vigentes (mismas reglas que el alta). Fuera de `pending`, o con un pedido de Mercado Pago, responde 409; pasar un pedido a Mercado Pago es 400 (la transferencia sí se edita). Para eliminar un pedido: `PATCH /orders/:id/cancel`.
+     * @description Admin, super admin y el CLIENTE DUEÑO del pedido (uno ajeno es 404). Idempotente vía `Idempotency-Key`. Los precios y recargos los calcula SIEMPRE el servidor. El cliente deja una anotación en el historial de estados. Dirección, franja/fecha, medio de pago, notas y renglones. Si vienen `items` reemplazan a los actuales: se devuelve el stock viejo y se reserva el nuevo con los precios y recargos vigentes (mismas reglas que el alta). Fuera de `pending`, o con un pedido de Mercado Pago, responde 409; pasar un pedido a Mercado Pago es 400 (pasar a transferencia también es 400 `PAYMENT_METHOD_NOT_ACCEPTED`; un pedido viejo con transferencia la conserva si el medio no cambia). Para eliminar un pedido: `PATCH /orders/:id/cancel`.
      */
     patch: operations['OrderController_update'];
     trace?: never;
@@ -5233,8 +5324,8 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Obtener el código secreto de entrega (para el QR del chofer)
-     * @description El chofer renderiza este código como QR y lo muestra al cliente al llegar. Solo existe si el pedido ya fue aceptado. El chofer solo puede ver el de SUS pedidos. Trae `attempts` (códigos incorrectos del cliente) y `blocked` (agotó los 5 intentos: hay que generar un código nuevo). El chofer también se entera en vivo por el socket: `order:delivery-code-failed` en cada error y `order:delivery-code-blocked` al bloquearse.
+     * Obtener el código secreto de entrega (admin)
+     * @description Sólo admin y super admin (soporte): el chofer ya no puede leerlo (403) porque el código lo ve el cliente y se lo dice al chofer (`GET /api/v3/orders/:id/delivery-code`). Solo existe si el pedido ya fue aceptado. Trae `attempts` (códigos incorrectos) y `blocked` (agotó los 5 intentos: hay que generar un código nuevo).
      */
     get: operations['OrderController_getDeliveryCode'];
     put?: never;
@@ -5255,8 +5346,8 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Confirmar entrega escaneando el QR del chofer (prueba anti-fraude)
-     * @description El cliente escanea el QR que muestra el chofer y envía el código leído. Si coincide con `order.deliveryCode` y el pedido está ON_THE_WAY, se marca DELIVERED. Idempotente vía header `Idempotency-Key`: reintentos de red no re-procesan la entrega. Si lo confirma un admin/super_admin, `reason` es obligatorio (10 a 500 caracteres, 400 si falta) y queda en el historial de estados y en la auditoría; para el cliente no se pide y se ignora.
+     * Confirmar la entrega con el código (admin)
+     * @description Sólo admin y super admin: el cliente ya no puede confirmar (403); la entrega la confirma el chofer con el código del cliente en `POST /api/v3/orders/:id/confirm-delivery`. Si coincide con `order.deliveryCode` y el pedido está ON_THE_WAY, se marca DELIVERED. Idempotente vía header `Idempotency-Key`: reintentos de red no re-procesan la entrega. Si lo confirma un admin/super_admin, `reason` es obligatorio (10 a 500 caracteres, 400 si falta) y queda en el historial de estados y en la auditoría; para el cliente no se pide y se ignora.
      */
     post: operations['OrderController_confirmDelivery'];
     delete?: never;
@@ -5634,7 +5725,7 @@ export interface paths {
     put?: never;
     /**
      * Generar un código de entrega nuevo
-     * @description El chofer asignado (o un admin) reemplaza el código del pedido en camino por uno de 6 dígitos y los intentos fallidos del cliente vuelven a 0. Sirve cuando el cliente agotó los intentos (`DELIVERY_CODE_BLOQUEADO`). Queda en la auditoría de datos. El código viejo deja de valer.
+     * @description Sólo un admin (el chofer no puede: el código lo ve el cliente, que lo regenera en `POST /api/v3/orders/:id/delivery-code/regenerate`) reemplaza el código del pedido en camino por uno de 6 dígitos y los intentos fallidos del cliente vuelven a 0. Sirve cuando el cliente agotó los intentos (`DELIVERY_CODE_BLOQUEADO`). Queda en la auditoría de datos. El código viejo deja de valer.
      */
     post: operations['DeliveryCodeV2Controller_regenerate'];
     delete?: never;
@@ -5695,6 +5786,26 @@ export interface paths {
      * @description Uno de los nueve estados de pago de Mercado Pago (`paymentStatus`), su motivo (`paymentStatusDetail`), el texto en castellano armado por el back (`paymentStatusLabel`), si se puede reintentar el pago (`canRetry`) y el enlace para hacerlo (`paymentUrl`). El cliente sólo lee sus pedidos; admin y super admin los de su distribuidora (el super admin manda `X-Distributor`) y además reciben el `history` de cambios. Lo ajeno responde 404.
      */
     get: operations['OrderPaymentV2Controller_deUno'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/dispatch/metrics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cómo viene el despacho
+     * @description Pedidos despachados, ofertas por pedido, porcentaje de ofertas aceptadas, rechazadas y vencidas (sobre las ya resueltas), tiempo de respuesta del chofer y tiempo hasta asignar (mediana y p90, en segundos), pedidos que se quedaron sin chofer y los 5 choferes con mejor tasa de aceptación. El tiempo de respuesta sólo cuenta ofertas con respuesta registrada: las anteriores a esta función no la tienen. Por omisión, los últimos 30 días; el período puede ser de hasta 366 días. El super admin tiene que mandar `X-Distributor`.
+     */
+    get: operations['DispatchMetricsController_obtener'];
     put?: never;
     post?: never;
     delete?: never;
@@ -6615,6 +6726,26 @@ export interface paths {
      * @description Sólo una presentada: una aprobada ya movió dinero a una caja y se corrige anulando el movimiento y ajustando la deducción.
      */
     patch: operations['DriverSettlementController_reopen'];
+    trace?: never;
+  };
+  '/api/v2/driver-settlements/unreported-cash': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Efectivo cobrado y no rendido, por chofer
+     * @description Por chofer, el efectivo de pedidos entregados que todavía no entró en una rendición: cantidad de pedidos, monto (total menos la seña ya paga, calculado en el back), antigüedad del más viejo y si pasó el umbral del aviso (`cash_alerts.minHours`). No incluye los pedidos cuyo cobro resolvió un administrador.
+     */
+    get: operations['DriverSettlementV2Controller_efectivoSinRendir'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/api/v2/driver-settlements/{id}/preview': {
@@ -7714,7 +7845,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Health check del sistema */
+    /** Health check del sistema (JSON) y página de estado (HTML) */
     get: operations['HealthController_check'];
     put?: never;
     post?: never;
@@ -7770,6 +7901,26 @@ export interface paths {
      * @description Ruta del chofer hasta la dirección de entrega de UN pedido, para dibujarla en el mapa sin que las apps lleven la clave de Google. Sólo la pide el chofer asignado (pedido `accepted` u `on_the_way`) o el cliente dueño (`on_the_way`); el destino es siempre la dirección del pedido. El origen es la última posición reciente del chofer; `from` es opcional y se acepta sólo si está a menos de `ROUTES_FROM_MAX_DISTANCE_M` (300 m) de ella. El servidor consulta la Routes API de Google con su propia clave (`GOOGLE_DIRECTIONS_API_KEY`) y, si falta o Google falla, OSRM propio (`OSRM_BASE_URL`; el público sólo en desarrollo); `provider` dice cuál respondió. Cupos: 30 por minuto y usuario, y por día (24 h) 100 por usuario y 3000 por distribuidora, ajustables con `ROUTES_DAILY_LIMIT_PER_USER` y `ROUTES_DAILY_LIMIT_PER_DISTRIBUTOR` (429). Las respuestas se guardan 60 s por origen y destino redondeados a 4 decimales y no cuentan contra el cupo diario.
      */
     get: operations['RoutesController_driving'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v2/tracking/vehicles': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Vehículos en uso ahora
+     * @description Los vehículos que un chofer tiene en uso en este momento, cada uno con su chofer (nombre, teléfono y foto), la ocupación (envases a bordo sobre la capacidad en garrafas, en por ciento), la carga abierta, la hoja de ruta de hoy de ese chofer con ese vehículo (avance y llegada estimada a la última parada), las paradas en su orden más los pedidos en curso fuera de una hoja, y la última posición conocida. `status` es `on_route` si la hoja ya se inició o hay un pedido aceptado o en camino, y `waiting` si no. Sólo lectura (sirve en modo soporte). Las fotos son URL firmadas de corta vigencia, o `null`. En vivo: `order:driver-location` y `route-sheet:*` en el socket del panel.
+     */
+    get: operations['LiveFleetController_vehiculos'];
     put?: never;
     post?: never;
     delete?: never;
@@ -9220,7 +9371,7 @@ export interface paths {
     };
     /**
      * Cómo le va a la recompra anticipada
-     * @description Invitaciones del período por resultado y la tasa de conversión: aceptadas sobre las que ya tuvieron resolución (aceptadas, descartadas y vencidas; las abiertas y las canceladas por compra propia no cuentan). Por omisión, los últimos 90 días.
+     * @description Invitaciones del período por resultado y la tasa de conversión: aceptadas sobre las que ya tuvieron resolución (aceptadas, descartadas y vencidas; las abiertas y las canceladas por compra propia no cuentan). `accuracy` mide cuánto acertó la fecha proyectada contra la primera compra entregada después de cada invitación. Por omisión, los últimos 90 días.
      */
     get: operations['RepurchaseAdminController_stats'];
     put?: never;
@@ -12436,6 +12587,66 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v3/orders/{id}/delivery-code': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ver el código de entrega (el que el cliente le dice al chofer)
+     * @description Lo ve el cliente dueño del pedido y el admin, con el pedido aceptado o en camino. El chofer no tiene acceso (403): es el que lo escribe. Trae `attempts` (códigos incorrectos del chofer) y `blocked` (agotó los 5 intentos: hay que generar un código nuevo). Al cliente le llegan por socket `order:delivery-code-failed` (`{orderId, attempts, remaining}`) en cada error del chofer y `order:delivery-code-blocked` (`{orderId}`) al bloquearse.
+     */
+    get: operations['DeliveryCodeV3Controller_getDeliveryCode'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/delivery-code/regenerate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generar un código de entrega nuevo
+     * @description El cliente dueño del pedido (o un admin con permiso de despacho) reemplaza el código del pedido en camino por uno de 6 dígitos; los intentos del chofer vuelven a 0 y el código viejo deja de valer. Sirve cuando se bloqueó (`DELIVERY_CODE_BLOQUEADO`) o se filtró. Queda en la auditoría de datos. Un super admin tiene que mandar `X-Distributor`.
+     */
+    post: operations['DeliveryCodeV3Controller_regenerate'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/confirm-delivery': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirmar la entrega con el código del cliente y la ubicación
+     * @description El chofer asignado escribe el código de 6 dígitos que le dice el cliente y manda su ubicación (`latitude`, `longitude`, `accuracyMeters` opcional). Con el pedido en camino y el código correcto pasa a entregado y queda asentado dónde estaba (punto, precisión, distancia al domicilio), quién confirmó y la hora de la base. Si está más lejos del domicilio que el radio de llegada de la distribuidora no se rechaza: `deliveryConfirmation.outOfRange` queda en `true` y se audita. 5 códigos incorrectos bloquean el código (el cliente genera otro) y a cada error se le avisa al cliente por socket. Un admin entrega mandando SIEMPRE `reason` (10 a 500 caracteres), sin ubicación; el `code` que mande es informativo (no se compara). Pedido ya entregado: responde 200 con el pedido, sin volver a pedir el código ni pisar la confirmación. Idempotente vía header `Idempotency-Key`: el reintento con la misma clave de un código incorrecto responde el mismo error sin sumar otro intento ni volver a avisar al cliente. `deliveryConfirmation.confirmedByUserId` sólo viene para el admin.
+     */
+    post: operations['DeliveryCodeV3Controller_confirm'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -12724,6 +12935,17 @@ export interface components {
       cashMovementId: string | null;
       /** Format: uuid */
       receiptAttachmentId: string | null;
+      /**
+       * @description `none`: sin pedir aprobación; `awaiting`: el aviso de los 5 días la pidió («pendiente de aprobación»); `approved`: aprobada. Una cuota se paga sólo si está `approved`
+       * @enum {string}
+       */
+      approvalStatus: 'none' | 'awaiting' | 'approved';
+      /** Format: date-time */
+      approvalRequestedAt: string | null;
+      /** Format: date-time */
+      approvedAt: string | null;
+      /** Format: uuid */
+      approvedByUserId: string | null;
       /** Format: date-time */
       createdAt: string;
     };
@@ -12923,6 +13145,17 @@ export interface components {
       cashMovementId: string | null;
       /** Format: uuid */
       receiptAttachmentId: string | null;
+      /**
+       * @description `none`: sin pedir aprobación; `awaiting`: el aviso de los 5 días la pidió («pendiente de aprobación»); `approved`: aprobada. Una cuota se paga sólo si está `approved`
+       * @enum {string}
+       */
+      approvalStatus: 'none' | 'awaiting' | 'approved';
+      /** Format: date-time */
+      approvalRequestedAt: string | null;
+      /** Format: date-time */
+      approvedAt: string | null;
+      /** Format: uuid */
+      approvedByUserId: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: uuid */
@@ -14106,6 +14339,174 @@ export interface components {
       /** @description Por qué se cancela */
       notes?: string;
     };
+    FleetTaskBoardCarDto: {
+      /** Format: uuid */
+      id: string;
+      /** @example AB123CD */
+      plate: string | null;
+      /**
+       * @description Marca y modelo; si no hay, el tipo de vehículo o la patente
+       * @example Ford Cargo 1722
+       */
+      label: string;
+      /** @description Foto del vehículo: URL firmada de corta vigencia, o null */
+      photoUrl: string | null;
+    };
+    FleetTaskBoardAssigneeDto: {
+      /** Format: uuid */
+      employeeId: string;
+      /** @example Pérez, Juan */
+      name: string;
+    };
+    FleetTaskBoardCardDto: {
+      /** Format: uuid */
+      id: string;
+      /**
+       * @description El nombre del plan
+       * @example VTV
+       */
+      title: string;
+      /**
+       * @description Tipo de tarea (el `documentKind` del plan; `generic` si no tiene)
+       * @enum {string}
+       */
+      category:
+        | 'insurance'
+        | 'vtv'
+        | 'hazmat_vehicle_permit'
+        | 'driver_license'
+        | 'hazmat_driver_course'
+        | 'psychophysical'
+        | 'art_coverage'
+        | 'service'
+        | 'generic';
+      /** @enum {string} */
+      status: 'forecast' | 'scheduled' | 'in_progress' | 'done' | 'overdue' | 'cancelled';
+      /**
+       * @description La columna donde va (`null` si está cancelada)
+       * @enum {string|null}
+       */
+      column: 'forecast' | 'scheduled' | 'in_progress' | 'done' | null;
+      /** @description Abierta y con el vencimiento ya pasado (o con estado `overdue`). No cambia de columna */
+      isOverdue: boolean;
+      /** Format: date-time */
+      dueAt: string | null;
+      dueKm: number | null;
+      /** Format: date-time */
+      scheduledAt: string | null;
+      car: components['schemas']['FleetTaskBoardCarDto'] | null;
+      assignee: components['schemas']['FleetTaskBoardAssigneeDto'] | null;
+      /** @example 2 */
+      attachmentsCount: number;
+      /** @example 185000 */
+      cost: number | null;
+      /**
+       * @description Orden dentro de la columna (ascendente)
+       * @example 2048
+       */
+      position: number;
+      /**
+       * Format: date-time
+       * @description La precondición para mover o editar (`expectedUpdatedAt`)
+       */
+      updatedAt: string;
+    };
+    FleetTaskBoardEventDto: {
+      /** Format: uuid */
+      id: string;
+      /** @enum {string} */
+      change: 'created' | 'moved' | 'updated' | 'closed' | 'cancelled' | 'overdue' | 'reordered';
+      card: components['schemas']['FleetTaskBoardCardDto'];
+    };
+    FleetTaskBoardColumnsDto: {
+      forecast: components['schemas']['FleetTaskBoardCardDto'][];
+      scheduled: components['schemas']['FleetTaskBoardCardDto'][];
+      in_progress: components['schemas']['FleetTaskBoardCardDto'][];
+      /** @description Las hechas desde `doneSince` (30 días por omisión), la más reciente primero */
+      done: components['schemas']['FleetTaskBoardCardDto'][];
+    };
+    FleetTaskBoardDto: {
+      columns: components['schemas']['FleetTaskBoardColumnsDto'];
+      /**
+       * @description Canceladas con los mismos filtros (no tienen columna)
+       * @example 3
+       */
+      cancelledCount: number;
+    };
+    CreateFleetTaskV2Dto: {
+      /** Format: uuid */
+      planId: string;
+      /**
+       * Format: uuid
+       * @description Obligatorio si el plan es de vehículo (subject: vehicle)
+       */
+      carId?: string;
+      /**
+       * Format: uuid
+       * @description Obligatorio si el plan es de chofer (subject: driver)
+       */
+      deliveryId?: string;
+      /**
+       * Format: uuid
+       * @description Obligatorio si el plan es de personal (subject: employee): curso de mercancías peligrosas, psicofísico, ART (CU-183 a CU-185)
+       */
+      employeeId?: string;
+      /**
+       * Format: date-time
+       * @description Fecha límite (vencimiento de la póliza, la VTV, la licencia)
+       * @example 2026-12-31T00:00:00.000Z
+       */
+      dueAt?: string;
+      /**
+       * Format: date-time
+       * @description Inicio de la vigencia (póliza, habilitación). No puede ser posterior al vencimiento
+       * @example 2026-01-01T00:00:00.000Z
+       */
+      validFrom?: string;
+      /**
+       * @description Importe de la tarea (la prima de la póliza, el costo del service). Entra en el costo del vehículo
+       * @example 185000
+       */
+      cost?: number;
+      /** @description Km al que corresponde el próximo service */
+      dueKm?: number;
+      /**
+       * @description Aseguradora, taller o gestoría
+       * @example La Segunda Seguros
+       */
+      provider?: string;
+      /**
+       * @description Número de póliza, de licencia, u otra referencia del proveedor
+       * @example 123456789
+       */
+      referenceNumber?: string;
+      /**
+       * @description Categoría de la licencia de conducir, si aplica
+       * @example B1
+       */
+      category?: string;
+      notes?: string;
+      /**
+       * @description Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle.
+       * @example {
+       *       "certificateNumber": "123/26",
+       *       "issuer": "CNRT"
+       *     }
+       */
+      details?: {
+        [key: string]: string;
+      };
+      /**
+       * Format: date-time
+       * @description Cuándo está agendado el turno/trámite, si ya se sabe. Un `YYYY-MM-DD` (o medianoche argentina) es ese día argentino y se guarda a las 00:00 de Argentina; un instante con hora se guarda tal cual. Inválido: 400.
+       */
+      scheduledAt?: string;
+      /**
+       * Format: uuid
+       * @description Responsable de la tarea: un empleado activo de la distribuidora (404 si no es de ella, 409 si está egresado)
+       */
+      assigneeEmployeeId?: string;
+    };
     FleetTaskV2ResponseDto: {
       /** Format: uuid */
       taskId: string;
@@ -14162,6 +14563,106 @@ export interface components {
       payable: boolean;
       /** @description Por qué no se paga por acá, cuando es por la naturaleza de la tarea (el seguro se paga por sus cuotas) */
       notPayableReason: string | null;
+      /**
+       * Format: uuid
+       * @description Responsable de la tarea en el tablero
+       */
+      assigneeEmployeeId: string | null;
+      /**
+       * Format: date-time
+       * @description Última modificación: la precondición para editar o mover (`expectedUpdatedAt` / `If-Match`)
+       */
+      updatedAt: string;
+    };
+    UpdateFleetTaskV2Dto: {
+      /**
+       * Format: date-time
+       * @description Fecha límite (vencimiento de la póliza, la VTV, la licencia)
+       * @example 2026-12-31T00:00:00.000Z
+       */
+      dueAt?: string;
+      /**
+       * Format: date-time
+       * @description Inicio de la vigencia (póliza, habilitación). No puede ser posterior al vencimiento
+       * @example 2026-01-01T00:00:00.000Z
+       */
+      validFrom?: string;
+      /**
+       * @description Importe de la tarea (la prima de la póliza, el costo del service). Entra en el costo del vehículo
+       * @example 185000
+       */
+      cost?: number;
+      /** @description Km al que corresponde el próximo service */
+      dueKm?: number;
+      /**
+       * @description Aseguradora, taller o gestoría
+       * @example La Segunda Seguros
+       */
+      provider?: string;
+      /**
+       * @description Número de póliza, de licencia, u otra referencia del proveedor
+       * @example 123456789
+       */
+      referenceNumber?: string;
+      /**
+       * @description Categoría de la licencia de conducir, si aplica
+       * @example B1
+       */
+      category?: string;
+      notes?: string;
+      /**
+       * @description Datos propios del tipo de documento (`plan.documentKind`): curso de mercancías peligrosas {certificateNumber, issuer}, psicofísico {examDate}, ART {insurer, policyNumber}. Los demás tipos no llevan detalle.
+       * @example {
+       *       "certificateNumber": "123/26",
+       *       "issuer": "CNRT"
+       *     }
+       */
+      details?: {
+        [key: string]: string;
+      };
+      /**
+       * Format: date-time
+       * @description Cuándo está agendado el turno/trámite. Si la tarea tiene un caso del planificador de taller (M2) confirmado cuya ventana no terminó, cambiar el turno mueve esa ventana (y con ella el bloqueo del despacho) en la misma operación: un `YYYY-MM-DD` (o medianoche argentina) la lleva a ese día argentino conservando su hora de inicio; un instante con hora la hace arrancar a esa hora; en ambos casos la duración se conserva y la ventana nueva tiene que ser a futuro (400 si no). `null` borra el turno y cancela el caso confirmado. Un turno igual al guardado no toca la tarea ni el caso.
+       */
+      scheduledAt?: string | null;
+      /**
+       * Format: uuid
+       * @description Responsable de la tarea: un empleado activo de la distribuidora (404 si no es de ella, 409 si está egresado). `null` lo quita
+       */
+      assigneeEmployeeId?: string | null;
+      /**
+       * Format: date-time
+       * @description Precondición: el `updatedAt` que tiene el panel. Si la tarea cambió, 409 `FLEET_TASK_STALE`. También se acepta en el header `If-Match`
+       */
+      expectedUpdatedAt?: string;
+    };
+    MoveFleetTaskDto: {
+      /**
+       * @description Columna de destino. A «hecha» no se mueve por acá (se cierra con `POST /v2/fleet/tasks/:id/close`) y cancelar va por `PATCH /fleet/tasks/:id/cancel`
+       * @enum {string}
+       */
+      to: 'forecast' | 'scheduled' | 'in_progress';
+      /**
+       * Format: date-time
+       * @description Turno. Obligatorio al pasar de `forecast` a `scheduled`; opcional al ir a `scheduled` desde `scheduled` o `in_progress` (reprograma, y mueve la ventana confirmada del planificador). En otro destino, 400. Un `YYYY-MM-DD` es ese día argentino. `null` cuenta como ausente: el turno se borra sólo yendo a `forecast`
+       * @example 2026-12-02
+       */
+      scheduledAt?: string;
+      /**
+       * Format: uuid
+       * @description La tarjeta queda inmediatamente ANTES de esta (de la misma columna de destino y la misma empresa)
+       */
+      beforeId?: string;
+      /**
+       * Format: uuid
+       * @description La tarjeta queda inmediatamente DESPUÉS de esta (de la misma columna de destino y la misma empresa). Sin `beforeId` ni `afterId`, al final de la columna
+       */
+      afterId?: string;
+      /**
+       * Format: date-time
+       * @description Precondición: el `updatedAt` de la tarjeta que tiene el panel. Si la tarea cambió, 409 `FLEET_TASK_STALE`. También se acepta en el header `If-Match`
+       */
+      expectedUpdatedAt?: string;
     };
     FleetTaskV2PageDto: {
       data: components['schemas']['FleetTaskV2ResponseDto'][];
@@ -14295,6 +14796,8 @@ export interface components {
       carModel: string | null;
       /** @example Moto */
       carTypeCar: string | null;
+      /** @description Foto del vehículo: URL firmada de corta vigencia, o null */
+      photoUrl: string | null;
       /** @description Si el vehículo está inhabilitado por documentación vencida (CU-136/137) */
       isLocked: boolean;
       /** Format: date-time */
@@ -14318,6 +14821,8 @@ export interface components {
       carPatent: string | null;
       carBrand: string | null;
       carModel: string | null;
+      /** @description Foto del vehículo: URL firmada de corta vigencia, o null */
+      photoUrl: string | null;
       /** Format: uuid */
       deliveryId: string;
       driverName: string | null;
@@ -14431,6 +14936,35 @@ export interface components {
        */
       status: 'negotiating' | 'awaiting_confirmation' | 'escalated' | 'confirmed' | 'cancelled';
     };
+    ForecastCalibrationResponseDto: {
+      /**
+       * @description Días que se sumaron a la fecha por kilometraje (negativo: se adelantó)
+       * @example 6
+       */
+      correctionDays: number;
+      /**
+       * @description Desvío medio de los cierres promediados, con signo: positivo = se hizo después de lo proyectado
+       * @example 6.4
+       */
+      averageDeviationDays: number;
+      /**
+       * @description Cierres promediados
+       * @example 5
+       */
+      samples: number;
+      /** @description El desvío medio superaba el tope y la corrección quedó en él */
+      capped: boolean;
+      /**
+       * @description De dónde sale: el historial de cierres de este vehículo en este tipo de tarea
+       * @enum {string}
+       */
+      source: 'vehicle_task_type';
+      /**
+       * Format: date-time
+       * @description La fecha por kilometraje antes de corregir
+       */
+      uncorrectedAt: string | null;
+    };
     ForecastItemResponseDto: {
       /** Format: uuid */
       taskId: string;
@@ -14465,6 +14999,8 @@ export interface components {
       caseId: string | null;
       /** @enum {string|null} */
       caseStatus: 'negotiating' | 'awaiting_confirmation' | 'escalated' | 'confirmed' | 'cancelled' | null;
+      /** @description La corrección que se le aplicó a `predictedByKmAt` por el desvío histórico del vehículo en este tipo de tarea; `null` si no hubo (menos de 3 cierres, autocalibración apagada o nada que corregir) */
+      calibration: components['schemas']['ForecastCalibrationResponseDto'] | null;
     };
     ForecastVehicleResponseDto: {
       /** Format: uuid */
@@ -14491,6 +15027,28 @@ export interface components {
     PlannerForecastResponseDto: {
       vehicles: components['schemas']['ForecastVehicleResponseDto'][];
     };
+    PredictionAccuracyDto: {
+      /** @description Predicciones que ya se pudieron comparar */
+      measured: number;
+      /** @description Error medio absoluto en días; `null` si no hay nada medido */
+      meanAbsoluteErrorDays: number | null;
+      /** @description Parte de las medidas dentro del margen, de 0 a 1; `null` si no hay nada medido */
+      withinMarginRate: number | null;
+      /** @description Margen en días de `withinMarginRate` */
+      marginDays: number;
+      /** @description Error medio con signo en días: positivo = pasó después de lo proyectado, negativo = antes; `null` si no hay nada medido */
+      meanBiasDays: number | null;
+    };
+    PlannerAccuracyResponseDto: {
+      /** Format: date-time */
+      from: string;
+      /** Format: date-time */
+      to: string;
+      /** @description Primera fecha proyectada del vencimiento por kilometraje, sin corregir, contra la fecha en que se hizo el trabajo, en las tareas cerradas del período */
+      accuracy: components['schemas']['PredictionAccuracyDto'];
+      /** @description Lo mismo con la primera fecha ya corregida por el desvío del vehículo (autocalibración); igual a `accuracy` donde no hubo corrección */
+      calibratedAccuracy: components['schemas']['PredictionAccuracyDto'];
+    };
     ProcessConfigFieldDto: {
       /** @example anticipationDays */
       key: string;
@@ -14513,7 +15071,13 @@ export interface components {
        * @enum {string}
        */
       process:
-        'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery' | 'route_planning' | 'document_reading';
+        | 'fleet_planner'
+        | 'repurchase'
+        | 'route_batching'
+        | 'cylinder_recovery'
+        | 'route_planning'
+        | 'document_reading'
+        | 'cash_alerts';
       /** @example Anticipación de recompra */
       title: string;
       description: string;
@@ -14574,6 +15138,10 @@ export interface components {
       anticipationKm?: number;
       /** @description Mandar también un correo al chofer con cada propuesta (0 no, 1 sí) */
       driverEmail?: number;
+      /** @description Cuántos de los últimos cierres de un vehículo y tipo de tarea se promedian para corregir la proyección */
+      calibrationClosures?: number;
+      /** @description Tope de la corrección de la fecha proyectada, en días y en uno y otro sentido (0 apaga la autocalibración) */
+      calibrationMaxDays?: number;
     };
     PlannerRunResponseDto: {
       vehicles: number;
@@ -14599,8 +15167,11 @@ export interface components {
       urgent: boolean;
       /** @description Entre las que se le ofrecen al chofer */
       offered: boolean;
-      /** @enum {string|null} */
-      discardReason: 'coverage' | 'not_selected' | null;
+      /**
+       * @description `coverage`: sin cobertura; `not_selected`: no entró entre las ofrecidas; `rejected`: se ofreció y el chofer la rechazó; `expired`: se ofreció y venció sin respuesta
+       * @enum {string|null}
+       */
+      discardReason: 'coverage' | 'not_selected' | 'rejected' | 'expired' | null;
     };
     PlanningCaseDetailResponseDto: {
       /** Format: uuid */
@@ -15819,7 +16390,11 @@ export interface components {
       standardEstimatedMinutes?: number;
     };
     PaymentSurchargeConfigResponseDto: {
-      /** @example 10 */
+      /**
+       * @deprecated
+       * @description Sin uso: la transferencia ya no se acepta. Se conserva lo guardado y los pedidos viejos que la tienen
+       * @example 10
+       */
       transferPercentage: number;
       /** @example 10 */
       mercadoPagoPercentage: number;
@@ -15836,11 +16411,6 @@ export interface components {
       updatedByUserId: string | null;
     };
     PaymentSurchargeConfigDto: {
-      /**
-       * @description Recargo por transferencia, en % (0 a 30 %, hasta 2 decimales). Obligatorio. Valor por omisión del sistema: 10
-       * @example 10
-       */
-      transferPercentage: number;
       /**
        * @description Recargo por Mercado Pago, en % (0 a 30 %, hasta 2 decimales). Obligatorio. Valor por omisión del sistema: 10
        * @example 10
@@ -17355,6 +17925,8 @@ export interface components {
       /** @example 30 */
       paymentTermsDays: number | null;
       isActive: boolean;
+      /** @description URL firmada de la foto del proveedor (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
       /** Format: date-time */
       createdAt: string;
       /** Format: date-time */
@@ -17545,6 +18117,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       /** @example 40 */
       quantity: number;
       /** @example 5200.5 */
@@ -17643,6 +18217,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       /** @example 40 */
       ordered: number;
       /** @example 25 */
@@ -17756,6 +18332,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       /** @example 25 */
       quantityFull: number;
       /** @example 25 */
@@ -18053,6 +18631,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       /** @enum {string} */
       condition: 'full' | 'empty' | 'defective';
       /** @example 40 */
@@ -18232,6 +18812,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       /** @description En los depósitos */
       warehouses: components['schemas']['ConditionTotalsDto'];
       /** @description En los camiones */
@@ -18492,6 +19074,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       /** @description `gas_cylinder.stock` */
       sellable: number;
       /** @description Llenas en depósitos y camiones */
@@ -18520,6 +19104,8 @@ export interface components {
       gasCylinderId: string;
       /** @example 10kg */
       gasCylinderType: string;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      gasCylinderPhotoUrl: string | null;
       quantity: number;
     };
     StockReconciliationDto: {
@@ -18640,7 +19226,7 @@ export interface components {
        * @example CASH
        * @enum {string}
        */
-      key: 'CASH' | 'TRANSFER' | 'MERCADOPAGO';
+      key: 'CASH' | 'MERCADOPAGO';
       /**
        * @description Recargo en % que la distribuidora cobra con ese medio de pago (parámetro configurable; el monto exacto lo da `POST /orders/quote`)
        * @example 0
@@ -18949,7 +19535,7 @@ export interface components {
        * @example cash
        * @enum {string}
        */
-      paymentMethod: 'cash' | 'mercadopago' | 'transfer' | 'account';
+      paymentMethod: 'cash' | 'mercadopago' | 'account';
       /**
        * Format: uuid
        * @description Tipo de garrafa. Si no se manda, el de la última compra del cliente en esta distribuidora; sin compras previas es obligatorio (400).
@@ -19033,12 +19619,12 @@ export interface components {
        */
       zoneSurcharge: number;
       /**
-       * @example transfer
+       * @example cash
        * @enum {string}
        */
       paymentMethod: 'cash' | 'mercadopago' | 'transfer' | 'account';
       /**
-       * @description Recargo por medio de pago en pesos: `paymentSurchargePercentage` % sobre subtotal + recargo de zona (parámetro de la distribuidora por medio de pago; por omisión 10 en `mercadopago` y `transfer`, 0 en `cash`)
+       * @description Recargo por medio de pago en pesos: `paymentSurchargePercentage` % sobre subtotal + recargo de zona (parámetro de la distribuidora por medio de pago; por omisión 10 en `mercadopago`, 0 en `cash`)
        * @example 1995
        */
       paymentSurcharge: number;
@@ -19116,6 +19702,8 @@ export interface components {
       /** @example 11300 */
       price: number;
       description: string | null;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
     };
     OrderItemResponseDto: {
       /** @example 2 */
@@ -19180,6 +19768,8 @@ export interface components {
       patent: string | null;
       brand: string | null;
       model: string | null;
+      /** @description Foto del vehículo: URL firmada de corta vigencia, o null (sin foto o vehículo dado de baja) */
+      photoUrl: string | null;
     };
     DriverLocationDto: {
       /** @example -34.6037 */
@@ -19234,6 +19824,11 @@ export interface components {
       status: 'reserved' | 'pending' | 'accepted' | 'out_for_delivery' | 'delivered' | 'cancelled';
       /** Format: date-time */
       created_at: string;
+      /**
+       * @description Efectivo que el chofer cobra al entregar (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back. `null` si el pedido no es en efectivo, ya se cobró, está entregado o cancelado. Las apps lo muestran tal cual.
+       * @example 22600
+       */
+      cashToCollect: number | null;
       /**
        * @description Tipo de pago: efectivo, online (MercadoPago, transferencia) o cuenta corriente (`account`: no se cobra en la entrega)
        * @enum {string}
@@ -19340,6 +19935,7 @@ export interface components {
       /** @enum {string|null} */
       cancelledBy: 'customer' | 'admin' | 'system' | 'driver' | null;
       driver: components['schemas']['DriverDeOrderDto'] | null;
+      deliveryConfirmation: components['schemas']['DeliveryConfirmationDto'] | null;
     };
     OrderItemDto: {
       /** @description ID de la garrafa */
@@ -19377,7 +19973,7 @@ export interface components {
        * @example cash
        * @enum {string}
        */
-      paymentMethod: 'cash' | 'mercadopago' | 'transfer' | 'account';
+      paymentMethod: 'cash' | 'mercadopago' | 'account';
       /** @description Notas adicionales */
       notes?: string;
       /** @description Token de notificación push */
@@ -19413,7 +20009,7 @@ export interface components {
        * @example cash
        * @enum {string}
        */
-      paymentMethod: 'cash' | 'mercadopago' | 'transfer' | 'account';
+      paymentMethod: 'cash' | 'mercadopago' | 'account';
       /** @description ID del cliente */
       customerId?: string;
       /** @description ID de la dirección de entrega */
@@ -19663,6 +20259,11 @@ export interface components {
       /** Format: date-time */
       created_at: string;
       /**
+       * @description Efectivo que el chofer cobra al entregar (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back. `null` si el pedido no es en efectivo, ya se cobró, está entregado o cancelado. Las apps lo muestran tal cual.
+       * @example 22600
+       */
+      cashToCollect: number | null;
+      /**
        * @description Tipo de pago: efectivo, online (MercadoPago, transferencia) o cuenta corriente (`account`: no se cobra en la entrega)
        * @enum {string}
        */
@@ -19768,6 +20369,7 @@ export interface components {
       /** @enum {string|null} */
       cancelledBy: 'customer' | 'admin' | 'system' | 'driver' | null;
       driver: components['schemas']['DriverDeOrderDto'] | null;
+      deliveryConfirmation: components['schemas']['DeliveryConfirmationDto'] | null;
       /**
        * @description `true` si el pedido ya estaba en el destino pedido (reintento o segundo admin): no se tocó nada, ni la nota del pedido ni la incidencia.
        * @example false
@@ -19906,7 +20508,7 @@ export interface components {
        * @description Medio de pago. No se puede pasar a ni desde MercadoPago: cancelá y creá el pedido de nuevo.
        * @enum {string}
        */
-      paymentMethod?: 'cash' | 'mercadopago' | 'transfer' | 'account';
+      paymentMethod?: 'cash' | 'mercadopago' | 'account';
       /** @example Tocar timbre 2B */
       notes?: string;
       /** @description Renglones nuevos: reemplazan a los actuales (se devuelve el stock viejo y se reserva el nuevo, con los precios vigentes) */
@@ -20055,6 +20657,47 @@ export interface components {
        * @example Hablé con el cliente y verifiqué el pago en Mercado Pago: es legítimo
        */
       reason: string;
+    };
+    TiempoEnSegundosDto: {
+      /** @example 14.5 */
+      mediana: number | null;
+      /** @example 28 */
+      p90: number | null;
+    };
+    ChoferEnElTopDto: {
+      /** Format: uuid */
+      driverId: string;
+      /** @example Ana Pérez */
+      nombre: string;
+      /** @description Ofertas ya resueltas del período */
+      ofertas: number;
+      aceptadas: number;
+      /**
+       * @description 0 a 100
+       * @example 80
+       */
+      tasaAceptacion: number;
+      medianaRespuestaSegundos: number | null;
+    };
+    DispatchMetricsResponseDto: {
+      /** Format: date-time */
+      from: string;
+      /** Format: date-time */
+      to: string;
+      /** @description Pedidos con al menos una oferta en el período */
+      pedidosDespachados: number;
+      ofertasPorPedido: number | null;
+      /** @description Sobre las ofertas resueltas, 0 a 100 */
+      porcentajeAceptadas: number | null;
+      porcentajeRechazadas: number | null;
+      porcentajeVencidas: number | null;
+      /** @description Sólo ofertas con respuesta registrada */
+      respuestaDelChofer: components['schemas']['TiempoEnSegundosDto'];
+      /** @description Desde que el pedido quedó pendiente hasta que un chofer lo aceptó */
+      hastaAsignar: components['schemas']['TiempoEnSegundosDto'];
+      /** @description Pedidos que el sistema canceló porque ningún chofer los tomó */
+      pedidosSinChofer: number;
+      topChoferes: components['schemas']['ChoferEnElTopDto'][];
     };
     CustomerPurchaseStatsDto: {
       /**
@@ -20473,6 +21116,8 @@ export interface components {
       type: string;
       /** @example 10 */
       weight: number;
+      /** @description URL firmada de la foto del producto (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
     };
     ClienteDelEnvaseDto: {
       /** Format: uuid */
@@ -20503,6 +21148,8 @@ export interface components {
       current_order_id: string | null;
       /** @example 15000 */
       deposit: number;
+      /** @description URL firmada de la foto del envase (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
       /** @description Tipo y peso del producto (null si no tiene uno asignado) */
       gas_cylinder: components['schemas']['ProductoDelEnvaseDto'] | null;
       /** @description Quién lo tiene ahora (null si está en la distribuidora) */
@@ -21381,6 +22028,51 @@ export interface components {
       differenceResolution?: 'none' | 'charged_to_driver' | 'absorbed';
       notes?: string;
     };
+    EfectivoSinRendirDeChoferDto: {
+      /** Format: uuid */
+      deliveryId: string;
+      /** @example Juan Pérez */
+      driverName: string | null;
+      /**
+       * @description Pedidos en efectivo entregados que ninguna rendición tomó
+       * @example 3
+       */
+      orders: number;
+      /**
+       * @description Lo que cobró el chofer en esos pedidos (total menos la seña ya paga), calculado en el back
+       * @example 54000
+       */
+      amount: number;
+      /**
+       * Format: date-time
+       * @description Entrega del pedido más viejo sin rendir
+       */
+      oldestDeliveredAt: string;
+      /**
+       * @description Horas desde esa entrega (redondeadas hacia abajo)
+       * @example 30
+       */
+      ageHours: number;
+      /** @description Lleva sin rendir más horas que `minHours`: es lo que dispara el aviso del cierre del día */
+      overdue: boolean;
+    };
+    EfectivoSinRendirDto: {
+      items: components['schemas']['EfectivoSinRendirDeChoferDto'][];
+      /** @example 108000 */
+      totalAmount: number;
+      /** @example 6 */
+      totalOrders: number;
+      /**
+       * @description Antigüedad (horas) configurada para el aviso (`cash_alerts.minHours`)
+       * @example 24
+       */
+      minHours: number;
+      /**
+       * @description El aviso del cierre del día está encendido (`cash_alerts.enabled`); si es `false` el panel no dice que se avisa
+       * @example true
+       */
+      enabled: boolean;
+    };
     PreviewExpenseDto: {
       /**
        * @description Mayor que cero
@@ -21767,6 +22459,8 @@ export interface components {
        * @example 2
        */
       itemsCount: number;
+      /** @description URL firmada de la foto de la carga (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
       items: components['schemas']['TruckLoadItemResponseDto'][];
       /** @description Vista previa del cierre (mismo cálculo que `close`): true si la rendición tendría diferencias (declarado distinto del esperado, o el camión con otra cosa que lo declarado). null mientras no se declaró la vuelta de todos los renglones y en cargas cerradas o canceladas (ahí vale el estado). */
       hayDiferencia: boolean | null;
@@ -21912,6 +22606,8 @@ export interface components {
        * @example 2
        */
       itemsCount: number;
+      /** @description URL firmada de la foto de la carga (se abre sin token, vence); `null` si no tiene. */
+      photoUrl: string | null;
     };
     TruckLoadPageDto: {
       data: components['schemas']['TruckLoadSummaryDto'][];
@@ -22168,6 +22864,7 @@ export interface components {
         | 's3_orphans_retry'
         | 'driver_settlement_generate'
         | 'driver_settlement_alert'
+        | 'driver_cash_alert'
         | 'coverage_zone_expiry'
         | 'fine_due_alerts'
         | 'finance_reconciliation'
@@ -22246,6 +22943,7 @@ export interface components {
         | 's3_orphans_retry'
         | 'driver_settlement_generate'
         | 'driver_settlement_alert'
+        | 'driver_cash_alert'
         | 'coverage_zone_expiry'
         | 'fine_due_alerts'
         | 'finance_reconciliation'
@@ -22353,6 +23051,7 @@ export interface components {
         | 's3_orphans_retry'
         | 'driver_settlement_generate'
         | 'driver_settlement_alert'
+        | 'driver_cash_alert'
         | 'coverage_zone_expiry'
         | 'fine_due_alerts'
         | 'finance_reconciliation'
@@ -22589,6 +23288,164 @@ export interface components {
       encodedPolyline: string;
       /** @description La misma polilínea ya decodificada */
       points: components['schemas']['RoutePointDto'][];
+    };
+    LiveVehicleDriverDto: {
+      /** Format: uuid */
+      deliveryId: string;
+      /**
+       * Format: uuid
+       * @description Usuario del chofer: el `driverId` de `order:driver-location` y el `driverUserId` de `route-sheet:driver-location`
+       */
+      userId: string;
+      name: string | null;
+      /** @example +5493764123456 */
+      phone: string | null;
+      /** @description Foto del chofer: URL firmada de corta vigencia, o null */
+      photoUrl: string | null;
+    };
+    LiveVehicleLoadDto: {
+      /**
+       * Format: uuid
+       * @description Carga abierta del vehículo, si tiene
+       */
+      truckLoadId: string | null;
+      truckLoadNumber: number | null;
+      /** @enum {string|null} */
+      truckLoadStatus: 'loading' | 'on_route' | 'returned' | null;
+      /**
+       * @description Garrafas llenas a bordo
+       * @example 20
+       */
+      fullUnits: number;
+      /**
+       * @description Envases vacíos a bordo
+       * @example 12
+       */
+      emptyUnits: number;
+      /**
+       * @description Envases defectuosos a bordo
+       * @example 0
+       */
+      defectiveUnits: number;
+      /**
+       * @description Envases a bordo: llenos, vacíos y defectuosos
+       * @example 32
+       */
+      unitsOnBoard: number;
+      /**
+       * @description Garrafas que entran en el vehículo; null si no tiene la capacidad cargada
+       * @example 40
+       */
+      capacityUnits: number | null;
+      /**
+       * @description Ocupación: envases a bordo sobre la capacidad, en por ciento (puede pasar de 100); null sin capacidad cargada
+       * @example 80
+       */
+      percent: number | null;
+    };
+    LiveVehicleSheetDto: {
+      /** Format: uuid */
+      id: string;
+      number: number | null;
+      /**
+       * @description `confirmed`: todavía no salió; `assigned`: en curso
+       * @enum {string}
+       */
+      status: 'confirmed' | 'assigned';
+      /**
+       * Format: date
+       * @description Día de reparto de la hoja
+       * @example 2026-11-21
+       */
+      planDate: string;
+      /** Format: date-time */
+      plannedStartAt: string | null;
+      /**
+       * Format: date-time
+       * @description Cuándo el chofer inició el viaje
+       */
+      startedAt: string | null;
+      /** @description Paradas visibles de la hoja */
+      total: number;
+      delivered: number;
+      failed: number;
+      /** @description Pendientes más la que está en camino */
+      pending: number;
+      /**
+       * Format: date-time
+       * @description Llegada estimada a la última parada que falta; null si no queda ninguna con hora
+       */
+      estimatedEndAt: string | null;
+    };
+    LiveVehicleStopDto: {
+      /** Format: uuid */
+      orderId: string;
+      /**
+       * @description `route_sheet`: parada de la hoja; `order`: pedido en curso fuera de una hoja
+       * @enum {string}
+       */
+      source: 'route_sheet' | 'order';
+      /** @description Orden en la hoja (1 = primera); null si salió de la hoja o no es de una hoja */
+      sequence: number | null;
+      /** @enum {string} */
+      progress: 'pending' | 'on_the_way' | 'delivered' | 'failed';
+      customerName: string | null;
+      address: string | null;
+      lat: number | null;
+      lng: number | null;
+      /**
+       * Format: date-time
+       * @description Llegada estimada vigente (sólo las paradas de una hoja la tienen)
+       */
+      etaAt: string | null;
+    };
+    LiveVehicleLocationDto: {
+      lat: number;
+      lng: number;
+      /**
+       * Format: date-time
+       * @description Cuándo se registró la posición
+       */
+      at: string | null;
+    };
+    LiveVehicleDto: {
+      /** Format: uuid */
+      carId: string;
+      /** @example AB104EJ */
+      patent: string | null;
+      /** @example Camioneta */
+      typeCar: string | null;
+      /**
+       * @description Marca y modelo
+       * @example Toyota Hilux
+       */
+      description: string | null;
+      /** @description Foto del vehículo: URL firmada de corta vigencia, o null */
+      photoUrl: string | null;
+      /**
+       * @description `on_route`: la hoja de ruta ya se inició o el chofer tiene un pedido aceptado o en camino; `waiting`: en uso, sin viaje en curso
+       * @enum {string}
+       */
+      status: 'on_route' | 'waiting';
+      /**
+       * Format: date-time
+       * @description Desde cuándo el chofer lo tiene en uso
+       */
+      inUseSince: string;
+      driver: components['schemas']['LiveVehicleDriverDto'];
+      load: components['schemas']['LiveVehicleLoadDto'];
+      /** @description La hoja de ruta de hoy de este chofer con este vehículo (confirmada o en curso), si tiene */
+      sheet: components['schemas']['LiveVehicleSheetDto'] | null;
+      /** @description Las paradas de la hoja en su orden y, después, los pedidos en curso fuera de una hoja */
+      stops: components['schemas']['LiveVehicleStopDto'][];
+      /** @description Última posición conocida del chofer, o null */
+      location: components['schemas']['LiveVehicleLocationDto'] | null;
+    };
+    LiveFleetDto: {
+      /** Format: date-time */
+      generatedAt: string;
+      /** @description Primero los que están en ruta; después, por patente */
+      vehicles: components['schemas']['LiveVehicleDto'][];
     };
     CreateRatingDto: {
       /** Format: uuid */
@@ -23038,6 +23895,11 @@ export interface components {
        * @example pending
        */
       orderStatus: string;
+      /**
+       * @description Efectivo que el chofer cobra en la parada (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back; `null` si no es en efectivo, ya se cobró o no hay saldo
+       * @example 22600
+       */
+      cashToCollect: number | null;
       items: components['schemas']['RouteBatchStopItemDto'][];
     };
     RouteBatchResponseDto: {
@@ -23272,6 +24134,11 @@ export interface components {
       weightKg: number;
       /** @description Mercado Pago todavía sin pagar (entra con advertencia) */
       unpaidOnline: boolean;
+      /**
+       * @description Efectivo que el chofer cobra en la parada (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back; `null` si no es en efectivo, ya se cobró o no hay saldo
+       * @example 22600
+       */
+      cashToCollect: number | null;
     };
     RouteSheetWarningDto: {
       /** @enum {string} */
@@ -23373,6 +24240,8 @@ export interface components {
       description: string | null;
       capacityKg: number | null;
       capacityUnits: number | null;
+      /** @description Foto del vehículo: URL firmada de corta vigencia, o null */
+      photoUrl: string | null;
       available: boolean;
       /** Format: uuid */
       busySheetId: string | null;
@@ -23823,6 +24692,11 @@ export interface components {
       emptiesExpected: number;
       weightKg: number;
       unpaidOnline: boolean;
+      /**
+       * @description Efectivo que el chofer cobra en la parada (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back; `null` si no es en efectivo, ya se cobró o no hay saldo
+       * @example 22600
+       */
+      cashToCollect: number | null;
       items: components['schemas']['RouteSheetItemDto'][];
     };
     RouteSheetExecutionDto: {
@@ -24144,6 +25018,8 @@ export interface components {
       conversionRate: number | null;
       /** @description Total de los pedidos que crearon las aceptadas (sin los cancelados) */
       acceptedRevenue: number;
+      /** @description Acierto de la fecha proyectada de recompra contra la primera compra entregada después de la invitación */
+      accuracy: components['schemas']['PredictionAccuracyDto'];
     };
     RunRepurchaseDto: {
       /** @description Con true sólo calcula a quién se invitaría: no escribe, no vence nada y no avisa a nadie. Por omisión, false */
@@ -24292,7 +25168,7 @@ export interface components {
        * @description Medio de pago; por omisión el de la invitación
        * @enum {string}
        */
-      paymentMethod?: 'cash' | 'transfer' | 'mercadopago';
+      paymentMethod?: 'cash' | 'mercadopago';
       /**
        * Format: uuid
        * @description Franja horaria de la entrega. Va junto con `scheduledDate`; sin ninguna de las dos, la entrega es inmediata
@@ -25100,6 +25976,8 @@ export interface components {
       userId: string;
       /** @example Ana Pérez */
       fullName: string | null;
+      /** @description Foto de perfil: URL firmada de S3 de corta vigencia, o null si no tiene */
+      photoUrl: string | null;
     };
     SupportSessionResponseDto: {
       /** Format: uuid */
@@ -25262,6 +26140,8 @@ export interface components {
       /** Format: uuid */
       distributorId: string;
       distributorName: string;
+      /** @description Logo de la empresa del ticket: URL firmada de S3 de corta vigencia. Sólo para la plataforma, en la lista y la ficha de tickets; null si la empresa no tiene logo, si quien pide es la empresa o en el ticket que viaja dentro de una conversación */
+      distributorLogoUrl: string | null;
       /** @enum {string} */
       category: 'billing' | 'technical' | 'module' | 'data' | 'account' | 'other';
       /**
@@ -26880,6 +27760,8 @@ export interface components {
       distributorId: string;
       /** @example Gas del Sur */
       name: string;
+      /** @description Logo de la empresa: URL firmada de S3 de corta vigencia, o null si no tiene */
+      logoUrl: string | null;
       /** @description Conversaciones con clientes y choferes creadas en el período */
       conversations: number;
       /** @description Mensajes visibles de personas en esas conversaciones (sólo el conteo) */
@@ -27022,6 +27904,8 @@ export interface components {
       name: string;
       /** @example gas-del-norte */
       slug: string;
+      /** @description Logo de la empresa: URL firmada de S3 de corta vigencia, o null si no tiene */
+      logoUrl: string | null;
       /** @enum {string} */
       status: 'active' | 'suspended';
       /** @description Empresa propia de la plataforma: el administrador general la opera con `X-Distributor`, sin sesión de soporte */
@@ -27140,6 +28024,7 @@ export interface components {
         | 's3_orphans_retry'
         | 'driver_settlement_generate'
         | 'driver_settlement_alert'
+        | 'driver_cash_alert'
         | 'coverage_zone_expiry'
         | 'fine_due_alerts'
         | 'finance_reconciliation'
@@ -27278,6 +28163,7 @@ export interface components {
         | 's3_orphans_retry'
         | 'driver_settlement_generate'
         | 'driver_settlement_alert'
+        | 'driver_cash_alert'
         | 'coverage_zone_expiry'
         | 'fine_due_alerts'
         | 'finance_reconciliation'
@@ -27351,6 +28237,8 @@ export interface components {
       distributorId: string;
       /** @example Gas del Norte */
       name: string;
+      /** @description Logo de la empresa: URL firmada de S3 de corta vigencia, o null si no tiene */
+      logoUrl: string | null;
       /** @example 41 */
       readings: number;
       /** @example 0.318204 */
@@ -27389,6 +28277,8 @@ export interface components {
       actorUserId: string | null;
       /** @example Soporte Plataforma */
       actorName: string | null;
+      /** @description Foto de perfil de quien lo hizo: URL firmada de S3 de corta vigencia, o null si no tiene (o no hay actor) */
+      actorPhotoUrl: string | null;
       /** @example super_admin */
       actorRole: string | null;
       /** @example PATCH */
@@ -28094,6 +28984,56 @@ export interface components {
        * @example ¿Cómo cargo un chofer nuevo?
        */
       question: string;
+    };
+    DeliveryConfirmationDto: {
+      /**
+       * Format: date-time
+       * @description Hora de la base al confirmar
+       */
+      confirmedAt: string;
+      /** @enum {string|null} */
+      confirmedByRole: 'delivery' | 'admin' | 'super_admin' | null;
+      /**
+       * Format: uuid
+       * @description Usuario que confirmó (el chofer o el admin). Sólo en las respuestas al personal del panel; para el cliente y el chofer, `null`
+       */
+      confirmedByUserId: string | null;
+      /** @description Latitud del chofer al confirmar; null si confirmó un admin */
+      latitude: number | null;
+      longitude: number | null;
+      /** @description Precisión del GPS, en metros */
+      accuracyMeters: number | null;
+      /** @description Metros entre el chofer y el domicilio al confirmar */
+      distanceMeters: number | null;
+      /** @description Confirmó más lejos del domicilio que el radio de llegada de la distribuidora (no se rechaza: se marca) */
+      outOfRange: boolean;
+    };
+    ConfirmDeliveryV3Dto: {
+      /**
+       * @description Código de 6 dígitos que el cliente ve en su app. Obligatorio para el chofer: si no tiene 6 dígitos responde 400 `DELIVERY_CODE_FORMATO` y no cuenta como intento (el formato lo valida el caso de uso, para devolver ese `code`). Para el admin es opcional e informativo: no se compara ni frena la entrega, que sale con `reason`.
+       * @example 482913
+       */
+      code?: string;
+      /**
+       * @description Latitud del chofer al confirmar. Obligatoria para el chofer.
+       * @example -27.3671
+       */
+      latitude?: number;
+      /**
+       * @description Longitud del chofer al confirmar. Obligatoria para el chofer.
+       * @example -55.8961
+       */
+      longitude?: number;
+      /**
+       * @description Precisión del GPS, en metros.
+       * @example 12.5
+       */
+      accuracyMeters?: number;
+      /**
+       * @description Motivo de la entrega. Obligatorio SIEMPRE que confirma un admin o super admin (10 a 500 caracteres; 400 si falta o es corto), mande o no el `code`; el chofer no lo manda.
+       * @example El cliente no tiene celular: confirmó por teléfono
+       */
+      reason?: string;
     };
   };
   responses: never;
@@ -29066,6 +30006,8 @@ export interface operations {
         /** @description Texto a buscar */
         term?: string;
         status?: 'pending' | 'paid' | 'cancelled';
+        /** @description `awaiting` lista las cuotas pendientes de aprobación («¿Aprobar pago?») */
+        approvalStatus?: 'none' | 'awaiting' | 'approved';
         dueFrom?: string | null;
         dueTo?: string | null;
         carId?: string;
@@ -29296,6 +30238,56 @@ export interface operations {
       };
     };
   };
+  InsuranceInstallmentController_approve: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cuota UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InsuranceInstallmentDetailDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuota ya está aprobada, o está paga o cancelada: `INSTALLMENT_NOT_APPROVABLE` */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   InsuranceInstallmentController_pay: {
     parameters: {
       query?: never;
@@ -29348,7 +30340,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuota ya está paga o cancelada, la caja está desactivada, exige sesión abierta o no tiene saldo */
+      /** @description La cuota ya está paga o cancelada, no está aprobada (`INSTALLMENT_APPROVAL_REQUIRED`), el importe supera el aprobado (`INSTALLMENT_AMOUNT_EXCEEDS_APPROVED`), la caja está desactivada, exige sesión abierta o no tiene saldo */
       409: {
         headers: {
           [name: string]: unknown;
@@ -30597,7 +31589,7 @@ export interface operations {
           'application/json': components['schemas']['UserResponseDto'];
         };
       };
-      /** @description Datos inválidos o falta la distribuidora */
+      /** @description Datos inválidos o falta la distribuidora; `staffRoleId` en un alta que no es de administrador (`STAFF_ROLE_ONLY_FOR_ADMINS`); un administrador sin `staffRoleId` cuando quien pide no tiene todos los permisos: el rol de sistema sólo lo da quien los tiene (`STAFF_ROLE_REQUIRED`) */
       400: {
         headers: {
           [name: string]: unknown;
@@ -30613,6 +31605,13 @@ export interface operations {
       };
       /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) ni para gestionar el personal (`personal.gestionar`) ni para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El rol del personal (`staffRoleId`) no existe, es de otra distribuidora o está dado de baja */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -30898,7 +31897,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) ni para gestionar el personal (`personal.gestionar`) ni para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -30962,7 +31961,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) ni para gestionar el personal (`personal.gestionar`) ni para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31062,7 +32061,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) ni para gestionar el personal (`personal.gestionar`) ni para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31123,7 +32122,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description No es su cuenta, pide contraseña o bloqueo sin ser admin, o es la cuenta de un cliente */
+      /** @description No es su cuenta, pide contraseña o bloqueo sin ser admin, se bloquea a sí mismo, o es la cuenta de un cliente (para un admin de empresa). La contraseña de otro administrador, sin ser super admin (`ADMIN_PASSWORD_NOT_CHANGEABLE`). Sobre la cuenta de otro: un chofer pide `personal.gestionar`, un cliente `clientes.gestionar` y un administrador `administradores.gestionar` (`PERMISSION_DENIED`); además, un administrador con permisos que quien pide no tiene (o con el rol de sistema, si quien pide no los tiene todos) no se modifica, bloquea ni da de baja (`STAFF_ROLE_TARGET_OUTRANKS`). El super admin pasa siempre. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -31271,7 +32270,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`) ni para gestionar el personal (`personal.gestionar`) ni para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -33423,6 +34422,68 @@ export interface operations {
       };
     };
   };
+  FleetTaskV2Controller_boardView: {
+    parameters: {
+      query?: {
+        /** @description Sólo las del vehículo */
+        carId?: string;
+        /** @description Tipo de tarea (el `documentKind` del plan). `generic` incluye las de planes sin tipo */
+        category?:
+          | 'insurance'
+          | 'vtv'
+          | 'hazmat_vehicle_permit'
+          | 'driver_license'
+          | 'hazmat_driver_course'
+          | 'psychophysical'
+          | 'art_coverage'
+          | 'service'
+          | 'generic';
+        /** @description Sólo las de ese empleado: las que tiene como responsable o las de su legajo */
+        employeeId?: string;
+        /** @description Sólo las que vencen hasta ese día inclusive */
+        dueBefore?: string;
+        /** @description Desde cuándo entran las hechas (por la fecha en que se hicieron). Por omisión, los últimos 30 días */
+        doneSince?: string;
+        /** @description Texto en el nombre del plan, la patente, la marca o el modelo, el responsable, el proveedor, la referencia o las notas */
+        q?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetTaskBoardDto'];
+        };
+      };
+      /** @description Un filtro con formato inválido (id que no es UUID, fecha irreal, tipo desconocido, texto de más de 100 caracteres) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   FleetTaskV2Controller_findAll: {
     parameters: {
       query?: {
@@ -33461,6 +34522,71 @@ export interface operations {
       };
       /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FleetTaskV2Controller_create: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateFleetTaskV2Dto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetTaskV2ResponseDto'];
+        };
+      };
+      /** @description Cuerpo inválido, o el vehículo/chofer/empleado no coincide con el sujeto del plan */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Plan, vehículo, chofer, empleado o responsable no encontrado (o de otra distribuidora) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El empleado del plan o el responsable está egresado */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };
@@ -33511,6 +34637,134 @@ export interface operations {
       };
       /** @description No existe o es de otra distribuidora */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FleetTaskV2Controller_update: {
+    parameters: {
+      query?: never;
+      header?: {
+        /** @description Precondición: el `updatedAt` de la tarea (ISO 8601) que tiene el panel. Si cambió, 409 `FLEET_TASK_STALE`. El campo `expectedUpdatedAt` del cuerpo tiene prioridad */
+        'If-Match'?: string;
+      };
+      path: {
+        /** @description Task UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateFleetTaskV2Dto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetTaskV2ResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID, el cuerpo trae un campo que no se puede editar o con formato inválido, `If-Match` no es una fecha, el inicio de la vigencia es posterior al vencimiento o el detalle no es válido para el plan */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Tarea o responsable no encontrado (o de otra distribuidora) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La tarea ya está hecha o cancelada, el responsable está egresado, o la tarea cambió desde que se leyó (`FLEET_TASK_STALE`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FleetTaskV2Controller_move: {
+    parameters: {
+      query?: never;
+      header?: {
+        /** @description Precondición: el `updatedAt` de la tarea (ISO 8601) que tiene el panel. Si cambió, 409 `FLEET_TASK_STALE`. El campo `expectedUpdatedAt` del cuerpo tiene prioridad */
+        'If-Match'?: string;
+      };
+      path: {
+        /** @description Task UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MoveFleetTaskDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FleetTaskBoardCardDto'];
+        };
+      };
+      /** @description Cuerpo inválido (destino desconocido o `done`, fecha irreal, id que no es UUID), `If-Match` no es una fecha, falta el turno al programar (`FLEET_TASK_SCHEDULED_AT_REQUIRED`), turno en otro destino (`FLEET_TASK_SCHEDULED_AT_NOT_ALLOWED`), día inválido (`SCHEDULED_DAY_INVALID`), ventana del planificador en el pasado (`SCHEDULED_WINDOW_IN_PAST`), o la tarjeta de referencia no está en la columna de destino de la empresa, es la misma o están al revés (`FLEET_TASK_NEIGHBOR_INVALID`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar la flota (`flota.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La tarea no existe o es de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La tarea está hecha o cancelada (`FLEET_TASK_CLOSED`), la transición no está permitida (`FLEET_TASK_TRANSITION_NOT_ALLOWED`), o la tarea cambió desde que se leyó (`FLEET_TASK_STALE`) */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -34265,6 +35519,51 @@ export interface operations {
         };
       };
       /** @description Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Planificador de taller» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  MaintenancePlannerController_acierto: {
+    parameters: {
+      query?: {
+        /** @description Desde este día (por omisión, 180 días atrás) */
+        from?: string;
+        /** @description Hasta este día inclusive (por omisión, hoy) */
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PlannerAccuracyResponseDto'];
+        };
+      };
+      /** @description from o to inválidos, o from posterior a to. Super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
       400: {
         headers: {
           [name: string]: unknown;
@@ -37102,7 +38401,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Ya está egresado, o el chofer tiene pedidos en curso, una carga de camión abierta o una rendición pendiente */
+      /** @description Ya está egresado, o el chofer tiene pedidos en curso, una carga de camión abierta o una rendición pendiente; o la cuenta es de un administrador y es el último activo de la distribuidora, o el último que puede gestionar los roles y permisos (`LAST_ROLES_MANAGER`) */
       409: {
         headers: {
           [name: string]: unknown;
@@ -39070,7 +40369,8 @@ export interface operations {
           | 'route_batching'
           | 'cylinder_recovery'
           | 'route_planning'
-          | 'document_reading';
+          | 'document_reading'
+          | 'cash_alerts';
       };
       cookie?: never;
     };
@@ -39125,7 +40425,8 @@ export interface operations {
           | 'route_batching'
           | 'cylinder_recovery'
           | 'route_planning'
-          | 'document_reading';
+          | 'document_reading'
+          | 'cash_alerts';
       };
       cookie?: never;
     };
@@ -45565,7 +46866,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los administradores (`administradores.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el personal (`personal.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -45815,7 +47116,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Es de otro cliente */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -45919,7 +47220,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Es de otro cliente */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar los clientes (`clientes.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
         headers: {
           [name: string]: unknown;
@@ -48741,6 +50042,49 @@ export interface operations {
       };
       /** @description Pedido no encontrado */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DispatchMetricsController_obtener: {
+    parameters: {
+      query?: {
+        from?: string;
+        to?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DispatchMetricsResponseDto'];
+        };
+      };
+      /** @description Fecha inválida, `from` posterior a `to`, período de más de 366 días o falta `X-Distributor` (super admin) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -52086,6 +53430,39 @@ export interface operations {
       };
     };
   };
+  DriverSettlementV2Controller_efectivoSinRendir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EfectivoSinRendirDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   DriverSettlementV2Controller_preview: {
     parameters: {
       query?: never;
@@ -54532,6 +55909,7 @@ export interface operations {
           | 's3_orphans_retry'
           | 'driver_settlement_generate'
           | 'driver_settlement_alert'
+          | 'driver_cash_alert'
           | 'coverage_zone_expiry'
           | 'fine_due_alerts'
           | 'finance_reconciliation'
@@ -55432,14 +56810,17 @@ export interface operations {
   };
   HealthController_check: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Con `json` fuerza el JSON aunque el cliente prefiera HTML. */
+        format?: 'json';
+      };
       header?: never;
       path?: never;
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description The Health Check is successful */
+      /** @description Todo sano. JSON de Terminus; con `Accept: text/html`, la página de estado. */
       200: {
         headers: {
           [name: string]: unknown;
@@ -55448,46 +56829,35 @@ export interface operations {
           'application/json': {
             /** @example ok */
             status?: string;
-            /**
-             * @example {
-             *       "database": {
-             *         "status": "up"
-             *       }
-             *     }
-             */
             info?: {
               [key: string]: {
-                status: string;
+                /** @example up */
+                status?: string;
               } & {
-                [key: string]: unknown;
+                [key: string]: string;
               };
             } | null;
-            /** @example {} */
             error?: {
               [key: string]: {
-                status: string;
+                /** @example up */
+                status?: string;
               } & {
-                [key: string]: unknown;
+                [key: string]: string;
               };
             } | null;
-            /**
-             * @example {
-             *       "database": {
-             *         "status": "up"
-             *       }
-             *     }
-             */
             details?: {
               [key: string]: {
-                status: string;
+                /** @example up */
+                status?: string;
               } & {
-                [key: string]: unknown;
+                [key: string]: string;
               };
             };
           };
+          'text/html': string;
         };
       };
-      /** @description The Health Check is not successful */
+      /** @description Algo caído. JSON de Terminus con el detalle; con `Accept: text/html`, la página de estado. */
       503: {
         headers: {
           [name: string]: unknown;
@@ -55496,54 +56866,32 @@ export interface operations {
           'application/json': {
             /** @example error */
             status?: string;
-            /**
-             * @example {
-             *       "database": {
-             *         "status": "up"
-             *       }
-             *     }
-             */
             info?: {
               [key: string]: {
-                status: string;
+                /** @example up */
+                status?: string;
               } & {
-                [key: string]: unknown;
+                [key: string]: string;
               };
             } | null;
-            /**
-             * @example {
-             *       "redis": {
-             *         "status": "down",
-             *         "message": "Could not connect"
-             *       }
-             *     }
-             */
             error?: {
               [key: string]: {
-                status: string;
+                /** @example up */
+                status?: string;
               } & {
-                [key: string]: unknown;
+                [key: string]: string;
               };
             } | null;
-            /**
-             * @example {
-             *       "database": {
-             *         "status": "up"
-             *       },
-             *       "redis": {
-             *         "status": "down",
-             *         "message": "Could not connect"
-             *       }
-             *     }
-             */
             details?: {
               [key: string]: {
-                status: string;
+                /** @example up */
+                status?: string;
               } & {
-                [key: string]: unknown;
+                [key: string]: string;
               };
             };
           };
+          'text/html': string;
         };
       };
     };
@@ -55763,6 +57111,46 @@ export interface operations {
       };
       /** @description No hay proveedor de rutas configurado */
       503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  LiveFleetController_vehiculos: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['LiveFleetDto'];
+        };
+      };
+      /** @description Falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`) ni para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -70293,6 +71681,191 @@ export interface operations {
       };
       /** @description No hay preguntas pendientes con ese id en el último año: ya se resolvió o descartó, o no es del soporte de la plataforma (`ASSISTANT_UNANSWERED_NOT_FOUND`) */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DeliveryCodeV3Controller_getDeliveryCode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CodigoDeEntregaResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente, de otro cliente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está aceptado ni en camino (`code: ORDER_WITHOUT_DELIVERY_CODE`): todavía no lo aceptó un chofer, ya se entregó o se canceló */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DeliveryCodeV3Controller_regenerate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CodigoDeEntregaResponseDto'];
+        };
+      };
+      /** @description Super admin sin `X-Distributor` (`code: MISSING_DISTRIBUTOR`) o el id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente, de otro cliente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`): todavía no salió, ya se entregó o se canceló */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DeliveryCodeV3Controller_confirm: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmDeliveryV3Dto'];
+      };
+    };
+    responses: {
+      /** @description Entrega confirmada (o ya estaba entregada) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description Código sin 6 dígitos (`code: DELIVERY_CODE_FORMATO`, no cuenta como intento); faltan o son `null` el código o la ubicación del chofer, o la ubicación está fuera de rango (`code: VALIDATION`); falta el motivo del admin o es corto; código incorrecto (`code: DELIVERY_CODE_INCORRECTO`, con `attempts` y `remaining` en el cuerpo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`) o el código quedó bloqueado por 5 intentos (`code: DELIVERY_CODE_BLOQUEADO`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
         headers: {
           [name: string]: unknown;
         };

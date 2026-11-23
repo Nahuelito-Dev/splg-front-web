@@ -30,6 +30,7 @@ export const stop = (n: number, over: Partial<RouteSheetStop> = {}): RouteSheetS
   units: 1,
   weightKg: 10,
   unpaidOnline: false,
+  cashToCollect: null,
   emptiesExpected: 0,
   ...over,
 });
@@ -100,6 +101,7 @@ export const planDay = (over: Partial<RoutePlanDay> = {}): RoutePlanDay => ({
         description: 'Camioneta',
         capacityKg: 950,
         capacityUnits: null,
+        photoUrl: null,
         available: true,
         busySheetId: null,
       },
@@ -140,6 +142,7 @@ export const liveStop = (n: number, over: Partial<RouteSheetExecutionStop> = {})
   units: 1,
   weightKg: 10,
   unpaidOnline: false,
+  cashToCollect: null,
   items: [],
   emptiesExpected: 0,
   ...over,

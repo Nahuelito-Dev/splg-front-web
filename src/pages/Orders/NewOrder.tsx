@@ -32,7 +32,10 @@ import { buildQuoteBody, quoteHint } from './components/orderQuote';
 import { newOrderSchema, type NewOrderValues } from './components/newOrderSchema';
 import { depositCapError as depositCapOf, reservationBody } from './components/reservationBody';
 
-const PAYMENT_OPTIONS = Object.entries(PAYMENT_METHOD).map(([value, label]) => ({ value, label: label.text }));
+/** La distribuidora ya no acepta transferencias: queda en `PAYMENT_METHOD` sólo para mostrar los pedidos viejos. */
+const PAYMENT_OPTIONS = Object.entries(PAYMENT_METHOD)
+  .filter(([value]) => value !== 'transfer')
+  .map(([value, label]) => ({ value, label: label.text }));
 
 /**
  * CU-072: alta telefónica. Cuando el cliente llama en vez de pedir desde la

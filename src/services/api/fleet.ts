@@ -17,6 +17,9 @@ import type {
   FleetPlan,
   FleetTask,
   FleetTaskV2,
+  FleetTaskBoard,
+  FleetTaskBoardCard,
+  MoveFleetTaskBody,
   FleetTaskAttachment,
   FleetVehicleDocuments,
   Message,
@@ -273,3 +276,24 @@ export const listCarAssignments = async (carId: string, params: PageParams): Pro
       params: toQuery(params),
     }),
   );
+
+export interface FleetTaskBoardFilters {
+  carId?: string;
+  employeeId?: string;
+  q?: string;
+  category?: string;
+  dueBefore?: string;
+  doneSince?: string;
+}
+
+/** GET /v2/fleet/tasks/board: las tarjetas por columna (`flota.ver`). */
+export const getFleetTaskBoard = async (filters: FleetTaskBoardFilters = {}): Promise<FleetTaskBoard> => {
+  const { data } = await http.get<FleetTaskBoard>('/fleet/tasks/board', { params: filters, baseURL: env.apiUrlV2 });
+  return data;
+};
+
+/** POST /v2/fleet/tasks/:id/move: cambia de columna o de lugar una tarjeta (`flota.gestionar`). */
+export const moveFleetTask = async (id: string, body: MoveFleetTaskBody): Promise<FleetTaskBoardCard> => {
+  const { data } = await http.post<FleetTaskBoardCard>(`/fleet/tasks/${id}/move`, body, { baseURL: env.apiUrlV2 });
+  return data;
+};

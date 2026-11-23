@@ -82,6 +82,7 @@ export const TruckLoads = () => {
           title={`N° ${row.number} · ${row.carPatent ?? 'Camión'}`}
           subtitle={`${row.driverName} · ${formatDay(row.businessDate)}`}
           icon={Truck}
+          photo={{ kind: 'truckLoad', id: row.loadId, url: row.photoUrl }}
         />
       ),
     },
@@ -184,6 +185,7 @@ export const TruckLoads = () => {
                   title={`N° ${row.number} · ${row.carPatent ?? 'Camión'}`}
                   subtitle={`${row.driverName} · ${formatDay(row.businessDate)}`}
                   icon={Truck}
+                  photo={{ kind: 'truckLoad', id: row.loadId, url: row.photoUrl }}
                 />
                 <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                   <Badge label={labelOf(TRUCK_LOAD_STATUS, row.status)} />

@@ -30,6 +30,15 @@ const ReadingState = ({ enabled }: { enabled: boolean }) => (
   <Badge label={enabled ? { text: 'Encendido', tone: 'success' } : { text: 'Apagado', tone: 'neutral' }} />
 );
 
+/** La empresa con su logo (`logoUrl` firmada de la API); sin logo, sus iniciales. */
+const Company = ({ row }: { row: DocumentReadingUsageItem }) => (
+  <IdentityCell
+    title={row.name}
+    avatarName={row.name}
+    photo={{ kind: 'distributor', id: row.distributorId, url: row.logoUrl }}
+  />
+);
+
 const columns: GridColDef<DocumentReadingUsageItem>[] = [
   {
     field: 'name',
@@ -37,7 +46,7 @@ const columns: GridColDef<DocumentReadingUsageItem>[] = [
     flex: 1.3,
     minWidth: 200,
     sortable: false,
-    renderCell: ({ row }) => <IdentityCell title={row.name} avatarName={row.name} />,
+    renderCell: ({ row }) => <Company row={row} />,
   },
   {
     field: 'enabled',
@@ -87,7 +96,9 @@ const columns: GridColDef<DocumentReadingUsageItem>[] = [
 const UsageCard = (row: DocumentReadingUsageItem) => (
   <div className="grid gap-1">
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <p className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{row.name}</p>
+      <div className="min-w-0 flex-1 text-sm">
+        <Company row={row} />
+      </div>
       <ReadingState enabled={row.enabled} />
     </div>
     <p className="text-sm text-ink-2">

@@ -5,9 +5,12 @@ vi.mock('./httpClient', () => ({ http }));
 
 import { env } from '../../config/env';
 import {
+  approveInsuranceInstallment,
   createInsurancePolicy,
   deleteInsurer,
   getCarInsurance,
+  getInsuranceInstallment,
+  listInsuranceInstallments,
   listInsurers,
   payInsuranceInstallment,
   uploadInstallmentReceipt,
@@ -36,6 +39,26 @@ describe('API de seguros (v2)', () => {
     http.delete.mockResolvedValue({});
     await deleteInsurer('i-1');
     expect(http.delete).toHaveBeenCalledWith('/insurers/i-1', v2);
+  });
+
+  it('aprobar el pago de una cuota es un POST sin cuerpo a la v2', async () => {
+    http.post.mockResolvedValue({ data: { installmentId: 'q-1', approvalStatus: 'approved' } });
+    const result = await approveInsuranceInstallment('q-1');
+    expect(http.post).toHaveBeenCalledWith('/insurance-installments/q-1/approve', undefined, v2);
+    expect(result.approvalStatus).toBe('approved');
+  });
+
+  it('lee una cuota por id y filtra el listado por aprobación pendiente', async () => {
+    http.get.mockResolvedValue({ data: { installmentId: 'q-1', carId: 'c-1' } });
+    await getInsuranceInstallment('q-1');
+    expect(http.get).toHaveBeenCalledWith('/insurance-installments/q-1', v2);
+
+    http.get.mockResolvedValue({ data: { data: [], total: 0 } });
+    await listInsuranceInstallments({ page: 0, pageSize: 10 }, { approvalStatus: 'awaiting' });
+    expect(http.get).toHaveBeenLastCalledWith('/insurance-installments', {
+      ...v2,
+      params: { page: 1, limit: 10, approvalStatus: 'awaiting' },
+    });
   });
 
   it('el alta de póliza lleva Idempotency-Key', async () => {

@@ -129,6 +129,7 @@ export const AssignModal = ({ conversation, myUserId, onClose }: Props) => {
           label={me ? 'Yo' : undefined}
           detail={me ? person.fullName : undefined}
           photoUrl={person.photoUrl}
+          userId={person.userId}
           value={person.userId}
           checked={userId === person.userId}
           onSelect={setUserId}

@@ -18,6 +18,7 @@ const bal = (patch: Partial<StockBalance>): StockBalance => ({
   carId: null,
   gasCylinderId: 'g1',
   gasCylinderType: '10kg',
+  gasCylinderPhotoUrl: null,
   condition: 'full',
   quantity: 1,
   updatedAt: '',
@@ -54,7 +55,14 @@ describe('pivot', () => {
       bal({ condition: 'empty', quantity: 2 }),
       bal({ condition: 'defective', quantity: 1 }),
     ]);
-    expect(rows).toEqual([{ gasCylinderId: 'g1', gasCylinderType: '10kg', full: 5, empty: 2, defective: 1 }]);
+    expect(rows).toEqual([
+      { gasCylinderId: 'g1', gasCylinderType: '10kg', gasCylinderPhotoUrl: null, full: 5, empty: 2, defective: 1 },
+    ]);
+  });
+  it('conserva la foto del producto en cada fila', () => {
+    const photo = 'https://fotos.test/g1.jpg';
+    expect(pivotBalances([bal({ gasCylinderPhotoUrl: photo })])[0].gasCylinderPhotoUrl).toBe(photo);
+    expect(pivotByLocation([bal({ gasCylinderPhotoUrl: photo })])[0].gasCylinderPhotoUrl).toBe(photo);
   });
   it('separa por ubicación y deja los galpones antes que los camiones', () => {
     const rows = pivotByLocation([

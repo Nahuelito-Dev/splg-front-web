@@ -15,6 +15,7 @@ import {
   ResponsiveTable,
   PageContainer,
   CardHeader,
+  ProductName,
   type MenuAction,
 } from '../../common/components/ui';
 import { useBackToList, usePermissions } from '../../hooks';
@@ -29,7 +30,18 @@ import { PurchaseReceiptFormModal } from './components/PurchaseReceiptFormModal'
 import { orderActions } from './purchaseRules';
 
 const ITEM_COLUMNS: GridColDef<PurchaseOrderItem>[] = [
-  { field: 'gasCylinderType', headerName: 'Garrafa', flex: 1, minWidth: 120, sortable: false },
+  {
+    field: 'gasCylinderType',
+    headerName: 'Garrafa',
+    flex: 1,
+    minWidth: 120,
+    sortable: false,
+    renderCell: ({ row }) => (
+      <ProductName id={row.gasCylinderId} photoUrl={row.gasCylinderPhotoUrl}>
+        {row.gasCylinderType}
+      </ProductName>
+    ),
+  },
   { field: 'quantity', headerName: 'Pedidas', width: 100, type: 'number', sortable: false },
   { field: 'receivedQuantity', headerName: 'Recibidas', width: 110, type: 'number', sortable: false },
   { field: 'pendingQuantity', headerName: 'Pendientes', width: 120, type: 'number', sortable: false },
@@ -192,7 +204,13 @@ export const PurchaseOrderDetails = () => {
                 getRowId={(row) => row.itemId}
                 renderCard={(row) => (
                   <div className="space-y-1 text-sm">
-                    <p className="font-semibold text-ink">{row.gasCylinderType}</p>
+                    <ProductName
+                      id={row.gasCylinderId}
+                      photoUrl={row.gasCylinderPhotoUrl}
+                      className="font-semibold text-ink"
+                    >
+                      {row.gasCylinderType}
+                    </ProductName>
                     <p className="text-muted">
                       Pedidas {row.quantity} · recibidas {row.receivedQuantity} · pendientes {row.pendingQuantity}
                     </p>

@@ -13,6 +13,9 @@ import {
   getFleetExpirations,
   getFleetPlan,
   getFleetTask,
+  getFleetTaskBoard,
+  moveFleetTask,
+  type FleetTaskBoardFilters,
   getVehicleInUse,
   listCarAssignments,
   listFleetPlans,
@@ -38,6 +41,9 @@ import type {
   CloseFleetTaskV2Body,
   CreateFleetPlanBody,
   CreateFleetTaskBody,
+  FleetTaskBoard,
+  FleetTaskBoardCard,
+  MoveFleetTaskBody,
   PayFleetTaskBody,
   UpdateFleetPlanBody,
 } from '../api/types';
@@ -270,3 +276,50 @@ export const useFleetTask = (id: string | undefined) =>
     queryFn: () => getFleetTask(id ?? ''),
     enabled: Boolean(id),
   });
+
+/** Clave del tablero: cuelga de `fleet`, así cualquier cambio de tareas (alta, cierre, cancelación) lo refresca. */
+export const boardKey = (filters: FleetTaskBoardFilters = {}) => [...keys.all, 'board', filters] as const;
+
+/** El tablero de tareas (`GET /v2/fleet/tasks/board`). */
+export const useFleetTaskBoard = (filters: FleetTaskBoardFilters, enabled = true) =>
+  useQuery({
+    queryKey: boardKey(filters),
+    queryFn: () => getFleetTaskBoard(filters),
+    enabled,
+    placeholderData: keepPreviousData,
+  });
+
+interface MoveVars {
+  id: string;
+  body: MoveFleetTaskBody;
+  /** Cómo queda el tablero mientras el back contesta. */
+  optimistic: (board: FleetTaskBoard) => FleetTaskBoard;
+  /** Cómo entra la tarjeta que devuelve el back (reemplaza la optimista). */
+  settle: (board: FleetTaskBoard, card: FleetTaskBoardCard) => FleetTaskBoard;
+}
+
+/**
+ * Mueve una tarjeta: se acomoda al instante y, si el back la rechaza, vuelve a donde estaba (y se pide el tablero de
+ * nuevo si la tarea cambió por otro lado).
+ */
+export const useMoveFleetTask = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: MoveVars) => moveFleetTask(id, body),
+    onMutate: async ({ optimistic }) => {
+      const prefix = [...keys.all, 'board'];
+      await queryClient.cancelQueries({ queryKey: prefix });
+      const snapshots = queryClient.getQueriesData<FleetTaskBoard>({ queryKey: prefix });
+      for (const [key, board] of snapshots) if (board) queryClient.setQueryData(key, optimistic(board));
+      return { snapshots };
+    },
+    onError: (_error, _vars, context) => {
+      for (const [key, board] of context?.snapshots ?? []) queryClient.setQueryData(key, board);
+      void queryClient.invalidateQueries({ queryKey: [...keys.all, 'board'] });
+    },
+    onSuccess: (card, { settle }) => {
+      for (const [key, board] of queryClient.getQueriesData<FleetTaskBoard>({ queryKey: [...keys.all, 'board'] }))
+        if (board) queryClient.setQueryData(key, settle(board, card));
+    },
+  });
+};

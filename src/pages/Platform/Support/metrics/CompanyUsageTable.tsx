@@ -11,6 +11,15 @@ const assistantText = (row: CompanyChatUsage) =>
     ? `${formatNumber(row.assistant.aiReplies)} respuestas · ${formatRate(row.assistant.resolvedWithoutHumanRate)} sin persona`
     : '—';
 
+/** La empresa con su logo (`logoUrl` firmada de la API); sin logo, sus iniciales. */
+const Company = ({ row }: { row: CompanyChatUsage }) => (
+  <IdentityCell
+    title={row.name}
+    avatarName={row.name}
+    photo={{ kind: 'distributor', id: row.distributorId, url: row.logoUrl }}
+  />
+);
+
 const columns: GridColDef<CompanyChatUsage>[] = [
   {
     field: 'name',
@@ -18,7 +27,7 @@ const columns: GridColDef<CompanyChatUsage>[] = [
     flex: 1.3,
     minWidth: 200,
     sortable: false,
-    renderCell: ({ row }) => <IdentityCell title={row.name} avatarName={row.name} />,
+    renderCell: ({ row }) => <Company row={row} />,
   },
   {
     field: 'conversations',
@@ -50,7 +59,9 @@ const columns: GridColDef<CompanyChatUsage>[] = [
 
 const UsageCard = (row: CompanyChatUsage) => (
   <div className="grid gap-1">
-    <p className="truncate text-sm font-medium text-ink">{row.name}</p>
+    <div className="min-w-0 text-sm">
+      <Company row={row} />
+    </div>
     <p className="text-sm text-ink-2">
       {formatNumber(row.conversations)} conversaciones · {formatNumber(row.messages)} mensajes
     </p>

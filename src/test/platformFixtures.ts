@@ -20,6 +20,7 @@ export const companyItem = (over: Partial<CompanyListItem> = {}): CompanyListIte
   id: 'c-demo',
   name: 'Distribuidora Demo',
   slug: 'demo',
+  logoUrl: null,
   status: 'active',
   ownedByPlatform: false,
   plan: null,

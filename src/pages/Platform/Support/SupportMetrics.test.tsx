@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../../../services/api/errors';
 import { emptyPlatformChatMetrics, platformChatMetrics } from '../../../test/chatMetricsFixtures';
 import { failed, loading, ok, renderPage } from '../../../test/pageTest';
+import { initialsOf } from '../../../utils/format';
 
 const state = vi.hoisted(() => ({ metrics: undefined as unknown, params: vi.fn() }));
 
@@ -175,5 +176,20 @@ describe('Tablero de soporte', () => {
     render();
     fireEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
     expect(refetch).toHaveBeenCalled();
+  });
+
+  it('uso por empresa: el logo de la empresa si la API lo manda; sin logo, sus iniciales', () => {
+    const LOGO = 'https://fotos.test/florchi.png';
+    const metrics = platformChatMetrics();
+    state.metrics = ok({
+      ...metrics,
+      companies: metrics.companies.map((company) =>
+        company.distributorId === 'd-1' ? { ...company, logoUrl: LOGO } : company,
+      ),
+    });
+    const { container } = render();
+    expect(container.querySelectorAll('img')).toHaveLength(1);
+    expect(container.querySelector(`img[src="${LOGO}"]`)).not.toBeNull();
+    expect(screen.getByText(initialsOf('Gas del Sur'))).toBeInTheDocument();
   });
 });

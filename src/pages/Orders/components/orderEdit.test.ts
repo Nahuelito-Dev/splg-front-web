@@ -81,7 +81,7 @@ describe('buildOrderUpdate', () => {
   });
 
   it('el medio de pago sólo si se eligió uno', () => {
-    expect(buildOrderUpdate(initial, { ...same, paymentMethod: 'transfer' })).toEqual({ paymentMethod: 'transfer' });
+    expect(buildOrderUpdate(initial, { ...same, paymentMethod: 'cash' })).toEqual({ paymentMethod: 'cash' });
   });
 });
 

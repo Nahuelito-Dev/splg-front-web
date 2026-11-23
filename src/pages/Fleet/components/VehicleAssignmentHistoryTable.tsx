@@ -1,4 +1,5 @@
 import type { GridColDef, GridPaginationModel } from '@mui/x-data-grid';
+import { Car } from 'lucide-react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Card, DataTable, EmptyState, IdentityCell, CardHeader } from '../../../common/components/ui';
@@ -50,6 +51,8 @@ export const VehicleAssignmentHistoryTable = ({
               title={[row.carBrand, row.carModel].filter(Boolean).join(' ') || 'Vehículo'}
               subtitle={row.carPatent ?? undefined}
               monoSubtitle
+              icon={Car}
+              photo={{ kind: 'car', id: row.carId, url: row.photoUrl }}
             />
           ) : (
             <IdentityCell

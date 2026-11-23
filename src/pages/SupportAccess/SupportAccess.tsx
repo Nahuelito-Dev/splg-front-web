@@ -31,6 +31,19 @@ import { SupportSessionDrawer } from './components/SupportSessionDrawer';
 const PENDING_PAGE = { page: 0, pageSize: 20 };
 
 /**
+ * Quién del soporte pidió el acceso, con su foto (`requestedBy.photoUrl` firmada de la API). No se renueva: la cuenta
+ * es de la plataforma y la empresa no puede pedirle su foto a la API; si la URL vence, quedan las iniciales.
+ */
+const Requester = ({ row, withReason = true }: { row: SupportSession; withReason?: boolean }) => (
+  <IdentityCell
+    title={row.requestedBy.fullName ?? 'Soporte'}
+    subtitle={withReason ? row.reason : undefined}
+    avatarName={row.requestedBy.fullName ?? 'S'}
+    photo={{ kind: 'user', id: row.requestedBy.userId, url: row.requestedBy.photoUrl, renewable: false }}
+  />
+);
+
+/**
  * «Accesos de soporte» del admin de la empresa (§4.12): los pedidos pendientes para aprobar o rechazar, la sesión
  * activa para revocar, el historial con lo que miró el soporte y la política. Ver: `soporte.ver`; decidir y revocar:
  * `soporte.gestionar`. El enlace del aviso y del correo llega con `?session=<id>`.
@@ -68,13 +81,7 @@ export const SupportAccess = () => {
         flex: 1.4,
         minWidth: 220,
         sortable: false,
-        renderCell: ({ row }) => (
-          <IdentityCell
-            title={row.requestedBy.fullName ?? 'Soporte'}
-            subtitle={row.reason}
-            avatarName={row.requestedBy.fullName ?? 'S'}
-          />
-        ),
+        renderCell: ({ row }) => <Requester row={row} />,
       },
       {
         field: 'status',
@@ -206,7 +213,9 @@ export const SupportAccess = () => {
                     className="grid w-full gap-1 border-b border-outline px-4 py-3 text-left hover:bg-surface-hover"
                   >
                     <span className="flex items-center justify-between gap-2">
-                      <span className="truncate font-medium text-ink">{row.requestedBy.fullName ?? 'Soporte'}</span>
+                      <span className="min-w-0 flex-1">
+                        <Requester row={row} withReason={false} />
+                      </span>
                       <Badge label={labelOf(SUPPORT_SESSION_STATUS, row.status)} />
                     </span>
                     <span className="line-clamp-2 text-sm text-ink-2">{row.reason}</span>

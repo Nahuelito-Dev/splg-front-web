@@ -1,5 +1,13 @@
 import { UserRoundCog } from 'lucide-react';
-import { Badge, Button, CardHeader, DetailList, PersonAvatar, RecordDrawer } from '../../../common/components/ui';
+import {
+  Badge,
+  Button,
+  CardHeader,
+  DetailList,
+  PersonAvatar,
+  PhotoThumb,
+  RecordDrawer,
+} from '../../../common/components/ui';
 import { usePermissions } from '../../../hooks';
 import type { Order } from '../../../services/api/types';
 import { useOrder } from '../../../services/queries/orders';
@@ -121,8 +129,18 @@ export const OrderQuickDrawer = ({ open, onClose, order: listed, onAssign }: Pro
                 key={`${item.gas_cylinder?.gas_cylinder_id ?? 'item'}-${index}`}
                 className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm"
               >
-                <span className="min-w-0 truncate text-ink">
-                  {item.quantity} × {item.gas_cylinder?.type ?? 'Producto sin datos'}
+                <span className="flex min-w-0 items-center gap-2 text-ink">
+                  <PhotoThumb
+                    kind="gasCylinder"
+                    id={item.gas_cylinder?.gas_cylinder_id ?? ''}
+                    url={item.gas_cylinder?.photoUrl}
+                    size="sm"
+                    shape="square"
+                    fallback={null}
+                  />
+                  <span className="min-w-0 truncate">
+                    {item.quantity} × {item.gas_cylinder?.type ?? 'Producto sin datos'}
+                  </span>
                 </span>
                 <span className="shrink-0 tabular-nums text-ink">{formatCurrency(item.subtotal)}</span>
               </li>

@@ -1,15 +1,20 @@
 import { useState } from 'react';
-import { Copy, ExternalLink, FileText, PencilLine, Plus, ShieldCheck, XCircle } from 'lucide-react';
+import { CheckCircle2, Copy, ExternalLink, FileText, PencilLine, Plus, ShieldCheck, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { usePermiso } from '../../../hooks';
 import { Badge, Button, Card, EmptyState, ErrorState, LoadingState, ReasonModal } from '../../../common/components/ui';
 import type { InsuranceInstallment, InsurancePolicy } from '../../../services/api/types';
 import { useAttachmentFile } from '../../../services/queries/attachments';
-import { useCancelInsurancePolicy, useCarInsurance } from '../../../services/queries/insurance';
+import {
+  useApproveInsuranceInstallment,
+  useCancelInsurancePolicy,
+  useCarInsurance,
+} from '../../../services/queries/insurance';
 import { openFileSource } from '../../../utils/fileSource';
 import { argentinaDay, formatCurrency, formatDay, formatDateTime, formatShortId } from '../../../utils/format';
-import { notify } from '../../../utils/notifications';
+import { confirm, notify } from '../../../utils/notifications';
 import { INSURANCE_POLICY_STATUS } from '../../../utils/statusLabels';
-import { installmentLabel } from '../insuranceState';
+import { needsApproval, installmentLabel } from '../insuranceState';
 import { InstallmentPaymentModal } from './InstallmentPaymentModal';
 import { InsurancePolicyFormModal } from './InsurancePolicyFormModal';
 
@@ -36,9 +41,20 @@ interface InstallmentRowProps {
   canWrite: boolean;
   writeHint?: string;
   onRegister?: (installment: InsuranceInstallment) => void;
+  onApprove?: (installment: InsuranceInstallment) => void;
+  approving?: boolean;
 }
 
-const InstallmentRow = ({ installment, policy, today, canWrite, writeHint, onRegister }: InstallmentRowProps) => {
+const InstallmentRow = ({
+  installment,
+  policy,
+  today,
+  canWrite,
+  writeHint,
+  onRegister,
+  onApprove,
+  approving = false,
+}: InstallmentRowProps) => {
   const fileSource = useAttachmentFile();
   const label = installmentLabel(installment, today);
   const payUrl = policy.insurer.paymentUrl;
@@ -77,18 +93,34 @@ const InstallmentRow = ({ installment, policy, today, canWrite, writeHint, onReg
               Pagar
             </Button>
           )}
+          {onApprove && needsApproval(installment) && (
+            <Button
+              size="sm"
+              icon={<CheckCircle2 />}
+              loading={approving}
+              disabled={!canWrite}
+              title={writeHint}
+              onClick={() => onApprove(installment)}
+            >
+              Aprobar pago
+            </Button>
+          )}
           {onRegister && (
             <Button
               size="sm"
               variant="secondary"
               disabled={!canWrite}
               title={writeHint}
+              blockedReason={needsApproval(installment) ? 'Aprobá el pago de la cuota antes de registrarlo' : undefined}
               onClick={() => onRegister(installment)}
             >
               Registrar pago
             </Button>
           )}
         </div>
+      )}
+      {installment.status === 'pending' && installment.approvalStatus === 'approved' && installment.approvedAt && (
+        <p className="basis-full text-xs text-ink-2">Pago aprobado el {formatDateTime(installment.approvedAt)}</p>
       )}
       {installment.status === 'paid' && (
         <div className="flex basis-full flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-2">
@@ -117,6 +149,8 @@ const InstallmentRow = ({ installment, policy, today, canWrite, writeHint, onReg
 export const CarInsuranceTab = ({ carId, canWrite, writeHint }: Props) => {
   const { data, isPending, error, refetch } = useCarInsurance(carId);
   const cancel = useCancelInsurancePolicy();
+  const approve = useApproveInsuranceInstallment();
+  const gestionar = usePermiso('flota.gestionar');
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<InsurancePolicy | null>(null);
   const [cancelling, setCancelling] = useState<InsurancePolicy | null>(null);
@@ -145,6 +179,19 @@ export const CarInsuranceTab = ({ carId, canWrite, writeHint }: Props) => {
         onError: notify.error,
       },
     );
+  };
+
+  const confirmApprove = async (installment: InsuranceInstallment) => {
+    const ok = await confirm({
+      title: '¿Aprobar el pago de la cuota?',
+      text: `Cuota ${installment.label} de ${formatCurrency(installment.amount)}. Aprobar no mueve plata: después registrás el pago con su comprobante y la caja. Queda asentado quién aprobó y cuándo.`,
+      confirmText: 'Aprobar pago',
+    });
+    if (!ok) return;
+    approve.mutate(installment.installmentId, {
+      onSuccess: () => notify.success(`Pago de la cuota ${installment.label} aprobado`),
+      onError: notify.error,
+    });
   };
 
   return (
@@ -231,6 +278,8 @@ export const CarInsuranceTab = ({ carId, canWrite, writeHint }: Props) => {
                     canWrite={canWrite}
                     writeHint={writeHint}
                     onRegister={setPaying}
+                    onApprove={gestionar.known && !gestionar.allowed ? undefined : (i) => void confirmApprove(i)}
+                    approving={approve.isPending && approve.variables === installment.installmentId}
                   />
                 ))}
               </ul>

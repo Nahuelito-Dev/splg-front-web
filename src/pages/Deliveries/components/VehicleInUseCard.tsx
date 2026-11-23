@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ArrowRightLeft, ShieldAlert } from 'lucide-react';
 import { Button, Card, EmptyState, LoadingState, CardHeader } from '../../../common/components/ui';
+import { VehicleCard } from '../../../common/components/vehicle/VehicleCard';
 import { usePermissions } from '../../../hooks';
-import { carIcon } from '../../Cars/components/carIcon';
 import { useReleaseVehicle, useVehicleInUse } from '../../../services/queries/fleet';
 import { formatDateTime } from '../../../utils/format';
 import { confirm, notify } from '../../../utils/notifications';
@@ -48,8 +48,6 @@ export const VehicleInUseCard = ({ deliveryId, canWrite, writeHint }: Props) => 
     });
   };
 
-  const Icon = carIcon(vehicle?.carTypeCar ?? null);
-
   return (
     <Card className="p-6">
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -86,32 +84,24 @@ export const VehicleInUseCard = ({ deliveryId, canWrite, writeHint }: Props) => 
       {isPending ? (
         <LoadingState label="Cargando vehículo…" />
       ) : vehicle ? (
-        <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-outline p-3">
-          <div className="flex items-center gap-3">
-            <span
-              aria-hidden="true"
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary-strong [&_svg]:h-5 [&_svg]:w-5"
-            >
-              <Icon strokeWidth={1.8} />
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-ink">
-                {[vehicle.carBrand, vehicle.carModel].filter(Boolean).join(' ') || 'Vehículo'}
-              </p>
-              <p className="font-mono text-xs uppercase tracking-wide text-muted">
-                {vehicle.carPatent ?? 'Sin patente'} · {vehicle.carTypeCar ?? 'Sin tipo'}
-              </p>
-              <p className="mt-0.5 text-xs text-muted">Desde {formatDateTime(vehicle.assignedAt)}</p>
-              {vehicle.note && <p className="mt-1 text-xs text-muted">Nota: {vehicle.note}</p>}
-            </div>
-          </div>
+        <VehicleCard
+          variant="row"
+          carId={vehicle.carId}
+          patent={vehicle.carPatent}
+          description={[vehicle.carBrand, vehicle.carModel].filter(Boolean).join(' ') || null}
+          typeCar={vehicle.carTypeCar}
+          photoUrl={vehicle.photoUrl}
+          status={vehicle.isLocked ? { text: 'Inhabilitado', tone: 'danger' } : undefined}
+        >
+          <p className="text-xs text-muted">Desde {formatDateTime(vehicle.assignedAt)}</p>
+          {vehicle.note && <p className="mt-1 text-xs text-muted">Nota: {vehicle.note}</p>}
           {vehicle.isLocked && (
-            <div className="flex items-center gap-2 rounded-xl bg-danger-soft px-3 py-2 text-xs text-danger">
+            <div className="mt-2 flex items-center gap-2 rounded-xl bg-danger-soft px-3 py-2 text-xs text-danger">
               <ShieldAlert aria-hidden="true" className="h-4 w-4 shrink-0" strokeWidth={1.8} />
               Inhabilitado por documentación vencida
             </div>
           )}
-        </div>
+        </VehicleCard>
       ) : (
         <EmptyState
           title="Sin vehículo en uso"

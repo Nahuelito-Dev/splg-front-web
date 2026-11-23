@@ -57,7 +57,7 @@ const PaymentSurchargesForm = ({ config, canWrite, writeHint }: FormProps) => {
   const restoreDefaults = async () => {
     const ok = await confirm({
       title: '¿Restablecer los valores por defecto?',
-      text: 'Transferencia 10 %, Mercado Pago 10 % y efectivo 0 %. Rige para los pedidos que se coticen o creen desde ahora; los ya creados conservan su recargo.',
+      text: 'Mercado Pago 10 % y efectivo 0 %. Rige para los pedidos que se coticen o creen desde ahora; los ya creados conservan su recargo.',
       confirmText: 'Restablecer',
     });
     if (!ok) return;
@@ -81,15 +81,7 @@ const PaymentSurchargesForm = ({ config, canWrite, writeHint }: FormProps) => {
         updatedAt={config.updatedAt}
         updatedByUserId={config.updatedByUserId}
       />
-      <div className="grid gap-4 sm:grid-cols-3">
-        <FormInput
-          name="transfer"
-          label="Transferencia (%)"
-          inputMode="decimal"
-          autoComplete="off"
-          disabled={!canWrite}
-          hint={rangeHint}
-        />
+      <div className="grid gap-4 sm:grid-cols-2">
         <FormInput
           name="mercadoPago"
           label="Mercado Pago (%)"
@@ -145,7 +137,7 @@ export const PaymentSurchargesCard = () => {
       <CardHeader
         title="Recargos por medio de pago"
         icon={<Percent />}
-        subtitle="Porcentaje que se suma al total del pedido según cómo paga el cliente: transferencia, Mercado Pago o efectivo."
+        subtitle="Porcentaje que se suma al total del pedido según cómo paga el cliente: Mercado Pago o efectivo (la distribuidora ya no acepta transferencias)."
         className=""
       />
       {needsDistributor ? (

@@ -12,6 +12,7 @@ import {
   Skeleton,
   PageContainer,
   CardHeader,
+  ProductName,
 } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import type { DiferenciaDeVendible, PedidoEntregadoSinMovimiento } from '../../services/api/types';
@@ -48,7 +49,17 @@ export const Reconciliation = () => {
   };
 
   const cylinderColumns: GridColDef<DiferenciaDeVendible>[] = [
-    { field: 'gasCylinderType', headerName: 'Garrafa', width: 120, sortable: false },
+    {
+      field: 'gasCylinderType',
+      headerName: 'Garrafa',
+      width: 120,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <ProductName id={row.gasCylinderId} photoUrl={row.gasCylinderPhotoUrl}>
+          {row.gasCylinderType}
+        </ProductName>
+      ),
+    },
     { field: 'sellable', headerName: 'Vendible', width: 110, type: 'number', sortable: false },
     { field: 'physicalFull', headerName: 'Llenas físicas', width: 130, type: 'number', sortable: false },
     { field: 'reserved', headerName: 'Reservado', width: 110, type: 'number', sortable: false },
@@ -96,7 +107,17 @@ export const Reconciliation = () => {
       sortable: false,
       valueGetter: ({ row }) => formatDateTime(row.deliveredAt),
     },
-    { field: 'gasCylinderType', headerName: 'Garrafa', width: 130, sortable: false },
+    {
+      field: 'gasCylinderType',
+      headerName: 'Garrafa',
+      width: 130,
+      sortable: false,
+      renderCell: ({ row }) => (
+        <ProductName id={row.gasCylinderId} photoUrl={row.gasCylinderPhotoUrl}>
+          {row.gasCylinderType}
+        </ProductName>
+      ),
+    },
     { field: 'quantity', headerName: 'Cantidad', width: 110, type: 'number', sortable: false },
   ];
 
@@ -169,7 +190,13 @@ export const Reconciliation = () => {
               renderCard={(row) => (
                 <>
                   <div className="flex items-center justify-between">
-                    <p className="font-semibold text-ink">{row.gasCylinderType}</p>
+                    <ProductName
+                      id={row.gasCylinderId}
+                      photoUrl={row.gasCylinderPhotoUrl}
+                      className="font-semibold text-ink"
+                    >
+                      {row.gasCylinderType}
+                    </ProductName>
                     <Badge
                       label={
                         row.difference === 0

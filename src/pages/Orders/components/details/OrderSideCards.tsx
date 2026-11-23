@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { CircleUser, MapPin, Truck, UserCheck, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, PersonAvatar, Button, Card, CardHeader, UserRefLink } from '../../../../common/components/ui';
+import { VehicleCard } from '../../../../common/components/vehicle/VehicleCard';
 import type { Order } from '../../../../services/api/types';
 import { useFindCustomerByUserId } from '../../../../services/queries/customers';
 import { useUser } from '../../../../services/queries/users';
@@ -13,6 +14,7 @@ import { PaymentLink } from '../PaymentLink';
 import { OrderMiniMap } from './OrderMiniMap';
 import { OrderMercadoPagoPayment } from './OrderMercadoPagoPayment';
 import { OrderRefunds } from './OrderRefunds';
+import { OrderDeliveryConfirmation } from './OrderDeliveryConfirmation';
 import { orderCoordinates } from './orderLocation';
 
 const Section = ({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) => (
@@ -103,6 +105,7 @@ const DeliverySection = ({ order }: { order: Order }) => {
         {zone && <Row label="Zona">{zone.name}</Row>}
         {zone && zone.amount > 0 && <Row label="Recargo">{formatCurrency(zone.amount)}</Row>}
       </dl>
+      <OrderDeliveryConfirmation order={order} />
       {address?.additional_instructions && (
         <p className="mt-3 rounded-lg bg-surface-hover p-2 text-xs text-muted">{address.additional_instructions}</p>
       )}
@@ -141,19 +144,19 @@ const DriverSection = ({ order }: { order: Order }) => {
             <PersonAvatar name={order.delivery_name} deliveryId={order.delivery_id} size="lg" />
             <div className="min-w-0">
               <p className="break-words font-semibold text-ink">{order.delivery_name}</p>
-              {vehicle ? (
-                <p className="text-xs text-muted">
-                  <span className="font-mono font-semibold uppercase tracking-wide">
-                    {vehicle.patent ?? 's/patente'}
-                  </span>
-                  {' · '}
-                  {[vehicle.brand, vehicle.model].filter(Boolean).join(' ') || 'Sin marca/modelo'}
-                </p>
-              ) : (
-                <p className="text-xs text-muted">Sin vehículo registrado al aceptar el pedido</p>
-              )}
+              {!vehicle && <p className="text-xs text-muted">Sin vehículo registrado al aceptar el pedido</p>}
             </div>
           </div>
+          {vehicle && (
+            <VehicleCard
+              variant="row"
+              carId={vehicle.car_id}
+              patent={vehicle.patent}
+              description={[vehicle.brand, vehicle.model].filter(Boolean).join(' ') || 'Sin marca/modelo'}
+              photoUrl={vehicle.photoUrl}
+              className="mt-3"
+            />
+          )}
           {order.delivery_id && (
             <Button
               variant="secondary"

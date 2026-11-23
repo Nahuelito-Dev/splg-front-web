@@ -51,7 +51,14 @@ import {
 } from '../../../../services/queries/adminNotifications';
 import { queryKeys } from '../../../../services/queries/queryKeys';
 import { invalidateInbox } from '../../../../services/queries/inbox';
-import { CHAT_MENTION_KIND, notificationTarget, notificationVisuals } from '../../../../utils/adminNotifications';
+import {
+  CHAT_MENTION_KIND,
+  approvalInstallmentId,
+  notificationTarget,
+  notificationVisuals,
+} from '../../../../utils/adminNotifications';
+import { useInstallmentTarget } from '../../../../services/queries/insurance';
+import { ApproveInstallmentButton } from '../../ApproveInstallmentButton';
 import { notify } from '../../../../utils/notifications';
 import { formatCurrency, formatShortId } from '../../../../utils/format';
 import { INCIDENT_TYPE, type Tone } from '../../../../utils/statusLabels';
@@ -166,6 +173,8 @@ export const NotificationBell = () => {
   const { data: unreadSaved, refetch: refetchUnread } = useAdminUnreadCount();
   const markRead = useMarkAdminNotificationRead();
   const markAllRead = useMarkAllAdminNotificationsRead();
+  const installmentTarget = useInstallmentTarget();
+  const markSaved = markRead.mutate;
 
   const pushNotification = useCallback((event: NotificationEvent, payload: OrderSocketPayload = {}) => {
     const notification: SessionNotification = {
@@ -332,11 +341,19 @@ export const NotificationBell = () => {
       createdAt: n.createdAt,
       read: n.readAt !== null,
       ...notificationVisuals(n.kind),
+      action: approvalInstallmentId(n) ? (
+        <ApproveInstallmentButton
+          installmentId={approvalInstallmentId(n) as string}
+          onApproved={() => {
+            if (n.readAt === null) markSaved(n.id);
+          }}
+        />
+      ) : undefined,
     }));
     return [...savedItems, ...notifications.map(toDrawerItem)].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-  }, [saved, notifications]);
+  }, [saved, notifications, markSaved]);
 
   const sessionUnread = notifications.filter((n) => !n.read).length;
   const unreadCount = (unreadSaved?.count ?? 0) + sessionUnread;
@@ -352,6 +369,14 @@ export const NotificationBell = () => {
       const savedId = id.slice(SAVED_PREFIX.length);
       const clicked = saved?.items.find((n) => n.id === savedId);
       if (clicked && clicked.readAt === null) markRead.mutate(savedId);
+      const installmentId = clicked ? approvalInstallmentId(clicked) : null;
+      if (installmentId) {
+        installmentTarget(installmentId).then((path) => {
+          setOpen(false);
+          navigate(path);
+        }, notify.error);
+        return;
+      }
       const target = notificationTarget(clicked?.link);
       if (target) {
         setOpen(false);

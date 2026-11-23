@@ -31,6 +31,7 @@ export const AccountPicker = ({ selected, onSelect, label, placeholder = 'Nombre
           title={selected.full_name ?? 'Sin nombre'}
           subtitle={selected.email ?? undefined}
           avatarName={selected.full_name ?? '?'}
+          photo={{ kind: 'user', id: selected.user_id, url: selected.photoUrl }}
         />
         <Button variant="secondary" size="sm" onClick={() => onSelect(null)}>
           Cambiar
@@ -64,6 +65,7 @@ export const AccountPicker = ({ selected, onSelect, label, placeholder = 'Nombre
                   title={user.full_name ?? 'Sin nombre'}
                   subtitle={[user.email, roleOf(user)].filter(Boolean).join(' · ')}
                   avatarName={user.full_name ?? '?'}
+                  photo={{ kind: 'user', id: user.user_id, url: user.photoUrl }}
                 />
               </button>
             </li>

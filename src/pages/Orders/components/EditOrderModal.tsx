@@ -25,7 +25,6 @@ import { buildOrderUpdate, orderEditSchema, type OrderEditInitial, type OrderEdi
 const PAYMENT_OPTIONS = [
   { value: '', label: 'Sin cambios' },
   { value: 'cash', label: 'Efectivo' },
-  { value: 'transfer', label: 'Transferencia' },
 ];
 
 const initialOf = (order: Order): OrderEditInitial => ({

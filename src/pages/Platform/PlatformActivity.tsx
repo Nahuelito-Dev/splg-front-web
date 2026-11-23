@@ -33,11 +33,25 @@ const whatOf = (row: ActivityItem) => {
   return { title, detail: title.includes(area) ? undefined : area };
 };
 
+/** Las cuentas cuya foto la plataforma puede volver a pedir (`GET /users/:id/photo`); las demás no se renuevan. */
+const RENEWABLE_ROLES = new Set(['super_admin', 'admin']);
+
+/** Quién lo hizo, con su foto (`actorPhotoUrl` firmada de la API); sin foto, sus iniciales. */
 const Who = ({ row }: { row: ActivityItem }) => (
   <IdentityCell
     title={row.actorName ?? 'Sistema'}
     subtitle={row.actorRole ? roleLabel(row.actorRole).text : undefined}
     avatarName={row.actorName ?? undefined}
+    photo={
+      row.actorUserId && row.actorName
+        ? {
+            kind: 'user',
+            id: row.actorUserId,
+            url: row.actorPhotoUrl,
+            renewable: RENEWABLE_ROLES.has(row.actorRole ?? ''),
+          }
+        : undefined
+    }
   />
 );
 

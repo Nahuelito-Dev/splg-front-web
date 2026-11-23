@@ -9,12 +9,12 @@ import { formatDateTime, formatDay } from '../../../utils/format';
 import { confirm, notify } from '../../../utils/notifications';
 import { FLEET_TASK_CRITICALITY, labelOf } from '../../../utils/statusLabels';
 import {
-  DISCARD_REASON,
   PLANNING_CASE_STATUS,
   WINDOW_PROPOSAL_STATUS,
   WINDOW_SOURCE,
   formatWindow,
   isOpenCase,
+  windowOutcome,
 } from './plannerLabels';
 import { WindowFormModal } from './WindowFormModal';
 
@@ -68,16 +68,7 @@ const Windows = ({ planningCase }: { planningCase: PlanningCaseDetail }) =>
           <span className="text-xs text-muted">
             {w.demand} pedidos esperados{w.unitsLeft !== null ? ` · quedarían ${w.unitsLeft} unidades` : ''}
           </span>
-          <Badge
-            label={
-              w.offered
-                ? { text: 'Ofrecida', tone: 'info' }
-                : {
-                    text: DISCARD_REASON[w.discardReason ?? 'not_selected'],
-                    tone: w.discardReason === 'coverage' ? 'warn' : 'neutral',
-                  }
-            }
-          />
+          <Badge label={windowOutcome(w)} />
         </li>
       ))}
     </ul>

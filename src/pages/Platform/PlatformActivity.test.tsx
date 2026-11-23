@@ -32,6 +32,7 @@ const item = (over: Record<string, unknown> = {}) => ({
   kind: 'request',
   actorUserId: 'u1',
   actorName: 'Nahuel Wagner',
+  actorPhotoUrl: null,
   actorRole: 'super_admin',
   method: 'PUT',
   resource: 'platform',
@@ -122,5 +123,44 @@ describe('Auditoría de plataforma', () => {
     state.activity = list([]);
     renderPage(<PlatformActivity />, { url: '/platform/activity?company=c1' });
     expect(screen.getByText('Sin resultados')).toBeInTheDocument();
+  });
+
+  it('quién lo hizo, con su foto si la API la manda', () => {
+    const PHOTO = 'https://fotos.test/nahuel.jpg';
+    state.activity = list([item({ actorPhotoUrl: PHOTO })]);
+    const { container } = renderPage(<PlatformActivity />, { url: '/platform/activity' });
+    expect(container.querySelector(`img[src="${PHOTO}"]`)).not.toBeNull();
+  });
+
+  it('sin foto quedan las iniciales; una acción del sistema (sin actor) no lleva nada', () => {
+    state.activity = list([item(), item({ id: 'a2', actorUserId: null, actorName: null, actorRole: null })]);
+    const { container } = renderPage(<PlatformActivity />, { url: '/platform/activity' });
+    expect(container.querySelector('img')).toBeNull();
+    expect(screen.getByText('NW')).toBeInTheDocument();
+    expect(screen.getByText('Sistema')).toBeInTheDocument();
+  });
+
+  it('las cuentas del selector muestran su foto, o sus iniciales si no tienen', async () => {
+    const PHOTO = 'https://fotos.test/ana.jpg';
+    const account = (over: Record<string, unknown>) => ({
+      user_id: 'u-ana',
+      full_name: 'Ana Plataforma',
+      email: 'ana@orixtech.com',
+      role: { type: 'super_admin' },
+      photoUrl: null,
+      ...over,
+    });
+    accounts.mockReturnValue({
+      accounts: [account({ photoUrl: PHOTO }), account({ user_id: 'u-beto', full_name: 'Beto Admin' })],
+      loading: false,
+      error: null,
+    });
+    state.activity = list([]);
+    const { container } = renderPage(<PlatformActivity />, { url: '/platform/activity' });
+    fireEvent.change(screen.getByLabelText('Quién'), { target: { value: 'a' + 'n' } });
+    const found = await screen.findByRole('list', { name: 'Cuentas encontradas' });
+    expect(found.querySelectorAll('img')).toHaveLength(1);
+    expect(container.querySelector(`img[src="${PHOTO}"]`)).not.toBeNull();
+    expect(screen.getByText('BA')).toBeInTheDocument();
   });
 });

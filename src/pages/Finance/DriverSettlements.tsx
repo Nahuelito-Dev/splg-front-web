@@ -26,6 +26,7 @@ import { formatCurrency, formatDay } from '../../utils/format';
 import { SETTLEMENT_STATUS, labelOf, statusOptions, statusParam } from '../../utils/statusLabels';
 import { FinanceSummary } from './components/FinanceSummary';
 import { OpenSettlementModal } from './components/OpenSettlementModal';
+import { UnreportedCashCard } from './components/UnreportedCashCard';
 
 const differenceText = (row: DriverSettlement) =>
   row.difference === null ? '—' : row.difference === 0 ? 'Sin diferencia' : formatCurrency(row.difference);
@@ -131,6 +132,7 @@ export const DriverSettlements = () => {
         }
       />
       {day && <FinanceSummary kind="settlements" date={day} />}
+      <UnreportedCashCard />
       <Card>
         <StatusFilterTabs
           options={statusOptions(SETTLEMENT_STATUS)}

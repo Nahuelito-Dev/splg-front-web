@@ -96,6 +96,13 @@ const STATS = {
   cancelled: 1,
   conversionRate: 0.5,
   acceptedRevenue: 47400,
+  accuracy: {
+    measured: 6,
+    meanAbsoluteErrorDays: 2.5,
+    withinMarginRate: 0.67,
+    marginDays: 3,
+    meanBiasDays: 1.5,
+  },
 };
 
 /** El período de las estadísticas, en días argentinos: la lista pide el mismo que los contadores. */
@@ -232,6 +239,30 @@ describe('Repurchase: resultados', () => {
     expect(kpi('Aceptadas')).toHaveTextContent('3');
     expect(kpi('Conversión')).toHaveTextContent('50 %');
     expect(kpi('Vendido por invitación')).toHaveTextContent('47.400');
+  });
+
+  it('la tarjeta de acierto muestra el error medio y la tendencia, y el vacío cuando no hay compras', () => {
+    setup();
+    draw();
+    const card = screen.getByRole('generic', { name: 'Acierto de la predicción' });
+    expect(within(card).getByText('2,5 días')).toBeInTheDocument();
+    expect(within(card).getByText('67 %')).toBeInTheDocument();
+    expect(within(card).getByText(/Tiende a atrasarse/)).toBeInTheDocument();
+    cleanup();
+    state.stats.mockReturnValue(
+      ok({
+        ...STATS,
+        accuracy: {
+          measured: 0,
+          meanAbsoluteErrorDays: null,
+          withinMarginRate: null,
+          marginDays: 3,
+          meanBiasDays: null,
+        },
+      }),
+    );
+    draw();
+    expect(screen.getByText('Todavía no hay compras para comparar')).toBeInTheDocument();
   });
 
   it('sin invitaciones resueltas la conversión no inventa una tasa', () => {

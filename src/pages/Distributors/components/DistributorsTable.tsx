@@ -125,7 +125,13 @@ export const DistributorsTable = ({
         minWidth: 220,
         sortable: false,
         renderCell: ({ row }) => (
-          <IdentityCell title={row.name} subtitle={row.slug} avatarName={row.name} monoSubtitle />
+          <IdentityCell
+            title={row.name}
+            subtitle={row.slug}
+            avatarName={row.name}
+            photo={{ kind: 'distributor', id: row.id, url: row.logoUrl }}
+            monoSubtitle
+          />
         ),
       },
       {
@@ -174,7 +180,13 @@ export const DistributorsTable = ({
       renderCard={(row) => (
         <>
           <div className="flex items-start justify-between gap-2">
-            <IdentityCell title={row.name} subtitle={row.slug} avatarName={row.name} monoSubtitle />
+            <IdentityCell
+              title={row.name}
+              subtitle={row.slug}
+              avatarName={row.name}
+              photo={{ kind: 'distributor', id: row.id, url: row.logoUrl }}
+              monoSubtitle
+            />
             <CompanyBadges company={row} />
           </div>
           <Activity company={row} />

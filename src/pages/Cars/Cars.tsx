@@ -1,21 +1,37 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import { Button, Card, PageHeader, TableToolbar, PageContainer } from '../../common/components/ui';
-import { useDebounce, usePermissions } from '../../hooks';
+import { LayoutGrid, Rows3 } from 'lucide-react';
+import {
+  Button,
+  CalendarKanbanViewToggle,
+  Card,
+  PageHeader,
+  TableToolbar,
+  PageContainer,
+} from '../../common/components/ui';
+import { useDebounce, usePermissions, useUrlParam } from '../../hooks';
 import type { Car } from '../../services/api/types';
 import { useDeliveryOptions } from '../../services/queries/deliveries';
 import { useCarByPatent, useCars, useDeleteCar } from '../../services/queries/cars';
 import { confirm, notify } from '../../utils/notifications';
 import { normalizePatent } from '../../utils/patent';
 import { CarFormModal } from './components/CarFormModal';
+import { CarsGrid } from './components/CarsGrid';
 import { CarsTable } from './components/CarsTable';
 
 type FormState = { open: false } | { open: true; car: Car | null };
 
+const VIEWS = [
+  { id: 'cards', label: 'Tarjetas', icon: <LayoutGrid aria-hidden="true" className="h-3.5 w-3.5" /> },
+  { id: 'table', label: 'Tabla', icon: <Rows3 aria-hidden="true" className="h-3.5 w-3.5" /> },
+];
+
 export const Cars = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState<FormState>({ open: false });
+  const [viewParam, setView] = useUrlParam('view', 'cards');
+  const view = viewParam === 'table' ? 'table' : 'cards';
   const [patentSearch, setPatentSearch] = useState('');
   const typedPatent = normalizePatent(patentSearch);
   const debouncedPatent = useDebounce(typedPatent);
@@ -99,6 +115,7 @@ export const Cars = () => {
           }}
           noun={['vehículo', 'vehículos']}
         >
+          <CalendarKanbanViewToggle options={VIEWS} value={view} onChange={setView} label="Vista de los vehículos" />
           {searchingPatent && (
             <p
               className={patentMatch.isError && !patentSettling ? 'text-sm text-danger' : 'text-sm text-muted'}
@@ -118,15 +135,27 @@ export const Cars = () => {
             </p>
           )}
         </TableToolbar>
-        <CarsTable
-          onView={(car) => navigate(`/cars/details/${car.car_id}`)}
-          rows={rows}
-          loading={loading}
-          searching={searchingPatent}
-          searchFailed={searchingPatent && patentMatch.isError}
-          onEdit={canWrite ? (car) => setForm({ open: true, car }) : undefined}
-          onDelete={canWrite ? (car) => void handleDelete(car) : undefined}
-        />
+        {view === 'table' ? (
+          <CarsTable
+            onView={(car) => navigate(`/cars/details/${car.car_id}`)}
+            rows={rows}
+            loading={loading}
+            searching={searchingPatent}
+            searchFailed={searchingPatent && patentMatch.isError}
+            onEdit={canWrite ? (car) => setForm({ open: true, car }) : undefined}
+            onDelete={canWrite ? (car) => void handleDelete(car) : undefined}
+          />
+        ) : (
+          <CarsGrid
+            onView={(car) => navigate(`/cars/details/${car.car_id}`)}
+            rows={rows}
+            loading={loading}
+            searching={searchingPatent}
+            searchFailed={searchingPatent && patentMatch.isError}
+            onEdit={canWrite ? (car) => setForm({ open: true, car }) : undefined}
+            onDelete={canWrite ? (car) => void handleDelete(car) : undefined}
+          />
+        )}
       </Card>
 
       <CarFormModal

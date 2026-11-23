@@ -17,6 +17,7 @@ import {
   getCustomerStatement,
   getDriverLiquidation,
   getDriverSettlement,
+  getUnreportedCash,
   getFinanceDashboard,
   getIncomeStatement,
   listCashBoxes,
@@ -371,6 +372,14 @@ export const useDriverSettlements = (params: ListParams, filters: SettlementFilt
     queryKey: queryKeys.driverSettlements.list({ ...params, ...filters }),
     queryFn: () => listDriverSettlements(params, filters),
     placeholderData: keepPreviousData,
+  });
+
+/** El efectivo cobrado y no rendido por chofer (alimenta la tarjeta de Rendiciones). */
+export const useUnreportedCash = (enabled = true) =>
+  useQuery({
+    queryKey: queryKeys.driverSettlements.list({ view: 'unreported-cash' }),
+    queryFn: getUnreportedCash,
+    enabled,
   });
 
 export const useDriverSettlement = (id: string | undefined) =>
