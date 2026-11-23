@@ -6,6 +6,7 @@ import {
   CalendarX2,
   Copy,
   Gavel,
+  HandCoins,
   Landmark,
   LifeBuoy,
   FileWarning,
@@ -44,6 +45,7 @@ const KIND_VISUALS: Record<string, { icon: LucideIcon; tone: Tone }> = {
   traffic_fine_due: { icon: Gavel, tone: 'warn' },
   traffic_fine_overdue: { icon: Gavel, tone: 'danger' },
   sales_cash_unsettled: { icon: Landmark, tone: 'warn' },
+  driver_cash_unreported: { icon: HandCoins, tone: 'warn' },
   payment_in_mediation: { icon: Scale, tone: 'danger' },
   payment_chargeback_opened: { icon: Scale, tone: 'danger' },
   payment_chargeback: { icon: Scale, tone: 'danger' },
@@ -93,6 +95,8 @@ export const notificationTarget = (link: AdminNotification['link'] | undefined):
       return `/employees/details/${id}?tab=documents`;
     case 'car-insurance':
       return `/cars/details/${id}?tab=insurance`;
+    case 'driver-settlement-cash':
+      return '/finance/settlements';
     case 'cash-settings':
       return '/finance/collection-settings';
     case 'traffic-fine':

@@ -34,6 +34,7 @@ import type {
   DriverLiquidationPage,
   DriverSettlementDetail,
   DriverSettlementPage,
+  EfectivoSinRendir,
   FinanceDashboard,
   IncomeStatement,
   OpenCashSessionBody,
@@ -229,6 +230,14 @@ export const listDriverSettlements = async (
 ): Promise<DriverSettlementPage> => {
   const { data } = await http.get<DriverSettlementPage>('/driver-settlements', {
     params: { ...paging(params), ...settlementQuery(filters) },
+  });
+  return data;
+};
+
+/** GET /v2/driver-settlements/unreported-cash: el efectivo cobrado y no rendido, por chofer y con su antigüedad. */
+export const getUnreportedCash = async (): Promise<EfectivoSinRendir> => {
+  const { data } = await http.get<EfectivoSinRendir>('/driver-settlements/unreported-cash', {
+    baseURL: env.apiUrlV2,
   });
   return data;
 };

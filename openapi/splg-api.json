@@ -12838,7 +12838,8 @@
                                 "route_batching",
                                 "cylinder_recovery",
                                 "route_planning",
-                                "document_reading"
+                                "document_reading",
+                                "cash_alerts"
                             ],
                             "type": "string"
                         }
@@ -12893,7 +12894,8 @@
                                 "route_batching",
                                 "cylinder_recovery",
                                 "route_planning",
-                                "document_reading"
+                                "document_reading",
+                                "cash_alerts"
                             ],
                             "type": "string"
                         }
@@ -27967,6 +27969,43 @@
                 ]
             }
         },
+        "/api/v2/driver-settlements/unreported-cash": {
+            "get": {
+                "description": "Por chofer, el efectivo de pedidos entregados que todavía no entró en una rendición: cantidad de pedidos, monto (total menos la seña ya paga, calculado en el back), antigüedad del más viejo y si pasó el umbral del aviso (`cash_alerts.minHours`). No incluye los pedidos cuyo cobro resolvió un administrador.",
+                "operationId": "DriverSettlementV2Controller_efectivoSinRendir",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EfectivoSinRendirDto"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Efectivo cobrado y no rendido, por chofer",
+                "tags": [
+                    "Rendiciones del chofer (v2)"
+                ]
+            }
+        },
         "/api/v2/driver-settlements/{id}/preview": {
             "post": {
                 "description": "Con el efectivo y los gastos que el chofer está escribiendo, devuelve lo esperado en vivo y la diferencia (declarado + gastos − esperado) con la misma cuenta que se guarda al presentar. No escribe nada. El chofer sólo la ve en sus rendiciones.",
@@ -30844,6 +30883,7 @@
                                 "s3_orphans_retry",
                                 "driver_settlement_generate",
                                 "driver_settlement_alert",
+                                "driver_cash_alert",
                                 "coverage_zone_expiry",
                                 "fine_due_alerts",
                                 "finance_reconciliation",
@@ -54699,7 +54739,8 @@
                             "route_batching",
                             "cylinder_recovery",
                             "route_planning",
-                            "document_reading"
+                            "document_reading",
+                            "cash_alerts"
                         ],
                         "example": "repurchase"
                     },
@@ -66010,6 +66051,12 @@
                         "type": "string",
                         "format": "date-time"
                     },
+                    "cashToCollect": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 22600,
+                        "description": "Efectivo que el chofer cobra al entregar (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back. `null` si el pedido no es en efectivo, ya se cobró, está entregado o cancelado. Las apps lo muestran tal cual."
+                    },
                     "payment_method": {
                         "type": "string",
                         "enum": [
@@ -66260,6 +66307,7 @@
                     "containerChargeAmount",
                     "status",
                     "created_at",
+                    "cashToCollect",
                     "payment_method",
                     "paymentMethodDetail",
                     "paymentStatus",
@@ -67014,6 +67062,12 @@
                         "type": "string",
                         "format": "date-time"
                     },
+                    "cashToCollect": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 22600,
+                        "description": "Efectivo que el chofer cobra al entregar (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back. `null` si el pedido no es en efectivo, ya se cobró, está entregado o cancelado. Las apps lo muestran tal cual."
+                    },
                     "payment_method": {
                         "type": "string",
                         "enum": [
@@ -67269,6 +67323,7 @@
                     "containerChargeAmount",
                     "status",
                     "created_at",
+                    "cashToCollect",
                     "payment_method",
                     "paymentMethodDetail",
                     "paymentStatus",
@@ -71000,6 +71055,89 @@
                     "cashBoxId"
                 ]
             },
+            "EfectivoSinRendirDeChoferDto": {
+                "type": "object",
+                "properties": {
+                    "deliveryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "driverName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Juan Pérez"
+                    },
+                    "orders": {
+                        "type": "number",
+                        "example": 3,
+                        "description": "Pedidos en efectivo entregados que ninguna rendición tomó"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "example": 54000,
+                        "description": "Lo que cobró el chofer en esos pedidos (total menos la seña ya paga), calculado en el back"
+                    },
+                    "oldestDeliveredAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "description": "Entrega del pedido más viejo sin rendir"
+                    },
+                    "ageHours": {
+                        "type": "number",
+                        "example": 30,
+                        "description": "Horas desde esa entrega (redondeadas hacia abajo)"
+                    },
+                    "overdue": {
+                        "type": "boolean",
+                        "description": "Lleva sin rendir más horas que `minHours`: es lo que dispara el aviso del cierre del día"
+                    }
+                },
+                "required": [
+                    "deliveryId",
+                    "driverName",
+                    "orders",
+                    "amount",
+                    "oldestDeliveredAt",
+                    "ageHours",
+                    "overdue"
+                ]
+            },
+            "EfectivoSinRendirDto": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EfectivoSinRendirDeChoferDto"
+                        }
+                    },
+                    "totalAmount": {
+                        "type": "number",
+                        "example": 108000
+                    },
+                    "totalOrders": {
+                        "type": "number",
+                        "example": 6
+                    },
+                    "minHours": {
+                        "type": "number",
+                        "example": 24,
+                        "description": "Antigüedad (horas) configurada para el aviso (`cash_alerts.minHours`)"
+                    },
+                    "enabled": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "El aviso del cierre del día está encendido (`cash_alerts.enabled`); si es `false` el panel no dice que se avisa"
+                    }
+                },
+                "required": [
+                    "items",
+                    "totalAmount",
+                    "totalOrders",
+                    "minHours",
+                    "enabled"
+                ]
+            },
             "PreviewExpenseDto": {
                 "type": "object",
                 "properties": {
@@ -72965,6 +73103,7 @@
                             "s3_orphans_retry",
                             "driver_settlement_generate",
                             "driver_settlement_alert",
+                            "driver_cash_alert",
                             "coverage_zone_expiry",
                             "fine_due_alerts",
                             "finance_reconciliation",
@@ -73089,6 +73228,7 @@
                             "s3_orphans_retry",
                             "driver_settlement_generate",
                             "driver_settlement_alert",
+                            "driver_cash_alert",
                             "coverage_zone_expiry",
                             "fine_due_alerts",
                             "finance_reconciliation",
@@ -73289,6 +73429,7 @@
                             "s3_orphans_retry",
                             "driver_settlement_generate",
                             "driver_settlement_alert",
+                            "driver_cash_alert",
                             "coverage_zone_expiry",
                             "fine_due_alerts",
                             "finance_reconciliation",
@@ -75569,6 +75710,12 @@
                         "example": "pending",
                         "description": "Estado actual del pedido"
                     },
+                    "cashToCollect": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 22600,
+                        "description": "Efectivo que el chofer cobra en la parada (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back; `null` si no es en efectivo, ya se cobró o no hay saldo"
+                    },
                     "items": {
                         "type": "array",
                         "items": {
@@ -75590,6 +75737,7 @@
                     "paymentMethod",
                     "totalAmount",
                     "orderStatus",
+                    "cashToCollect",
                     "items"
                 ]
             },
@@ -76191,6 +76339,12 @@
                     "unpaidOnline": {
                         "type": "boolean",
                         "description": "Mercado Pago todavía sin pagar (entra con advertencia)"
+                    },
+                    "cashToCollect": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 22600,
+                        "description": "Efectivo que el chofer cobra en la parada (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back; `null` si no es en efectivo, ya se cobró o no hay saldo"
                     }
                 },
                 "required": [
@@ -76213,7 +76367,8 @@
                     "units",
                     "emptiesExpected",
                     "weightKg",
-                    "unpaidOnline"
+                    "unpaidOnline",
+                    "cashToCollect"
                 ]
             },
             "RouteSheetWarningDto": {
@@ -77682,6 +77837,12 @@
                     "unpaidOnline": {
                         "type": "boolean"
                     },
+                    "cashToCollect": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 22600,
+                        "description": "Efectivo que el chofer cobra en la parada (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back; `null` si no es en efectivo, ya se cobró o no hay saldo"
+                    },
                     "items": {
                         "type": "array",
                         "items": {
@@ -77720,6 +77881,7 @@
                     "emptiesExpected",
                     "weightKg",
                     "unpaidOnline",
+                    "cashToCollect",
                     "items"
                 ]
             },
@@ -86497,6 +86659,7 @@
                             "s3_orphans_retry",
                             "driver_settlement_generate",
                             "driver_settlement_alert",
+                            "driver_cash_alert",
                             "coverage_zone_expiry",
                             "fine_due_alerts",
                             "finance_reconciliation",
@@ -86792,6 +86955,7 @@
                             "s3_orphans_retry",
                             "driver_settlement_generate",
                             "driver_settlement_alert",
+                            "driver_cash_alert",
                             "coverage_zone_expiry",
                             "fine_due_alerts",
                             "finance_reconciliation",

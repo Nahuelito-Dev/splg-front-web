@@ -6728,6 +6728,26 @@ export interface paths {
     patch: operations['DriverSettlementController_reopen'];
     trace?: never;
   };
+  '/api/v2/driver-settlements/unreported-cash': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Efectivo cobrado y no rendido, por chofer
+     * @description Por chofer, el efectivo de pedidos entregados que todavía no entró en una rendición: cantidad de pedidos, monto (total menos la seña ya paga, calculado en el back), antigüedad del más viejo y si pasó el umbral del aviso (`cash_alerts.minHours`). No incluye los pedidos cuyo cobro resolvió un administrador.
+     */
+    get: operations['DriverSettlementV2Controller_efectivoSinRendir'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/driver-settlements/{id}/preview': {
     parameters: {
       query?: never;
@@ -15051,7 +15071,13 @@ export interface components {
        * @enum {string}
        */
       process:
-        'fleet_planner' | 'repurchase' | 'route_batching' | 'cylinder_recovery' | 'route_planning' | 'document_reading';
+        | 'fleet_planner'
+        | 'repurchase'
+        | 'route_batching'
+        | 'cylinder_recovery'
+        | 'route_planning'
+        | 'document_reading'
+        | 'cash_alerts';
       /** @example Anticipación de recompra */
       title: string;
       description: string;
@@ -19799,6 +19825,11 @@ export interface components {
       /** Format: date-time */
       created_at: string;
       /**
+       * @description Efectivo que el chofer cobra al entregar (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back. `null` si el pedido no es en efectivo, ya se cobró, está entregado o cancelado. Las apps lo muestran tal cual.
+       * @example 22600
+       */
+      cashToCollect: number | null;
+      /**
        * @description Tipo de pago: efectivo, online (MercadoPago, transferencia) o cuenta corriente (`account`: no se cobra en la entrega)
        * @enum {string}
        */
@@ -20227,6 +20258,11 @@ export interface components {
       status: 'reserved' | 'pending' | 'accepted' | 'out_for_delivery' | 'delivered' | 'cancelled';
       /** Format: date-time */
       created_at: string;
+      /**
+       * @description Efectivo que el chofer cobra al entregar (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back. `null` si el pedido no es en efectivo, ya se cobró, está entregado o cancelado. Las apps lo muestran tal cual.
+       * @example 22600
+       */
+      cashToCollect: number | null;
       /**
        * @description Tipo de pago: efectivo, online (MercadoPago, transferencia) o cuenta corriente (`account`: no se cobra en la entrega)
        * @enum {string}
@@ -21992,6 +22028,51 @@ export interface components {
       differenceResolution?: 'none' | 'charged_to_driver' | 'absorbed';
       notes?: string;
     };
+    EfectivoSinRendirDeChoferDto: {
+      /** Format: uuid */
+      deliveryId: string;
+      /** @example Juan Pérez */
+      driverName: string | null;
+      /**
+       * @description Pedidos en efectivo entregados que ninguna rendición tomó
+       * @example 3
+       */
+      orders: number;
+      /**
+       * @description Lo que cobró el chofer en esos pedidos (total menos la seña ya paga), calculado en el back
+       * @example 54000
+       */
+      amount: number;
+      /**
+       * Format: date-time
+       * @description Entrega del pedido más viejo sin rendir
+       */
+      oldestDeliveredAt: string;
+      /**
+       * @description Horas desde esa entrega (redondeadas hacia abajo)
+       * @example 30
+       */
+      ageHours: number;
+      /** @description Lleva sin rendir más horas que `minHours`: es lo que dispara el aviso del cierre del día */
+      overdue: boolean;
+    };
+    EfectivoSinRendirDto: {
+      items: components['schemas']['EfectivoSinRendirDeChoferDto'][];
+      /** @example 108000 */
+      totalAmount: number;
+      /** @example 6 */
+      totalOrders: number;
+      /**
+       * @description Antigüedad (horas) configurada para el aviso (`cash_alerts.minHours`)
+       * @example 24
+       */
+      minHours: number;
+      /**
+       * @description El aviso del cierre del día está encendido (`cash_alerts.enabled`); si es `false` el panel no dice que se avisa
+       * @example true
+       */
+      enabled: boolean;
+    };
     PreviewExpenseDto: {
       /**
        * @description Mayor que cero
@@ -22783,6 +22864,7 @@ export interface components {
         | 's3_orphans_retry'
         | 'driver_settlement_generate'
         | 'driver_settlement_alert'
+        | 'driver_cash_alert'
         | 'coverage_zone_expiry'
         | 'fine_due_alerts'
         | 'finance_reconciliation'
@@ -22861,6 +22943,7 @@ export interface components {
         | 's3_orphans_retry'
         | 'driver_settlement_generate'
         | 'driver_settlement_alert'
+        | 'driver_cash_alert'
         | 'coverage_zone_expiry'
         | 'fine_due_alerts'
         | 'finance_reconciliation'
@@ -22968,6 +23051,7 @@ export interface components {
         | 's3_orphans_retry'
         | 'driver_settlement_generate'
         | 'driver_settlement_alert'
+        | 'driver_cash_alert'
         | 'coverage_zone_expiry'
         | 'fine_due_alerts'
         | 'finance_reconciliation'
@@ -23811,6 +23895,11 @@ export interface components {
        * @example pending
        */
       orderStatus: string;
+      /**
+       * @description Efectivo que el chofer cobra en la parada (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back; `null` si no es en efectivo, ya se cobró o no hay saldo
+       * @example 22600
+       */
+      cashToCollect: number | null;
       items: components['schemas']['RouteBatchStopItemDto'][];
     };
     RouteBatchResponseDto: {
@@ -24045,6 +24134,11 @@ export interface components {
       weightKg: number;
       /** @description Mercado Pago todavía sin pagar (entra con advertencia) */
       unpaidOnline: boolean;
+      /**
+       * @description Efectivo que el chofer cobra en la parada (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back; `null` si no es en efectivo, ya se cobró o no hay saldo
+       * @example 22600
+       */
+      cashToCollect: number | null;
     };
     RouteSheetWarningDto: {
       /** @enum {string} */
@@ -24598,6 +24692,11 @@ export interface components {
       emptiesExpected: number;
       weightKg: number;
       unpaidOnline: boolean;
+      /**
+       * @description Efectivo que el chofer cobra en la parada (total menos la seña: la ya paga o, en una reserva, la comprometida), calculado en el back; `null` si no es en efectivo, ya se cobró o no hay saldo
+       * @example 22600
+       */
+      cashToCollect: number | null;
       items: components['schemas']['RouteSheetItemDto'][];
     };
     RouteSheetExecutionDto: {
@@ -27925,6 +28024,7 @@ export interface components {
         | 's3_orphans_retry'
         | 'driver_settlement_generate'
         | 'driver_settlement_alert'
+        | 'driver_cash_alert'
         | 'coverage_zone_expiry'
         | 'fine_due_alerts'
         | 'finance_reconciliation'
@@ -28063,6 +28163,7 @@ export interface components {
         | 's3_orphans_retry'
         | 'driver_settlement_generate'
         | 'driver_settlement_alert'
+        | 'driver_cash_alert'
         | 'coverage_zone_expiry'
         | 'fine_due_alerts'
         | 'finance_reconciliation'
@@ -40268,7 +40369,8 @@ export interface operations {
           | 'route_batching'
           | 'cylinder_recovery'
           | 'route_planning'
-          | 'document_reading';
+          | 'document_reading'
+          | 'cash_alerts';
       };
       cookie?: never;
     };
@@ -40323,7 +40425,8 @@ export interface operations {
           | 'route_batching'
           | 'cylinder_recovery'
           | 'route_planning'
-          | 'document_reading';
+          | 'document_reading'
+          | 'cash_alerts';
       };
       cookie?: never;
     };
@@ -53327,6 +53430,39 @@ export interface operations {
       };
     };
   };
+  DriverSettlementV2Controller_efectivoSinRendir: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EfectivoSinRendirDto'];
+        };
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver las finanzas (`finanzas.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   DriverSettlementV2Controller_preview: {
     parameters: {
       query?: never;
@@ -55773,6 +55909,7 @@ export interface operations {
           | 's3_orphans_retry'
           | 'driver_settlement_generate'
           | 'driver_settlement_alert'
+          | 'driver_cash_alert'
           | 'coverage_zone_expiry'
           | 'fine_due_alerts'
           | 'finance_reconciliation'
