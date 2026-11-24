@@ -26,6 +26,8 @@ import type {
   FleetPlan,
   FleetTask,
   FuelLoad,
+  FailedVisit,
+  FailedVisitOrder,
   Incident,
   InsuranceInstallment,
   InsurancePolicy,
@@ -283,6 +285,29 @@ export const INCIDENT_STATUS: LabelMap<Incident['status']> = {
   open: { text: 'Abierta', tone: 'warn' },
   resolved: { text: 'Resuelta', tone: 'success' },
   discarded: { text: 'Descartada', tone: 'neutral' },
+};
+
+/** Por qué no se pudo entregar (lo elige el chofer). */
+export const FAILED_VISIT_REASON: LabelMap<FailedVisit['reason']> = {
+  customer_absent: { text: 'El cliente no estaba', tone: 'warn' },
+  address_closed: { text: 'Domicilio cerrado', tone: 'warn' },
+  rejected: { text: 'Rechazó el pedido', tone: 'danger' },
+  other: { text: 'Otro motivo', tone: 'neutral' },
+};
+
+/** En qué está la nueva visita de un pedido con una entrega fallida. */
+export const REVISIT_STATUS: LabelMap<NonNullable<FailedVisitOrder['revisitStatus']>> = {
+  awaiting_admin: { text: 'Decidís vos', tone: 'danger' },
+  proposed: { text: 'Propuesta al cliente', tone: 'warn' },
+  confirmed: { text: 'Confirmada', tone: 'success' },
+};
+
+/** En qué quedó cada visita fallida. */
+export const FAILED_VISIT_OUTCOME: LabelMap<FailedVisit['outcome']> = {
+  requeued: { text: 'Volvió a pasar ese día', tone: 'info' },
+  proposed: { text: 'Se propuso otra visita', tone: 'warn' },
+  agreed: { text: 'Acordada con el cliente', tone: 'success' },
+  awaiting_admin: { text: 'Quedó para el administrador', tone: 'danger' },
 };
 
 export const DISTRIBUTOR_STATUS: LabelMap<Distributor['status']> = {

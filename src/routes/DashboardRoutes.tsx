@@ -95,6 +95,7 @@ const NewOrder = lazyPage(() => import('../pages/Orders/NewOrder'), 'NewOrder');
 const UnpaidCollections = lazyPage(() => import('../pages/UnpaidCollections/UnpaidCollections'), 'UnpaidCollections');
 const Claims = lazyPage(() => import('../pages/Claims/Claims'), 'Claims');
 const Notifications = lazyPage(() => import('../pages/Notifications/Notifications'), 'Notifications');
+const FailedVisits = lazyPage(() => import('../pages/FailedVisits/FailedVisits'), 'FailedVisits');
 const Incidents = lazyPage(() => import('../pages/Incidents/Incidents'), 'Incidents');
 const CoverageZones = lazyPage(() => import('../pages/CoverageZones/CoverageZones'), 'CoverageZones');
 const Reservations = lazyPage(() => import('../pages/Reservations/Reservations'), 'Reservations');
@@ -363,6 +364,7 @@ export const DashboardRoutes = () => {
             <Route path="tracking" element={<Tracking />} />
             <Route path="claims" element={<Claims />} />
             <Route path="incidents" element={<Incidents />} />
+            <Route path="failed-visits" element={<FailedVisits />} />
             <Route path="coverage-zones" element={<CoverageZones />} />
             <Route path="reservations" element={<Reservations />} />
             <Route path="reports" element={<Reports />} />

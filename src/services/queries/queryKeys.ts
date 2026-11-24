@@ -42,6 +42,7 @@ export const queryKeys = {
   fuelLoads: resource('fuelLoads'),
   gasCylinders: resource('gasCylinders'),
   health: resource('health'),
+  failedVisits: resource('failedVisits'),
   incidents: resource('incidents'),
   insurance: resource('insurance'),
   insurers: resource('insurers'),

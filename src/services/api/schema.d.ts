@@ -5646,6 +5646,66 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v3/orders/{id}/delivery-code': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Ver el código de entrega (el que el cliente le dice al chofer)
+     * @description Lo ve el cliente dueño del pedido y el admin, con el pedido aceptado o en camino. El chofer no tiene acceso (403): es el que lo escribe. Trae `attempts` (códigos incorrectos del chofer) y `blocked` (agotó los 5 intentos: hay que generar un código nuevo). Al cliente le llegan por socket `order:delivery-code-failed` (`{orderId, attempts, remaining}`) en cada error del chofer y `order:delivery-code-blocked` (`{orderId}`) al bloquearse.
+     */
+    get: operations['DeliveryCodeV3Controller_getDeliveryCode'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/delivery-code/regenerate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Generar un código de entrega nuevo
+     * @description El cliente dueño del pedido (o un admin con permiso de despacho) reemplaza el código del pedido en camino por uno de 6 dígitos; los intentos del chofer vuelven a 0 y el código viejo deja de valer. Sirve cuando se bloqueó (`DELIVERY_CODE_BLOQUEADO`) o se filtró. Queda en la auditoría de datos. Un super admin tiene que mandar `X-Distributor`.
+     */
+    post: operations['DeliveryCodeV3Controller_regenerate'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/confirm-delivery': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirmar la entrega con el código del cliente y la ubicación
+     * @description El chofer asignado escribe el código de 6 dígitos que le dice el cliente y manda su ubicación (`latitude`, `longitude`, `accuracyMeters` opcional). Con el pedido en camino y el código correcto pasa a entregado y queda asentado dónde estaba (punto, precisión, distancia al domicilio), quién confirmó y la hora de la base. Si está más lejos del domicilio que el radio de llegada de la distribuidora no se rechaza: `deliveryConfirmation.outOfRange` queda en `true` y se audita. 5 códigos incorrectos bloquean el código (el cliente genera otro) y a cada error se le avisa al cliente por socket. Un admin entrega mandando SIEMPRE `reason` (10 a 500 caracteres), sin ubicación; el `code` que mande es informativo (no se compara). Pedido ya entregado: responde 200 con el pedido, sin volver a pedir el código ni pisar la confirmación. Idempotente vía header `Idempotency-Key`: el reintento con la misma clave de un código incorrecto responde el mismo error sin sumar otro intento ni volver a avisar al cliente. `deliveryConfirmation.confirmedByUserId` sólo viene para el admin.
+     */
+    post: operations['DeliveryCodeV3Controller_confirm'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/orders/payments': {
     parameters: {
       query?: never;
@@ -9214,6 +9274,166 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v3/orders/{id}/failed-delivery': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * «No pude entregar»: informar una entrega fallida
+     * @description El chofer asignado informa por qué no pudo entregar (`reason`; `note` obligatoria con `other`) y su ubicación (queda el punto, la precisión, la distancia al domicilio y la hora, como en la confirmación de la entrega; fuera del radio de llegada no se rechaza: se marca). Opcional, `agreed`: el día y la franja que acordó con el cliente. Vale para todas las entregas. **Pedido suelto o express en camino**: vuelve a pendiente sin chofer y el sistema propone la nueva visita respetando el calendario y el cupo de las franjas — suelto: próximo día hábil con la franja original o la primera libre; express: la próxima franja libre de hoy o, si no hay, la primera del próximo día hábil. **Parada de una hoja de ruta en curso**: primer intento, vuelve al final del recorrido de hoy (`outcome: requeued`, no cuenta como visita fallida y no admite `agreed`); segundo, sale de la hoja y queda propuesta para el próximo día con hoja, con franja. A la segunda visita fallida del pedido (`failedVisitCount: 2`) el sistema deja de reprogramar: `outcome: awaiting_admin`. Hasta el inicio de la franja de la nueva visita el despacho no ofrece el pedido; ese día vuelve solo al circuito normal. El stock reservado y el pago no cambian (el efectivo se cobra en la nueva visita). Al cliente se le avisa por push, correo y socket (`order:rescheduled`, o `order:delivery-failed` si decide el admin); al panel, `order:failed-visit`. Un admin lo informa sin ubicación. Idempotente con `Idempotency-Key`.
+     */
+    post: operations['FailedDeliveryV3Controller_failedDelivery'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/failed-visits': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Historial de visitas fallidas del pedido
+     * @description De la más nueva a la más vieja: motivo, quién la informó, dónde estaba (punto, precisión, distancia al domicilio, fuera de radio), qué nueva visita se propuso o acordó y cómo se resolvió.
+     */
+    get: operations['FailedDeliveryV3Controller_failedVisits'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/revisit': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * La nueva visita del pedido
+     * @description El día y la franja en que se vuelve a pasar después de una entrega fallida, y si el cliente todavía puede contestar (`canRespond`). `status: null` si el pedido no tuvo visitas fallidas. Con `awaiting_admin` no hay fecha: decide la distribuidora.
+     */
+    get: operations['FailedDeliveryV3Controller_revisit'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/revisit/options': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Días y franjas libres para la nueva visita
+     * @description Los días en que la distribuidora reparte (su calendario, sin feriados) de las próximas dos semanas, cada uno con las franjas que todavía tienen cupo. Incluye hoy si es día hábil y queda alguna franja sin terminar con lugar, salvo para un pedido que salió de una hoja de ruta (entra en la hoja de otro día). Un día sin franjas libres no aparece. Lo usan el cliente para elegir otro día, el admin para fijarlo y el chofer asignado para «Acordé con el cliente»: `canAgree` (igual en todos los días) dice si se puede mandar un acuerdo; en el primer intento de una parada de hoja de ruta es `false`.
+     */
+    get: operations['FailedDeliveryV3Controller_options'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/revisit/accept': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * «Me sirve»: el cliente acepta la nueva visita propuesta
+     * @description Deja confirmados el día y la franja propuestos. Repetirlo con la visita ya confirmada responde 200 sin cambios. Si el cliente no contesta, la propuesta queda igual.
+     */
+    post: operations['FailedDeliveryV3Controller_accept'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/revisit/choose': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * «Elegir otro día y horario»: el cliente cambia la nueva visita
+     * @description El cliente elige un día y una franja de `GET /orders/:id/revisit/options`. Se valida de nuevo el calendario y el cupo (con la franja bloqueada, como al crear un pedido). La visita queda confirmada y se le avisa al admin.
+     */
+    post: operations['FailedDeliveryV3Controller_choose'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/revisit/schedule': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * El admin fija el día y la franja de la nueva visita
+     * @description Para un pedido pendiente sin chofer con una visita fallida, también cuando la decisión era del admin (`awaiting_admin`) o para cambiar lo propuesto. Valida el calendario y el cupo. La visita queda confirmada, el pedido vuelve al circuito normal al empezar esa franja y se le avisa al cliente (push, correo y socket). Para reasignarlo ya a un chofer o cancelarlo se usan los endpoints de siempre del pedido. Un super admin tiene que mandar `X-Distributor`.
+     */
+    post: operations['FailedDeliveryV3Controller_schedule'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/failed-visits': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Pedidos con visitas fallidas
+     * @description Un renglón por pedido con su última visita fallida, cuántas lleva y la nueva visita. Por omisión, los que siguen pendientes; primero los que esperan la decisión del admin. Filtra por estado de la nueva visita, motivo, fechas y cliente o número de pedido. Un super admin tiene que mandar `X-Distributor`.
+     */
+    get: operations['FailedVisitsV3Controller_list'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/repurchase/forecast': {
     parameters: {
       query?: never;
@@ -12493,66 +12713,6 @@ export interface paths {
      * @description Deja de mostrar lo que hay hasta ahora en el grupo; si se vuelve a preguntar, aparece de nuevo.
      */
     post: operations['PlatformAssistantLabController_descartar'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v3/orders/{id}/delivery-code': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Ver el código de entrega (el que el cliente le dice al chofer)
-     * @description Lo ve el cliente dueño del pedido y el admin, con el pedido aceptado o en camino. El chofer no tiene acceso (403): es el que lo escribe. Trae `attempts` (códigos incorrectos del chofer) y `blocked` (agotó los 5 intentos: hay que generar un código nuevo). Al cliente le llegan por socket `order:delivery-code-failed` (`{orderId, attempts, remaining}`) en cada error del chofer y `order:delivery-code-blocked` (`{orderId}`) al bloquearse.
-     */
-    get: operations['DeliveryCodeV3Controller_getDeliveryCode'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v3/orders/{id}/delivery-code/regenerate': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Generar un código de entrega nuevo
-     * @description El cliente dueño del pedido (o un admin con permiso de despacho) reemplaza el código del pedido en camino por uno de 6 dígitos; los intentos del chofer vuelven a 0 y el código viejo deja de valer. Sirve cuando se bloqueó (`DELIVERY_CODE_BLOQUEADO`) o se filtró. Queda en la auditoría de datos. Un super admin tiene que mandar `X-Distributor`.
-     */
-    post: operations['DeliveryCodeV3Controller_regenerate'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/api/v3/orders/{id}/confirm-delivery': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Confirmar la entrega con el código del cliente y la ubicación
-     * @description El chofer asignado escribe el código de 6 dígitos que le dice el cliente y manda su ubicación (`latitude`, `longitude`, `accuracyMeters` opcional). Con el pedido en camino y el código correcto pasa a entregado y queda asentado dónde estaba (punto, precisión, distancia al domicilio), quién confirmó y la hora de la base. Si está más lejos del domicilio que el radio de llegada de la distribuidora no se rechaza: `deliveryConfirmation.outOfRange` queda en `true` y se audita. 5 códigos incorrectos bloquean el código (el cliente genera otro) y a cada error se le avisa al cliente por socket. Un admin entrega mandando SIEMPRE `reason` (10 a 500 caracteres), sin ubicación; el `code` que mande es informativo (no se compara). Pedido ya entregado: responde 200 con el pedido, sin volver a pedir el código ni pisar la confirmación. Idempotente vía header `Idempotency-Key`: el reintento con la misma clave de un código incorrecto responde el mismo error sin sumar otro intento ni volver a avisar al cliente. `deliveryConfirmation.confirmedByUserId` sólo viene para el admin.
-     */
-    post: operations['DeliveryCodeV3Controller_confirm'];
     delete?: never;
     options?: never;
     head?: never;
@@ -19686,6 +19846,56 @@ export interface components {
       /** @description Última ubicación conocida del chofer (la misma que se emite por `order:driver-location`); `null` si todavía no reportó ninguna */
       location: components['schemas']['DriverLocationDto'] | null;
     };
+    DeliveryConfirmationDto: {
+      /**
+       * Format: date-time
+       * @description Hora de la base al confirmar
+       */
+      confirmedAt: string;
+      /** @enum {string|null} */
+      confirmedByRole: 'delivery' | 'admin' | 'super_admin' | null;
+      /**
+       * Format: uuid
+       * @description Usuario que confirmó (el chofer o el admin). Sólo en las respuestas al personal del panel; para el cliente y el chofer, `null`
+       */
+      confirmedByUserId: string | null;
+      /** @description Latitud del chofer al confirmar; null si confirmó un admin */
+      latitude: number | null;
+      longitude: number | null;
+      /** @description Precisión del GPS, en metros */
+      accuracyMeters: number | null;
+      /** @description Metros entre el chofer y el domicilio al confirmar */
+      distanceMeters: number | null;
+      /** @description Confirmó más lejos del domicilio que el radio de llegada de la distribuidora (no se rechaza: se marca) */
+      outOfRange: boolean;
+    };
+    RevisitDeOrderDto: {
+      /**
+       * @description `proposed`: la propuso el sistema (si el cliente no contesta, queda); `confirmed`: el cliente la aceptó o eligió otra, la acordó el chofer o la fijó el admin; `awaiting_admin`: decide la distribuidora
+       * @enum {string}
+       */
+      status: 'proposed' | 'confirmed' | 'awaiting_admin';
+      /**
+       * @description Visitas fallidas del pedido
+       * @example 2
+       */
+      failedVisitCount: number;
+      /**
+       * Format: date
+       * @description Día de la nueva visita (`null` si decide el admin y todavía no lo fijó)
+       */
+      scheduledDate: string | null;
+      /** Format: uuid */
+      timeSlotId: string | null;
+      /** @example Mañana */
+      timeSlotName: string | null;
+      /** @example 09:00:00 */
+      windowStart: string | null;
+      /** @example 13:00:00 */
+      windowEnd: string | null;
+      /** @description El cliente todavía puede contestar («Me sirve» / «Elegir otro día y horario»): es una propuesta y el pedido sigue pendiente sin chofer */
+      canRespond: boolean;
+    };
     OrderResponseDto: {
       /** Format: uuid */
       order_id: string;
@@ -19817,6 +20027,7 @@ export interface components {
       cancelledBy: 'customer' | 'admin' | 'system' | 'driver' | null;
       driver: components['schemas']['DriverDeOrderDto'] | null;
       deliveryConfirmation: components['schemas']['DeliveryConfirmationDto'] | null;
+      revisit: components['schemas']['RevisitDeOrderDto'] | null;
     };
     OrderItemDto: {
       /** @description ID de la garrafa */
@@ -20251,6 +20462,7 @@ export interface components {
       cancelledBy: 'customer' | 'admin' | 'system' | 'driver' | null;
       driver: components['schemas']['DriverDeOrderDto'] | null;
       deliveryConfirmation: components['schemas']['DeliveryConfirmationDto'] | null;
+      revisit: components['schemas']['RevisitDeOrderDto'] | null;
       /**
        * @description `true` si el pedido ya estaba en el destino pedido (reintento o segundo admin): no se tocó nada, ni la nota del pedido ni la incidencia.
        * @example false
@@ -20428,6 +20640,33 @@ export interface components {
        * @description Caja de EFECTIVO donde entra la seña recibida en efectivo. Obligatoria si la distribuidora tiene alguna caja de efectivo activa (400 si falta o no es de efectivo); la de otra distribuidora es 404 y una que exige sesión sin sesión abierta, 409.
        */
       cashBoxId?: string;
+    };
+    ConfirmDeliveryV3Dto: {
+      /**
+       * @description Código de 6 dígitos que el cliente ve en su app. Obligatorio para el chofer: si no tiene 6 dígitos responde 400 `DELIVERY_CODE_FORMATO` y no cuenta como intento (el formato lo valida el caso de uso, para devolver ese `code`). Para el admin es opcional e informativo: no se compara ni frena la entrega, que sale con `reason`.
+       * @example 482913
+       */
+      code?: string;
+      /**
+       * @description Latitud del chofer al confirmar. Obligatoria para el chofer.
+       * @example -27.3671
+       */
+      latitude?: number;
+      /**
+       * @description Longitud del chofer al confirmar. Obligatoria para el chofer.
+       * @example -55.8961
+       */
+      longitude?: number;
+      /**
+       * @description Precisión del GPS, en metros.
+       * @example 12.5
+       */
+      accuracyMeters?: number;
+      /**
+       * @description Motivo de la entrega. Obligatorio SIEMPRE que confirma un admin o super admin (10 a 500 caracteres; 400 si falta o es corto), mande o no el `code`; el chofer no lo manda.
+       * @example El cliente no tiene celular: confirmó por teléfono
+       */
+      reason?: string;
     };
     /**
      * @description Uno de los nueve estados de pago de Mercado Pago. Si el pedido tiene varios intentos, el que lo representa: el acreditado (o con reclamo), si no el contracargo o la devolución, el que está en curso, el pendiente y recién al final un rechazo o cancelación. `null`: el pedido no tiene pagos de Mercado Pago (efectivo, transferencia o todavía sin checkout).
@@ -24750,6 +24989,236 @@ export interface components {
       /** @example Inmaculada Concepción */
       description: string;
     };
+    RevisitChoiceDto: {
+      /**
+       * Format: date
+       * @example 2026-11-26
+       */
+      scheduledDate: string;
+      /** Format: uuid */
+      timeSlotId: string;
+    };
+    FailedDeliveryDto: {
+      /**
+       * @description customer_absent (no estaba), address_closed (domicilio cerrado), rejected (rechazó el pedido), other (otro: pide `note`)
+       * @example customer_absent
+       * @enum {string}
+       */
+      reason: 'customer_absent' | 'address_closed' | 'rejected' | 'other';
+      /**
+       * @description Obligatoria (3 caracteres o más) con `reason: other`
+       * @example Toqué timbre y nadie atendió
+       */
+      note?: string;
+      /**
+       * @description Latitud del chofer al informar. Obligatoria para el chofer.
+       * @example -27.3671
+       */
+      latitude?: number;
+      /**
+       * @description Longitud del chofer al informar. Obligatoria para el chofer.
+       * @example -55.8961
+       */
+      longitude?: number;
+      /**
+       * @description Precisión del GPS en metros
+       * @example 12.5
+       */
+      accuracyMeters?: number;
+      /** @description «Acordé con el cliente»: el día y la franja en que se vuelve a pasar. Tiene que ser un día hábil con cupo en la franja */
+      agreed?: components['schemas']['RevisitChoiceDto'];
+    };
+    FailedDeliveryResponseDto: {
+      /** Format: uuid */
+      orderId: string;
+      /** @enum {string|null} */
+      status: 'proposed' | 'confirmed' | 'awaiting_admin' | null;
+      /** @example 1 */
+      failedVisitCount: number;
+      /** Format: date */
+      scheduledDate: string | null;
+      /** Format: uuid */
+      timeSlotId: string | null;
+      /** @example Mañana */
+      timeSlotName: string | null;
+      /** @example 09:00:00 */
+      windowStart: string | null;
+      /** @example 13:00:00 */
+      windowEnd: string | null;
+      /** @description El cliente todavía puede aceptar o elegir otro día */
+      canRespond: boolean;
+      /** Format: uuid */
+      failedVisitId: string;
+      /**
+       * @description `requeued`: hoja de ruta, vuelve a pasar hoy al final del recorrido; `proposed`: el sistema propuso día y franja; `agreed`: quedó lo acordado con el cliente; `awaiting_admin`: decide el admin
+       * @enum {string}
+       */
+      outcome: 'requeued' | 'proposed' | 'agreed' | 'awaiting_admin';
+      /** @enum {string} */
+      deliveryKind: 'single' | 'express' | 'route_sheet';
+      /**
+       * Format: uuid
+       * @description Hoja de ruta: la próxima parada que le toca al chofer
+       */
+      nextOrderId: string | null;
+    };
+    FailedVisitDto: {
+      /** Format: uuid */
+      failedVisitId: string;
+      /** Format: uuid */
+      orderId: string;
+      /** @example 1 */
+      visitNumber: number;
+      /** @enum {string} */
+      deliveryKind: 'single' | 'express' | 'route_sheet';
+      /** @enum {string} */
+      reason: 'customer_absent' | 'address_closed' | 'rejected' | 'other';
+      /** @example El cliente no estaba */
+      reasonLabel: string;
+      note: string | null;
+      /** Format: date-time */
+      failedAt: string;
+      /** @example -27.3671 */
+      latitude: number | null;
+      /** @example -55.8961 */
+      longitude: number | null;
+      /** @example 12.5 */
+      accuracyMeters: number | null;
+      /**
+       * @description Metros al domicilio de entrega
+       * @example 35
+       */
+      distanceMeters: number | null;
+      /** @description Informó más lejos del domicilio que el radio de llegada */
+      outOfRange: boolean;
+      /** @enum {string} */
+      reportedByRole: 'delivery' | 'admin' | 'super_admin';
+      /** @example Juan Pérez */
+      reportedByName: string | null;
+      /** @enum {string} */
+      outcome: 'requeued' | 'proposed' | 'agreed' | 'awaiting_admin';
+      agreedWithCustomer: boolean;
+      /** Format: date */
+      proposedDate: string | null;
+      /** Format: uuid */
+      proposedTimeSlotId: string | null;
+      /** @example Mañana */
+      proposedTimeSlotName: string | null;
+      /** @enum {string|null} */
+      resolution: 'customer_accepted' | 'customer_changed' | 'admin_set' | null;
+      /** Format: date-time */
+      resolvedAt: string | null;
+      /** Format: date */
+      finalDate: string | null;
+      /** @example Tarde */
+      finalTimeSlotName: string | null;
+    };
+    RevisitStateDto: {
+      /** Format: uuid */
+      orderId: string;
+      /** @enum {string|null} */
+      status: 'proposed' | 'confirmed' | 'awaiting_admin' | null;
+      /** @example 1 */
+      failedVisitCount: number;
+      /** Format: date */
+      scheduledDate: string | null;
+      /** Format: uuid */
+      timeSlotId: string | null;
+      /** @example Mañana */
+      timeSlotName: string | null;
+      /** @example 09:00:00 */
+      windowStart: string | null;
+      /** @example 13:00:00 */
+      windowEnd: string | null;
+      /** @description El cliente todavía puede aceptar o elegir otro día */
+      canRespond: boolean;
+    };
+    RevisitSlotDto: {
+      /** Format: uuid */
+      timeSlotId: string;
+      /** @example Mañana */
+      name: string;
+      /** @example 09:00:00 */
+      startTime: string;
+      /** @example 13:00:00 */
+      endTime: string;
+      /**
+       * @description Cupos libres
+       * @example 12
+       */
+      remaining: number;
+    };
+    RevisitDayDto: {
+      /**
+       * Format: date
+       * @example 2026-11-26
+       */
+      date: string;
+      slots: components['schemas']['RevisitSlotDto'][];
+      /**
+       * @description El chofer (o el admin) puede informar este día como acordado con el cliente (`agreed` de «No pude entregar»). `false` en el primer intento de una parada de hoja de ruta en curso: vuelve a pasar hoy al final del recorrido y el back rechaza el acuerdo con 409 `REVISIT_AGREEMENT_NOT_ALLOWED`. Es el mismo valor en todos los días de la respuesta.
+       * @example true
+       */
+      canAgree: boolean;
+    };
+    FailedVisitOrderDto: {
+      /** Format: uuid */
+      orderId: string;
+      /**
+       * @example pending
+       * @enum {string}
+       */
+      orderStatus: 'reserved' | 'pending' | 'accepted' | 'on_the_way' | 'delivered' | 'cancelled';
+      /** @enum {string} */
+      deliveryMode: 'standard' | 'express';
+      /** @enum {string|null} */
+      revisitStatus: 'proposed' | 'confirmed' | 'awaiting_admin' | null;
+      /** @example 2 */
+      failedVisitCount: number;
+      /** Format: date-time */
+      lastFailedAt: string;
+      /** @enum {string} */
+      lastReason: 'customer_absent' | 'address_closed' | 'rejected' | 'other';
+      /** @example El cliente no estaba */
+      lastReasonLabel: string;
+      lastNote: string | null;
+      /** @enum {string} */
+      lastDeliveryKind: 'single' | 'express' | 'route_sheet';
+      lastDistanceMeters: number | null;
+      lastOutOfRange: boolean;
+      customerName: string | null;
+      customerPhone: string | null;
+      address: string | null;
+      driverName: string | null;
+      /** Format: date */
+      scheduledDate: string | null;
+      /** Format: uuid */
+      timeSlotId: string | null;
+      timeSlotName: string | null;
+      windowStart: string | null;
+      windowEnd: string | null;
+      /** @example 15000 */
+      total: number;
+      /**
+       * @example cash
+       * @enum {string}
+       */
+      paymentMethod: 'cash' | 'mercadopago' | 'transfer' | 'account';
+      /**
+       * @example pending
+       * @enum {string}
+       */
+      paymentStatus: 'pending' | 'paid' | 'failed' | 'unpaid' | 'written_off';
+    };
+    FailedVisitOrdersPageDto: {
+      data: components['schemas']['FailedVisitOrderDto'][];
+      /** @example 3 */
+      total: number;
+      /** @example 20 */
+      limit: number;
+      /** @example 0 */
+      offset: number;
+    };
     RepurchaseCustomerRefDto: {
       /**
        * Format: uuid
@@ -28813,56 +29282,6 @@ export interface components {
        * @example ¿Cómo cargo un chofer nuevo?
        */
       question: string;
-    };
-    DeliveryConfirmationDto: {
-      /**
-       * Format: date-time
-       * @description Hora de la base al confirmar
-       */
-      confirmedAt: string;
-      /** @enum {string|null} */
-      confirmedByRole: 'delivery' | 'admin' | 'super_admin' | null;
-      /**
-       * Format: uuid
-       * @description Usuario que confirmó (el chofer o el admin). Sólo en las respuestas al personal del panel; para el cliente y el chofer, `null`
-       */
-      confirmedByUserId: string | null;
-      /** @description Latitud del chofer al confirmar; null si confirmó un admin */
-      latitude: number | null;
-      longitude: number | null;
-      /** @description Precisión del GPS, en metros */
-      accuracyMeters: number | null;
-      /** @description Metros entre el chofer y el domicilio al confirmar */
-      distanceMeters: number | null;
-      /** @description Confirmó más lejos del domicilio que el radio de llegada de la distribuidora (no se rechaza: se marca) */
-      outOfRange: boolean;
-    };
-    ConfirmDeliveryV3Dto: {
-      /**
-       * @description Código de 6 dígitos que el cliente ve en su app. Obligatorio para el chofer: si no tiene 6 dígitos responde 400 `DELIVERY_CODE_FORMATO` y no cuenta como intento (el formato lo valida el caso de uso, para devolver ese `code`). Para el admin es opcional e informativo: no se compara ni frena la entrega, que sale con `reason`.
-       * @example 482913
-       */
-      code?: string;
-      /**
-       * @description Latitud del chofer al confirmar. Obligatoria para el chofer.
-       * @example -27.3671
-       */
-      latitude?: number;
-      /**
-       * @description Longitud del chofer al confirmar. Obligatoria para el chofer.
-       * @example -55.8961
-       */
-      longitude?: number;
-      /**
-       * @description Precisión del GPS, en metros.
-       * @example 12.5
-       */
-      accuracyMeters?: number;
-      /**
-       * @description Motivo de la entrega. Obligatorio SIEMPRE que confirma un admin o super admin (10 a 500 caracteres; 400 si falta o es corto), mande o no el `code`; el chofer no lo manda.
-       * @example El cliente no tiene celular: confirmó por teléfono
-       */
-      reason?: string;
     };
   };
   responses: never;
@@ -49382,6 +49801,191 @@ export interface operations {
       };
     };
   };
+  DeliveryCodeV3Controller_getDeliveryCode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CodigoDeEntregaResponseDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente, de otro cliente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está aceptado ni en camino (`code: ORDER_WITHOUT_DELIVERY_CODE`): todavía no lo aceptó un chofer, ya se entregó o se canceló */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DeliveryCodeV3Controller_regenerate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CodigoDeEntregaResponseDto'];
+        };
+      };
+      /** @description Super admin sin `X-Distributor` (`code: MISSING_DISTRIBUTOR`) o el id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente, de otro cliente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`): todavía no salió, ya se entregó o se canceló */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DeliveryCodeV3Controller_confirm: {
+    parameters: {
+      query?: never;
+      header: {
+        'idempotency-key': string;
+      };
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmDeliveryV3Dto'];
+      };
+    };
+    responses: {
+      /** @description Entrega confirmada (o ya estaba entregada) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['OrderResponseDto'];
+        };
+      };
+      /** @description Código sin 6 dígitos (`code: DELIVERY_CODE_FORMATO`, no cuenta como intento); faltan o son `null` el código o la ubicación del chofer, o la ubicación está fuera de rango (`code: VALIDATION`); falta el motivo del admin o es corto; código incorrecto (`code: DELIVERY_CODE_INCORRECTO`, con `attempts` y `remaining` en el cuerpo) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`) o el código quedó bloqueado por 5 intentos (`code: DELIVERY_CODE_BLOQUEADO`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   OrderPaymentV2Controller_deVarios: {
     parameters: {
       query: {
@@ -60840,6 +61444,469 @@ export interface operations {
       };
     };
   };
+  FailedDeliveryV3Controller_failedDelivery: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['FailedDeliveryDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FailedDeliveryResponseDto'];
+        };
+      };
+      /** @description Motivo inválido, falta la nota con `other` o la ubicación del chofer (`code: VALIDATION`); el día acordado no es hábil o está fuera de las próximas dos semanas (`code: REVISIT_DAY_NOT_AVAILABLE`); super admin sin `X-Distributor` */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: delivery, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`); la franja acordada no tiene cupo (`code: REVISIT_SLOT_NOT_AVAILABLE`); `agreed` en el primer intento de una hoja de ruta (`code: REVISIT_AGREEMENT_NOT_ALLOWED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FailedDeliveryV3Controller_failedVisits: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FailedVisitDto'][];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FailedDeliveryV3Controller_revisit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RevisitStateDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente, de otro cliente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FailedDeliveryV3Controller_options: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RevisitDayDto'][];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente, de otro cliente o de otra distribuidora, o que no está asignado a este chofer */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FailedDeliveryV3Controller_accept: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RevisitStateDto'];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente, de otro cliente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No hay una propuesta abierta: el pedido no tuvo una visita fallida, decide el admin, ya tiene chofer o se cerró (`code: REVISIT_NOT_OPEN`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FailedDeliveryV3Controller_choose: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RevisitChoiceDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RevisitStateDto'];
+        };
+      };
+      /** @description Datos inválidos, o el día no es hábil, ya pasó o está fuera de las próximas dos semanas (`code: REVISIT_DAY_NOT_AVAILABLE`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: customer */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente, de otro cliente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No hay una propuesta abierta (`code: REVISIT_NOT_OPEN`); la franja ya no tiene cupo, terminó o no existe (`code: REVISIT_SLOT_NOT_AVAILABLE`); el pedido ya está en el recorrido de ese día (`code: REVISIT_ALREADY_PLANNED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FailedDeliveryV3Controller_schedule: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RevisitChoiceDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RevisitStateDto'];
+        };
+      };
+      /** @description Datos inválidos, día no hábil o fuera de las próximas dos semanas (`code: REVISIT_DAY_NOT_AVAILABLE`), o super admin sin `X-Distributor` (`code: MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente o de otra distribuidora */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El pedido no tiene una nueva visita pendiente: no tuvo visitas fallidas, ya tiene chofer o se cerró (`code: REVISIT_NOT_OPEN`); franja sin cupo (`code: REVISIT_SLOT_NOT_AVAILABLE`); ya está en el recorrido de ese día (`code: REVISIT_ALREADY_PLANNED`) */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  FailedVisitsV3Controller_list: {
+    parameters: {
+      query?: {
+        /** @description `open` (por omisión): pedidos pendientes con una nueva visita sin cumplir; `awaiting_admin`, `proposed`, `confirmed`: sólo ese estado entre los abiertos; `all`: todos los que tuvieron una visita fallida, también los ya entregados o cancelados */
+        status?: 'proposed' | 'confirmed' | 'awaiting_admin' | 'open' | 'all';
+        reason?: 'customer_absent' | 'address_closed' | 'rejected' | 'other';
+        /** @description Última visita fallida desde este día (inclusive) */
+        from?: string;
+        /** @description Última visita fallida hasta este día (inclusive) */
+        to?: string;
+        /** @description Nombre del cliente o final del número de pedido */
+        term?: string;
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['FailedVisitOrdersPageDto'];
+        };
+      };
+      /** @description Filtros inválidos o super admin sin `X-Distributor` (`code: MISSING_DISTRIBUTOR`) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   RepurchaseAdminController_proximas: {
     parameters: {
       query?: {
@@ -71174,191 +72241,6 @@ export interface operations {
       };
       /** @description No hay preguntas pendientes con ese id en el último año: ya se resolvió o descartó, o no es del soporte de la plataforma (`ASSISTANT_UNANSWERED_NOT_FOUND`) */
       404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  DeliveryCodeV3Controller_getDeliveryCode: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Order UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CodigoDeEntregaResponseDto'];
-        };
-      };
-      /** @description El id no es un UUID */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Pedido inexistente, de otro cliente o de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El pedido no está aceptado ni en camino (`code: ORDER_WITHOUT_DELIVERY_CODE`): todavía no lo aceptó un chofer, ya se entregó o se canceló */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  DeliveryCodeV3Controller_regenerate: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Order UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['CodigoDeEntregaResponseDto'];
-        };
-      };
-      /** @description Super admin sin `X-Distributor` (`code: MISSING_DISTRIBUTOR`) o el id no es un UUID */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Pedido inexistente, de otro cliente o de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`): todavía no salió, ya se entregó o se canceló */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  DeliveryCodeV3Controller_confirm: {
-    parameters: {
-      query?: never;
-      header: {
-        'idempotency-key': string;
-      };
-      path: {
-        /** @description Order UUID */
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ConfirmDeliveryV3Dto'];
-      };
-    };
-    responses: {
-      /** @description Entrega confirmada (o ya estaba entregada) */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['OrderResponseDto'];
-        };
-      };
-      /** @description Código sin 6 dígitos (`code: DELIVERY_CODE_FORMATO`, no cuenta como intento); faltan o son `null` el código o la ubicación del chofer, o la ubicación está fuera de rango (`code: VALIDATION`); falta el motivo del admin o es corto; código incorrecto (`code: DELIVERY_CODE_INCORRECTO`, con `attempts` y `remaining` en el cuerpo) */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Sin token o token inválido */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Requiere rol: delivery, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Pedido inexistente o de otra distribuidora */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`) o el código quedó bloqueado por 5 intentos (`code: DELIVERY_CODE_BLOQUEADO`) */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
-      422: {
         headers: {
           [name: string]: unknown;
         };

@@ -4,6 +4,8 @@ import {
   ArrowDownToLine,
   Bell,
   BellOff,
+  CalendarClock,
+  CalendarX2,
   CircleCheck,
   CircleX,
   MapPinned,
@@ -116,6 +118,8 @@ const EVENT_LABELS: Record<NotificationEvent, string> = {
   [ORDER_SOCKET_EVENTS.RELEASED]: 'Pedido liberado, vuelve a buscar chofer',
   [ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED]: 'El chofer no confirmó la asignación',
   [ORDER_SOCKET_EVENTS.ADDRESS_CHANGED]: 'El cliente cambió la dirección de entrega',
+  [ORDER_SOCKET_EVENTS.FAILED_VISIT]: 'No se pudo entregar: se reprograma la visita',
+  [ORDER_SOCKET_EVENTS.REVISIT_UPDATED]: 'Cambió la nueva visita del pedido',
 };
 
 const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }> = {
@@ -131,6 +135,8 @@ const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }>
   [ORDER_SOCKET_EVENTS.RELEASED]: { icon: RotateCcw, tone: 'warn' },
   [ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED]: { icon: UserRoundX, tone: 'warn' },
   [ORDER_SOCKET_EVENTS.ADDRESS_CHANGED]: { icon: MapPinned, tone: 'info' },
+  [ORDER_SOCKET_EVENTS.FAILED_VISIT]: { icon: CalendarX2, tone: 'warn' },
+  [ORDER_SOCKET_EVENTS.REVISIT_UPDATED]: { icon: CalendarClock, tone: 'info' },
 };
 
 const MAX_NOTIFICATIONS = 50;

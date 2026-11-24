@@ -22,6 +22,9 @@ export const ORDER_SOCKET_EVENTS = {
   ASSIGNMENT_DECLINED: 'order:assignment-declined',
   // El cliente cambió la dirección de entrega (CU-127): la ficha y las listas se refrescan.
   ADDRESS_CHANGED: 'order:address-changed',
+  // Entrega fallida y nueva visita (C5): el chofer no pudo entregar, o el cliente o el admin movieron la visita.
+  FAILED_VISIT: 'order:failed-visit',
+  REVISIT_UPDATED: 'order:revisit-updated',
 } as const;
 
 export type OrderSocketEventName = (typeof ORDER_SOCKET_EVENTS)[keyof typeof ORDER_SOCKET_EVENTS];

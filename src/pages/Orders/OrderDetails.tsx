@@ -13,6 +13,7 @@ import { CylinderLinksCard } from '../PhysicalCylinders/components/CylinderLinks
 import { OrderCashSettlementCard } from './components/details/OrderCashSettlementCard';
 import { OrderDepositCard } from './components/details/OrderDepositCard';
 import { OrderDetailsToolbar } from './components/details/OrderDetailsToolbar';
+import { OrderFailedVisits } from './components/details/OrderFailedVisits';
 import { OrderHistoryCard } from './components/details/OrderHistoryCard';
 import { OrderIncidents } from './components/details/OrderIncidents';
 import { OrderItemsSummary } from './components/details/OrderItemsSummary';
@@ -54,6 +55,8 @@ export const OrderDetails = () => {
         void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(id) });
         // Un pago o una confirmación pudo asentarse en una caja: la tarjeta «Cobro en caja» se vuelve a leer.
         void queryClient.invalidateQueries({ queryKey: queryKeys.cashSettings.detail(id) });
+        // Una visita fallida o un cambio de la nueva visita: el historial de visitas se vuelve a leer.
+        void queryClient.invalidateQueries({ queryKey: queryKeys.failedVisits.detail(id) });
       }),
     );
     return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
@@ -89,6 +92,7 @@ export const OrderDetails = () => {
               {(order.paymentMethodDetail === 'mercadopago' || order.paymentMethodDetail === 'transfer') && (
                 <OrderCashSettlementCard orderId={order.order_id} />
               )}
+              <OrderFailedVisits order={order} />
               <OrderHistoryCard orderId={order.order_id} />
               <CylinderLinksCard
                 title="Envases"

@@ -23594,6 +23594,186 @@
                 ]
             }
         },
+        "/api/v3/orders/{id}/delivery-code": {
+            "get": {
+                "description": "Lo ve el cliente dueño del pedido y el admin, con el pedido aceptado o en camino. El chofer no tiene acceso (403): es el que lo escribe. Trae `attempts` (códigos incorrectos del chofer) y `blocked` (agotó los 5 intentos: hay que generar un código nuevo). Al cliente le llegan por socket `order:delivery-code-failed` (`{orderId, attempts, remaining}`) en cada error del chofer y `order:delivery-code-blocked` (`{orderId}`) al bloquearse.",
+                "operationId": "DeliveryCodeV3Controller_getDeliveryCode",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CodigoDeEntregaResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
+                    },
+                    "404": {
+                        "description": "Pedido inexistente, de otro cliente o de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El pedido no está aceptado ni en camino (`code: ORDER_WITHOUT_DELIVERY_CODE`): todavía no lo aceptó un chofer, ya se entregó o se canceló"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Ver el código de entrega (el que el cliente le dice al chofer)",
+                "tags": [
+                    "Pedidos · Código de entrega (v3)"
+                ]
+            }
+        },
+        "/api/v3/orders/{id}/delivery-code/regenerate": {
+            "post": {
+                "description": "El cliente dueño del pedido (o un admin con permiso de despacho) reemplaza el código del pedido en camino por uno de 6 dígitos; los intentos del chofer vuelven a 0 y el código viejo deja de valer. Sirve cuando se bloqueó (`DELIVERY_CODE_BLOQUEADO`) o se filtró. Queda en la auditoría de datos. Un super admin tiene que mandar `X-Distributor`.",
+                "operationId": "DeliveryCodeV3Controller_regenerate",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CodigoDeEntregaResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Super admin sin `X-Distributor` (`code: MISSING_DISTRIBUTOR`) o el id no es un UUID"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
+                    },
+                    "404": {
+                        "description": "Pedido inexistente, de otro cliente o de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`): todavía no salió, ya se entregó o se canceló"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Generar un código de entrega nuevo",
+                "tags": [
+                    "Pedidos · Código de entrega (v3)"
+                ]
+            }
+        },
+        "/api/v3/orders/{id}/confirm-delivery": {
+            "post": {
+                "description": "El chofer asignado escribe el código de 6 dígitos que le dice el cliente y manda su ubicación (`latitude`, `longitude`, `accuracyMeters` opcional). Con el pedido en camino y el código correcto pasa a entregado y queda asentado dónde estaba (punto, precisión, distancia al domicilio), quién confirmó y la hora de la base. Si está más lejos del domicilio que el radio de llegada de la distribuidora no se rechaza: `deliveryConfirmation.outOfRange` queda en `true` y se audita. 5 códigos incorrectos bloquean el código (el cliente genera otro) y a cada error se le avisa al cliente por socket. Un admin entrega mandando SIEMPRE `reason` (10 a 500 caracteres), sin ubicación; el `code` que mande es informativo (no se compara). Pedido ya entregado: responde 200 con el pedido, sin volver a pedir el código ni pisar la confirmación. Idempotente vía header `Idempotency-Key`: el reintento con la misma clave de un código incorrecto responde el mismo error sin sumar otro intento ni volver a avisar al cliente. `deliveryConfirmation.confirmedByUserId` sólo viene para el admin.",
+                "operationId": "DeliveryCodeV3Controller_confirm",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "idempotency-key",
+                        "required": true,
+                        "in": "header",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConfirmDeliveryV3Dto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Entrega confirmada (o ya estaba entregada)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Código sin 6 dígitos (`code: DELIVERY_CODE_FORMATO`, no cuenta como intento); faltan o son `null` el código o la ubicación del chofer, o la ubicación está fuera de rango (`code: VALIDATION`); falta el motivo del admin o es corto; código incorrecto (`code: DELIVERY_CODE_INCORRECTO`, con `attempts` y `remaining` en el cuerpo)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
+                    },
+                    "404": {
+                        "description": "Pedido inexistente o de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`) o el código quedó bloqueado por 5 intentos (`code: DELIVERY_CODE_BLOQUEADO`)"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Confirmar la entrega con el código del cliente y la ubicación",
+                "tags": [
+                    "Pedidos · Código de entrega (v3)"
+                ]
+            }
+        },
         "/api/v2/orders/payments": {
             "get": {
                 "description": "Como `GET /v2/orders/:id/payment`, para hasta 50 pedidos de la distribuidora, sin historial. Un pedido que no existe o es de otra distribuidora no aparece en la respuesta (no es un error). El super admin tiene que mandar `X-Distributor`.",
@@ -36758,6 +36938,530 @@
                 ]
             }
         },
+        "/api/v3/orders/{id}/failed-delivery": {
+            "post": {
+                "description": "El chofer asignado informa por qué no pudo entregar (`reason`; `note` obligatoria con `other`) y su ubicación (queda el punto, la precisión, la distancia al domicilio y la hora, como en la confirmación de la entrega; fuera del radio de llegada no se rechaza: se marca). Opcional, `agreed`: el día y la franja que acordó con el cliente. Vale para todas las entregas. **Pedido suelto o express en camino**: vuelve a pendiente sin chofer y el sistema propone la nueva visita respetando el calendario y el cupo de las franjas — suelto: próximo día hábil con la franja original o la primera libre; express: la próxima franja libre de hoy o, si no hay, la primera del próximo día hábil. **Parada de una hoja de ruta en curso**: primer intento, vuelve al final del recorrido de hoy (`outcome: requeued`, no cuenta como visita fallida y no admite `agreed`); segundo, sale de la hoja y queda propuesta para el próximo día con hoja, con franja. A la segunda visita fallida del pedido (`failedVisitCount: 2`) el sistema deja de reprogramar: `outcome: awaiting_admin`. Hasta el inicio de la franja de la nueva visita el despacho no ofrece el pedido; ese día vuelve solo al circuito normal. El stock reservado y el pago no cambian (el efectivo se cobra en la nueva visita). Al cliente se le avisa por push, correo y socket (`order:rescheduled`, o `order:delivery-failed` si decide el admin); al panel, `order:failed-visit`. Un admin lo informa sin ubicación. Idempotente con `Idempotency-Key`.",
+                "operationId": "FailedDeliveryV3Controller_failedDelivery",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FailedDeliveryDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedDeliveryResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Motivo inválido, falta la nota con `other` o la ubicación del chofer (`code: VALIDATION`); el día acordado no es hábil o está fuera de las próximas dos semanas (`code: REVISIT_DAY_NOT_AVAILABLE`); super admin sin `X-Distributor`"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: delivery, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
+                    },
+                    "404": {
+                        "description": "Pedido inexistente o de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`); la franja acordada no tiene cupo (`code: REVISIT_SLOT_NOT_AVAILABLE`); `agreed` en el primer intento de una hoja de ruta (`code: REVISIT_AGREEMENT_NOT_ALLOWED`)"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "«No pude entregar»: informar una entrega fallida",
+                "tags": [
+                    "Pedidos · Entrega fallida y nueva visita (v3)"
+                ]
+            }
+        },
+        "/api/v3/orders/{id}/failed-visits": {
+            "get": {
+                "description": "De la más nueva a la más vieja: motivo, quién la informó, dónde estaba (punto, precisión, distancia al domicilio, fuera de radio), qué nueva visita se propuso o acordó y cómo se resolvió.",
+                "operationId": "FailedDeliveryV3Controller_failedVisits",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/FailedVisitDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
+                    },
+                    "404": {
+                        "description": "Pedido inexistente o de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Historial de visitas fallidas del pedido",
+                "tags": [
+                    "Pedidos · Entrega fallida y nueva visita (v3)"
+                ]
+            }
+        },
+        "/api/v3/orders/{id}/revisit": {
+            "get": {
+                "description": "El día y la franja en que se vuelve a pasar después de una entrega fallida, y si el cliente todavía puede contestar (`canRespond`). `status: null` si el pedido no tuvo visitas fallidas. Con `awaiting_admin` no hay fecha: decide la distribuidora.",
+                "operationId": "FailedDeliveryV3Controller_revisit",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RevisitStateDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
+                    },
+                    "404": {
+                        "description": "Pedido inexistente, de otro cliente o de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "La nueva visita del pedido",
+                "tags": [
+                    "Pedidos · Entrega fallida y nueva visita (v3)"
+                ]
+            }
+        },
+        "/api/v3/orders/{id}/revisit/options": {
+            "get": {
+                "description": "Los días en que la distribuidora reparte (su calendario, sin feriados) de las próximas dos semanas, cada uno con las franjas que todavía tienen cupo. Incluye hoy si es día hábil y queda alguna franja sin terminar con lugar, salvo para un pedido que salió de una hoja de ruta (entra en la hoja de otro día). Un día sin franjas libres no aparece. Lo usan el cliente para elegir otro día, el admin para fijarlo y el chofer asignado para «Acordé con el cliente»: `canAgree` (igual en todos los días) dice si se puede mandar un acuerdo; en el primer intento de una parada de hoja de ruta es `false`.",
+                "operationId": "FailedDeliveryV3Controller_options",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/RevisitDayDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los pedidos (`pedidos.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    },
+                    "404": {
+                        "description": "Pedido inexistente, de otro cliente o de otra distribuidora, o que no está asignado a este chofer"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Días y franjas libres para la nueva visita",
+                "tags": [
+                    "Pedidos · Entrega fallida y nueva visita (v3)"
+                ]
+            }
+        },
+        "/api/v3/orders/{id}/revisit/accept": {
+            "post": {
+                "description": "Deja confirmados el día y la franja propuestos. Repetirlo con la visita ya confirmada responde 200 sin cambios. Si el cliente no contesta, la propuesta queda igual.",
+                "operationId": "FailedDeliveryV3Controller_accept",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RevisitStateDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    },
+                    "404": {
+                        "description": "Pedido inexistente, de otro cliente o de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "No hay una propuesta abierta: el pedido no tuvo una visita fallida, decide el admin, ya tiene chofer o se cerró (`code: REVISIT_NOT_OPEN`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "«Me sirve»: el cliente acepta la nueva visita propuesta",
+                "tags": [
+                    "Pedidos · Entrega fallida y nueva visita (v3)"
+                ]
+            }
+        },
+        "/api/v3/orders/{id}/revisit/choose": {
+            "post": {
+                "description": "El cliente elige un día y una franja de `GET /orders/:id/revisit/options`. Se valida de nuevo el calendario y el cupo (con la franja bloqueada, como al crear un pedido). La visita queda confirmada y se le avisa al admin.",
+                "operationId": "FailedDeliveryV3Controller_choose",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RevisitChoiceDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RevisitStateDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos, o el día no es hábil, ya pasó o está fuera de las próximas dos semanas (`code: REVISIT_DAY_NOT_AVAILABLE`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: customer"
+                    },
+                    "404": {
+                        "description": "Pedido inexistente, de otro cliente o de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "No hay una propuesta abierta (`code: REVISIT_NOT_OPEN`); la franja ya no tiene cupo, terminó o no existe (`code: REVISIT_SLOT_NOT_AVAILABLE`); el pedido ya está en el recorrido de ese día (`code: REVISIT_ALREADY_PLANNED`)"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "«Elegir otro día y horario»: el cliente cambia la nueva visita",
+                "tags": [
+                    "Pedidos · Entrega fallida y nueva visita (v3)"
+                ]
+            }
+        },
+        "/api/v3/orders/{id}/revisit/schedule": {
+            "post": {
+                "description": "Para un pedido pendiente sin chofer con una visita fallida, también cuando la decisión era del admin (`awaiting_admin`) o para cambiar lo propuesto. Valida el calendario y el cupo. La visita queda confirmada, el pedido vuelve al circuito normal al empezar esa franja y se le avisa al cliente (push, correo y socket). Para reasignarlo ya a un chofer o cancelarlo se usan los endpoints de siempre del pedido. Un super admin tiene que mandar `X-Distributor`.",
+                "operationId": "FailedDeliveryV3Controller_schedule",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RevisitChoiceDto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RevisitStateDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos, día no hábil o fuera de las próximas dos semanas (`code: REVISIT_DAY_NOT_AVAILABLE`), o super admin sin `X-Distributor` (`code: MISSING_DISTRIBUTOR`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
+                    },
+                    "404": {
+                        "description": "Pedido inexistente o de otra distribuidora"
+                    },
+                    "409": {
+                        "description": "El pedido no tiene una nueva visita pendiente: no tuvo visitas fallidas, ya tiene chofer o se cerró (`code: REVISIT_NOT_OPEN`); franja sin cupo (`code: REVISIT_SLOT_NOT_AVAILABLE`); ya está en el recorrido de ese día (`code: REVISIT_ALREADY_PLANNED`)"
+                    },
+                    "422": {
+                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "El admin fija el día y la franja de la nueva visita",
+                "tags": [
+                    "Pedidos · Entrega fallida y nueva visita (v3)"
+                ]
+            }
+        },
+        "/api/v3/failed-visits": {
+            "get": {
+                "description": "Un renglón por pedido con su última visita fallida, cuántas lleva y la nueva visita. Por omisión, los que siguen pendientes; primero los que esperan la decisión del admin. Filtra por estado de la nueva visita, motivo, fechas y cliente o número de pedido. Un super admin tiene que mandar `X-Distributor`.",
+                "operationId": "FailedVisitsV3Controller_list",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "description": "`open` (por omisión): pedidos pendientes con una nueva visita sin cumplir; `awaiting_admin`, `proposed`, `confirmed`: sólo ese estado entre los abiertos; `all`: todos los que tuvieron una visita fallida, también los ya entregados o cancelados",
+                        "schema": {
+                            "default": "open",
+                            "type": "string",
+                            "enum": [
+                                "proposed",
+                                "confirmed",
+                                "awaiting_admin",
+                                "open",
+                                "all"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "reason",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "customer_absent",
+                                "address_closed",
+                                "rejected",
+                                "other"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Última visita fallida desde este día (inclusive)",
+                        "schema": {
+                            "format": "date",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Última visita fallida hasta este día (inclusive)",
+                        "schema": {
+                            "format": "date",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Nombre del cliente o final del número de pedido",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 20,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FailedVisitOrdersPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Filtros inválidos o super admin sin `X-Distributor` (`code: MISSING_DISTRIBUTOR`)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Pedidos con visitas fallidas",
+                "tags": [
+                    "Pedidos · Entrega fallida y nueva visita (v3)"
+                ]
+            }
+        },
         "/api/v2/repurchase/forecast": {
             "get": {
                 "description": "Los clientes de la distribuidora cuya fecha estimada de recompra cae dentro de `days` días (por omisión 14), del más próximo al más lejano, con su última compra, su consumo declarado y de dónde sale la estimación (`history`: sus compras; `declared`: el consumo que declaró). Los que ya se pasaron de la fecha y siguen proyectados aparecen con `daysLeft` negativo. No aparecen los que nunca le compraron a la distribuidora, los que no tienen con qué estimarlos ni los que dejaron de comprar.",
@@ -48241,186 +48945,6 @@
                     "Asistente del chat (plataforma)"
                 ],
                 "x-permission": "plataforma.tickets.configurar"
-            }
-        },
-        "/api/v3/orders/{id}/delivery-code": {
-            "get": {
-                "description": "Lo ve el cliente dueño del pedido y el admin, con el pedido aceptado o en camino. El chofer no tiene acceso (403): es el que lo escribe. Trae `attempts` (códigos incorrectos del chofer) y `blocked` (agotó los 5 intentos: hay que generar un código nuevo). Al cliente le llegan por socket `order:delivery-code-failed` (`{orderId, attempts, remaining}`) en cada error del chofer y `order:delivery-code-blocked` (`{orderId}`) al bloquearse.",
-                "operationId": "DeliveryCodeV3Controller_getDeliveryCode",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Order UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CodigoDeEntregaResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "El id no es un UUID"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
-                    },
-                    "404": {
-                        "description": "Pedido inexistente, de otro cliente o de otra distribuidora"
-                    },
-                    "409": {
-                        "description": "El pedido no está aceptado ni en camino (`code: ORDER_WITHOUT_DELIVERY_CODE`): todavía no lo aceptó un chofer, ya se entregó o se canceló"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Ver el código de entrega (el que el cliente le dice al chofer)",
-                "tags": [
-                    "Pedidos · Código de entrega (v3)"
-                ]
-            }
-        },
-        "/api/v3/orders/{id}/delivery-code/regenerate": {
-            "post": {
-                "description": "El cliente dueño del pedido (o un admin con permiso de despacho) reemplaza el código del pedido en camino por uno de 6 dígitos; los intentos del chofer vuelven a 0 y el código viejo deja de valer. Sirve cuando se bloqueó (`DELIVERY_CODE_BLOQUEADO`) o se filtró. Queda en la auditoría de datos. Un super admin tiene que mandar `X-Distributor`.",
-                "operationId": "DeliveryCodeV3Controller_regenerate",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Order UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/CodigoDeEntregaResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Super admin sin `X-Distributor` (`code: MISSING_DISTRIBUTOR`) o el id no es un UUID"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: customer, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
-                    },
-                    "404": {
-                        "description": "Pedido inexistente, de otro cliente o de otra distribuidora"
-                    },
-                    "409": {
-                        "description": "El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`): todavía no salió, ya se entregó o se canceló"
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Generar un código de entrega nuevo",
-                "tags": [
-                    "Pedidos · Código de entrega (v3)"
-                ]
-            }
-        },
-        "/api/v3/orders/{id}/confirm-delivery": {
-            "post": {
-                "description": "El chofer asignado escribe el código de 6 dígitos que le dice el cliente y manda su ubicación (`latitude`, `longitude`, `accuracyMeters` opcional). Con el pedido en camino y el código correcto pasa a entregado y queda asentado dónde estaba (punto, precisión, distancia al domicilio), quién confirmó y la hora de la base. Si está más lejos del domicilio que el radio de llegada de la distribuidora no se rechaza: `deliveryConfirmation.outOfRange` queda en `true` y se audita. 5 códigos incorrectos bloquean el código (el cliente genera otro) y a cada error se le avisa al cliente por socket. Un admin entrega mandando SIEMPRE `reason` (10 a 500 caracteres), sin ubicación; el `code` que mande es informativo (no se compara). Pedido ya entregado: responde 200 con el pedido, sin volver a pedir el código ni pisar la confirmación. Idempotente vía header `Idempotency-Key`: el reintento con la misma clave de un código incorrecto responde el mismo error sin sumar otro intento ni volver a avisar al cliente. `deliveryConfirmation.confirmedByUserId` sólo viene para el admin.",
-                "operationId": "DeliveryCodeV3Controller_confirm",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "required": true,
-                        "in": "path",
-                        "description": "Order UUID",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "idempotency-key",
-                        "required": true,
-                        "in": "header",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ConfirmDeliveryV3Dto"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Entrega confirmada (o ya estaba entregada)",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/OrderResponseDto"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Código sin 6 dígitos (`code: DELIVERY_CODE_FORMATO`, no cuenta como intento); faltan o son `null` el código o la ubicación del chofer, o la ubicación está fuera de rango (`code: VALIDATION`); falta el motivo del admin o es corto; código incorrecto (`code: DELIVERY_CODE_INCORRECTO`, con `attempts` y `remaining` en el cuerpo)"
-                    },
-                    "401": {
-                        "description": "Sin token o token inválido"
-                    },
-                    "403": {
-                        "description": "Requiere rol: delivery, admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
-                    },
-                    "404": {
-                        "description": "Pedido inexistente o de otra distribuidora"
-                    },
-                    "409": {
-                        "description": "El pedido no está en camino (`code: ORDER_NOT_ON_THE_WAY`) o el código quedó bloqueado por 5 intentos (`code: DELIVERY_CODE_BLOQUEADO`)"
-                    },
-                    "422": {
-                        "description": "La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar."
-                    }
-                },
-                "security": [
-                    {
-                        "bearer": []
-                    }
-                ],
-                "summary": "Confirmar la entrega con el código del cliente y la ubicación",
-                "tags": [
-                    "Pedidos · Código de entrega (v3)"
-                ]
             }
         }
     },
@@ -65626,6 +66150,123 @@
                     "location"
                 ]
             },
+            "DeliveryConfirmationDto": {
+                "type": "object",
+                "properties": {
+                    "confirmedAt": {
+                        "format": "date-time",
+                        "type": "string",
+                        "description": "Hora de la base al confirmar"
+                    },
+                    "confirmedByRole": {
+                        "type": "string",
+                        "enum": [
+                            "delivery",
+                            "admin",
+                            "super_admin"
+                        ],
+                        "nullable": true
+                    },
+                    "confirmedByUserId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Usuario que confirmó (el chofer o el admin). Sólo en las respuestas al personal del panel; para el cliente y el chofer, `null`"
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Latitud del chofer al confirmar; null si confirmó un admin"
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "accuracyMeters": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Precisión del GPS, en metros"
+                    },
+                    "distanceMeters": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Metros entre el chofer y el domicilio al confirmar"
+                    },
+                    "outOfRange": {
+                        "type": "boolean",
+                        "description": "Confirmó más lejos del domicilio que el radio de llegada de la distribuidora (no se rechaza: se marca)"
+                    }
+                },
+                "required": [
+                    "confirmedAt",
+                    "confirmedByRole",
+                    "confirmedByUserId",
+                    "latitude",
+                    "longitude",
+                    "accuracyMeters",
+                    "distanceMeters",
+                    "outOfRange"
+                ]
+            },
+            "RevisitDeOrderDto": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "proposed",
+                            "confirmed",
+                            "awaiting_admin"
+                        ],
+                        "description": "`proposed`: la propuso el sistema (si el cliente no contesta, queda); `confirmed`: el cliente la aceptó o eligió otra, la acordó el chofer o la fijó el admin; `awaiting_admin`: decide la distribuidora"
+                    },
+                    "failedVisitCount": {
+                        "type": "number",
+                        "example": 2,
+                        "description": "Visitas fallidas del pedido"
+                    },
+                    "scheduledDate": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "Día de la nueva visita (`null` si decide el admin y todavía no lo fijó)"
+                    },
+                    "timeSlotId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "timeSlotName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Mañana"
+                    },
+                    "windowStart": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "09:00:00"
+                    },
+                    "windowEnd": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "13:00:00"
+                    },
+                    "canRespond": {
+                        "type": "boolean",
+                        "description": "El cliente todavía puede contestar («Me sirve» / «Elegir otro día y horario»): es una propuesta y el pedido sigue pendiente sin chofer"
+                    }
+                },
+                "required": [
+                    "status",
+                    "failedVisitCount",
+                    "scheduledDate",
+                    "timeSlotId",
+                    "timeSlotName",
+                    "windowStart",
+                    "windowEnd",
+                    "canRespond"
+                ]
+            },
             "OrderResponseDto": {
                 "type": "object",
                 "properties": {
@@ -65909,6 +66550,14 @@
                                 "$ref": "#/components/schemas/DeliveryConfirmationDto"
                             }
                         ]
+                    },
+                    "revisit": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RevisitDeOrderDto"
+                            }
+                        ]
                     }
                 },
                 "required": [
@@ -65953,7 +66602,8 @@
                     "vehicle",
                     "cancelledBy",
                     "driver",
-                    "deliveryConfirmation"
+                    "deliveryConfirmation",
+                    "revisit"
                 ]
             },
             "OrderItemDto": {
@@ -66921,6 +67571,14 @@
                             }
                         ]
                     },
+                    "revisit": {
+                        "nullable": true,
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RevisitDeOrderDto"
+                            }
+                        ]
+                    },
                     "alreadyResolved": {
                         "type": "boolean",
                         "example": false,
@@ -66970,6 +67628,7 @@
                     "cancelledBy",
                     "driver",
                     "deliveryConfirmation",
+                    "revisit",
                     "alreadyResolved"
                 ]
             },
@@ -67284,6 +67943,47 @@
                         "type": "string",
                         "format": "uuid",
                         "description": "Caja de EFECTIVO donde entra la seña recibida en efectivo. Obligatoria si la distribuidora tiene alguna caja de efectivo activa (400 si falta o no es de efectivo); la de otra distribuidora es 404 y una que exige sesión sin sesión abierta, 409."
+                    }
+                }
+            },
+            "ConfirmDeliveryV3Dto": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "minLength": 6,
+                        "maxLength": 6,
+                        "pattern": "^\\d{6}$",
+                        "example": "482913",
+                        "description": "Código de 6 dígitos que el cliente ve en su app. Obligatorio para el chofer: si no tiene 6 dígitos responde 400 `DELIVERY_CODE_FORMATO` y no cuenta como intento (el formato lo valida el caso de uso, para devolver ese `code`). Para el admin es opcional e informativo: no se compara ni frena la entrega, que sale con `reason`."
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "example": -27.3671,
+                        "minimum": -90,
+                        "maximum": 90,
+                        "description": "Latitud del chofer al confirmar. Obligatoria para el chofer."
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "example": -55.8961,
+                        "minimum": -180,
+                        "maximum": 180,
+                        "description": "Longitud del chofer al confirmar. Obligatoria para el chofer."
+                    },
+                    "accuracyMeters": {
+                        "type": "number",
+                        "example": 12.5,
+                        "minimum": 0,
+                        "maximum": 10000,
+                        "description": "Precisión del GPS, en metros."
+                    },
+                    "reason": {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 500,
+                        "description": "Motivo de la entrega. Obligatorio SIEMPRE que confirma un admin o super admin (10 a 500 caracteres; 400 si falta o es corto), mande o no el `code`; el chofer no lo manda.",
+                        "example": "El cliente no tiene celular: confirmó por teléfono"
                     }
                 }
             },
@@ -77908,6 +78608,649 @@
                     "description"
                 ]
             },
+            "RevisitChoiceDto": {
+                "type": "object",
+                "properties": {
+                    "scheduledDate": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-11-26"
+                    },
+                    "timeSlotId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "scheduledDate",
+                    "timeSlotId"
+                ]
+            },
+            "FailedDeliveryDto": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "enum": [
+                            "customer_absent",
+                            "address_closed",
+                            "rejected",
+                            "other"
+                        ],
+                        "example": "customer_absent",
+                        "description": "customer_absent (no estaba), address_closed (domicilio cerrado), rejected (rechazó el pedido), other (otro: pide `note`)"
+                    },
+                    "note": {
+                        "type": "string",
+                        "maxLength": 300,
+                        "example": "Toqué timbre y nadie atendió",
+                        "description": "Obligatoria (3 caracteres o más) con `reason: other`"
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "example": -27.3671,
+                        "minimum": -90,
+                        "maximum": 90,
+                        "description": "Latitud del chofer al informar. Obligatoria para el chofer."
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "example": -55.8961,
+                        "minimum": -180,
+                        "maximum": 180,
+                        "description": "Longitud del chofer al informar. Obligatoria para el chofer."
+                    },
+                    "accuracyMeters": {
+                        "type": "number",
+                        "example": 12.5,
+                        "minimum": 0,
+                        "maximum": 10000,
+                        "description": "Precisión del GPS en metros"
+                    },
+                    "agreed": {
+                        "description": "«Acordé con el cliente»: el día y la franja en que se vuelve a pasar. Tiene que ser un día hábil con cupo en la franja",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RevisitChoiceDto"
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "reason"
+                ]
+            },
+            "FailedDeliveryResponseDto": {
+                "type": "object",
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "proposed",
+                            "confirmed",
+                            "awaiting_admin"
+                        ],
+                        "nullable": true
+                    },
+                    "failedVisitCount": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "scheduledDate": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "timeSlotId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "timeSlotName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Mañana"
+                    },
+                    "windowStart": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "09:00:00"
+                    },
+                    "windowEnd": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "13:00:00"
+                    },
+                    "canRespond": {
+                        "type": "boolean",
+                        "description": "El cliente todavía puede aceptar o elegir otro día"
+                    },
+                    "failedVisitId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "outcome": {
+                        "type": "string",
+                        "enum": [
+                            "requeued",
+                            "proposed",
+                            "agreed",
+                            "awaiting_admin"
+                        ],
+                        "description": "`requeued`: hoja de ruta, vuelve a pasar hoy al final del recorrido; `proposed`: el sistema propuso día y franja; `agreed`: quedó lo acordado con el cliente; `awaiting_admin`: decide el admin"
+                    },
+                    "deliveryKind": {
+                        "type": "string",
+                        "enum": [
+                            "single",
+                            "express",
+                            "route_sheet"
+                        ]
+                    },
+                    "nextOrderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Hoja de ruta: la próxima parada que le toca al chofer"
+                    }
+                },
+                "required": [
+                    "orderId",
+                    "status",
+                    "failedVisitCount",
+                    "scheduledDate",
+                    "timeSlotId",
+                    "timeSlotName",
+                    "windowStart",
+                    "windowEnd",
+                    "canRespond",
+                    "failedVisitId",
+                    "outcome",
+                    "deliveryKind",
+                    "nextOrderId"
+                ]
+            },
+            "FailedVisitDto": {
+                "type": "object",
+                "properties": {
+                    "failedVisitId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "visitNumber": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "deliveryKind": {
+                        "type": "string",
+                        "enum": [
+                            "single",
+                            "express",
+                            "route_sheet"
+                        ]
+                    },
+                    "reason": {
+                        "type": "string",
+                        "enum": [
+                            "customer_absent",
+                            "address_closed",
+                            "rejected",
+                            "other"
+                        ]
+                    },
+                    "reasonLabel": {
+                        "type": "string",
+                        "example": "El cliente no estaba"
+                    },
+                    "note": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "failedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": -27.3671
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": -55.8961
+                    },
+                    "accuracyMeters": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 12.5
+                    },
+                    "distanceMeters": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 35,
+                        "description": "Metros al domicilio de entrega"
+                    },
+                    "outOfRange": {
+                        "type": "boolean",
+                        "description": "Informó más lejos del domicilio que el radio de llegada"
+                    },
+                    "reportedByRole": {
+                        "type": "string",
+                        "enum": [
+                            "delivery",
+                            "admin",
+                            "super_admin"
+                        ]
+                    },
+                    "reportedByName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Juan Pérez"
+                    },
+                    "outcome": {
+                        "type": "string",
+                        "enum": [
+                            "requeued",
+                            "proposed",
+                            "agreed",
+                            "awaiting_admin"
+                        ]
+                    },
+                    "agreedWithCustomer": {
+                        "type": "boolean"
+                    },
+                    "proposedDate": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "proposedTimeSlotId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "proposedTimeSlotName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Mañana"
+                    },
+                    "resolution": {
+                        "type": "string",
+                        "enum": [
+                            "customer_accepted",
+                            "customer_changed",
+                            "admin_set"
+                        ],
+                        "nullable": true
+                    },
+                    "resolvedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "finalDate": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "finalTimeSlotName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Tarde"
+                    }
+                },
+                "required": [
+                    "failedVisitId",
+                    "orderId",
+                    "visitNumber",
+                    "deliveryKind",
+                    "reason",
+                    "reasonLabel",
+                    "note",
+                    "failedAt",
+                    "latitude",
+                    "longitude",
+                    "accuracyMeters",
+                    "distanceMeters",
+                    "outOfRange",
+                    "reportedByRole",
+                    "reportedByName",
+                    "outcome",
+                    "agreedWithCustomer",
+                    "proposedDate",
+                    "proposedTimeSlotId",
+                    "proposedTimeSlotName",
+                    "resolution",
+                    "resolvedAt",
+                    "finalDate",
+                    "finalTimeSlotName"
+                ]
+            },
+            "RevisitStateDto": {
+                "type": "object",
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "proposed",
+                            "confirmed",
+                            "awaiting_admin"
+                        ],
+                        "nullable": true
+                    },
+                    "failedVisitCount": {
+                        "type": "number",
+                        "example": 1
+                    },
+                    "scheduledDate": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "timeSlotId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "timeSlotName": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "Mañana"
+                    },
+                    "windowStart": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "09:00:00"
+                    },
+                    "windowEnd": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "13:00:00"
+                    },
+                    "canRespond": {
+                        "type": "boolean",
+                        "description": "El cliente todavía puede aceptar o elegir otro día"
+                    }
+                },
+                "required": [
+                    "orderId",
+                    "status",
+                    "failedVisitCount",
+                    "scheduledDate",
+                    "timeSlotId",
+                    "timeSlotName",
+                    "windowStart",
+                    "windowEnd",
+                    "canRespond"
+                ]
+            },
+            "RevisitSlotDto": {
+                "type": "object",
+                "properties": {
+                    "timeSlotId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Mañana"
+                    },
+                    "startTime": {
+                        "type": "string",
+                        "example": "09:00:00"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "example": "13:00:00"
+                    },
+                    "remaining": {
+                        "type": "number",
+                        "example": 12,
+                        "description": "Cupos libres"
+                    }
+                },
+                "required": [
+                    "timeSlotId",
+                    "name",
+                    "startTime",
+                    "endTime",
+                    "remaining"
+                ]
+            },
+            "RevisitDayDto": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-11-26"
+                    },
+                    "slots": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RevisitSlotDto"
+                        }
+                    },
+                    "canAgree": {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "El chofer (o el admin) puede informar este día como acordado con el cliente (`agreed` de «No pude entregar»). `false` en el primer intento de una parada de hoja de ruta en curso: vuelve a pasar hoy al final del recorrido y el back rechaza el acuerdo con 409 `REVISIT_AGREEMENT_NOT_ALLOWED`. Es el mismo valor en todos los días de la respuesta."
+                    }
+                },
+                "required": [
+                    "date",
+                    "slots",
+                    "canAgree"
+                ]
+            },
+            "FailedVisitOrderDto": {
+                "type": "object",
+                "properties": {
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "orderStatus": {
+                        "type": "string",
+                        "enum": [
+                            "reserved",
+                            "pending",
+                            "accepted",
+                            "on_the_way",
+                            "delivered",
+                            "cancelled"
+                        ],
+                        "example": "pending"
+                    },
+                    "deliveryMode": {
+                        "type": "string",
+                        "enum": [
+                            "standard",
+                            "express"
+                        ]
+                    },
+                    "revisitStatus": {
+                        "type": "string",
+                        "enum": [
+                            "proposed",
+                            "confirmed",
+                            "awaiting_admin"
+                        ],
+                        "nullable": true
+                    },
+                    "failedVisitCount": {
+                        "type": "number",
+                        "example": 2
+                    },
+                    "lastFailedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "lastReason": {
+                        "type": "string",
+                        "enum": [
+                            "customer_absent",
+                            "address_closed",
+                            "rejected",
+                            "other"
+                        ]
+                    },
+                    "lastReasonLabel": {
+                        "type": "string",
+                        "example": "El cliente no estaba"
+                    },
+                    "lastNote": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "lastDeliveryKind": {
+                        "type": "string",
+                        "enum": [
+                            "single",
+                            "express",
+                            "route_sheet"
+                        ]
+                    },
+                    "lastDistanceMeters": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "lastOutOfRange": {
+                        "type": "boolean"
+                    },
+                    "customerName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "customerPhone": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "address": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "driverName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "scheduledDate": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "timeSlotId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "timeSlotName": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "windowStart": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "windowEnd": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 15000
+                    },
+                    "paymentMethod": {
+                        "type": "string",
+                        "enum": [
+                            "cash",
+                            "mercadopago",
+                            "transfer",
+                            "account"
+                        ],
+                        "example": "cash"
+                    },
+                    "paymentStatus": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "paid",
+                            "failed",
+                            "unpaid",
+                            "written_off"
+                        ],
+                        "example": "pending"
+                    }
+                },
+                "required": [
+                    "orderId",
+                    "orderStatus",
+                    "deliveryMode",
+                    "revisitStatus",
+                    "failedVisitCount",
+                    "lastFailedAt",
+                    "lastReason",
+                    "lastReasonLabel",
+                    "lastNote",
+                    "lastDeliveryKind",
+                    "lastDistanceMeters",
+                    "lastOutOfRange",
+                    "customerName",
+                    "customerPhone",
+                    "address",
+                    "driverName",
+                    "scheduledDate",
+                    "timeSlotId",
+                    "timeSlotName",
+                    "windowStart",
+                    "windowEnd",
+                    "total",
+                    "paymentMethod",
+                    "paymentStatus"
+                ]
+            },
+            "FailedVisitOrdersPageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FailedVisitOrderDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 3
+                    },
+                    "limit": {
+                        "type": "number",
+                        "example": 20
+                    },
+                    "offset": {
+                        "type": "number",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "data",
+                    "total",
+                    "limit",
+                    "offset"
+                ]
+            },
             "RepurchaseCustomerRefDto": {
                 "type": "object",
                 "properties": {
@@ -88132,105 +89475,6 @@
                 "required": [
                     "question"
                 ]
-            },
-            "DeliveryConfirmationDto": {
-                "type": "object",
-                "properties": {
-                    "confirmedAt": {
-                        "format": "date-time",
-                        "type": "string",
-                        "description": "Hora de la base al confirmar"
-                    },
-                    "confirmedByRole": {
-                        "type": "string",
-                        "enum": [
-                            "delivery",
-                            "admin",
-                            "super_admin"
-                        ],
-                        "nullable": true
-                    },
-                    "confirmedByUserId": {
-                        "type": "string",
-                        "format": "uuid",
-                        "nullable": true,
-                        "description": "Usuario que confirmó (el chofer o el admin). Sólo en las respuestas al personal del panel; para el cliente y el chofer, `null`"
-                    },
-                    "latitude": {
-                        "type": "number",
-                        "nullable": true,
-                        "description": "Latitud del chofer al confirmar; null si confirmó un admin"
-                    },
-                    "longitude": {
-                        "type": "number",
-                        "nullable": true
-                    },
-                    "accuracyMeters": {
-                        "type": "number",
-                        "nullable": true,
-                        "description": "Precisión del GPS, en metros"
-                    },
-                    "distanceMeters": {
-                        "type": "number",
-                        "nullable": true,
-                        "description": "Metros entre el chofer y el domicilio al confirmar"
-                    },
-                    "outOfRange": {
-                        "type": "boolean",
-                        "description": "Confirmó más lejos del domicilio que el radio de llegada de la distribuidora (no se rechaza: se marca)"
-                    }
-                },
-                "required": [
-                    "confirmedAt",
-                    "confirmedByRole",
-                    "confirmedByUserId",
-                    "latitude",
-                    "longitude",
-                    "accuracyMeters",
-                    "distanceMeters",
-                    "outOfRange"
-                ]
-            },
-            "ConfirmDeliveryV3Dto": {
-                "type": "object",
-                "properties": {
-                    "code": {
-                        "type": "string",
-                        "minLength": 6,
-                        "maxLength": 6,
-                        "pattern": "^\\d{6}$",
-                        "example": "482913",
-                        "description": "Código de 6 dígitos que el cliente ve en su app. Obligatorio para el chofer: si no tiene 6 dígitos responde 400 `DELIVERY_CODE_FORMATO` y no cuenta como intento (el formato lo valida el caso de uso, para devolver ese `code`). Para el admin es opcional e informativo: no se compara ni frena la entrega, que sale con `reason`."
-                    },
-                    "latitude": {
-                        "type": "number",
-                        "example": -27.3671,
-                        "minimum": -90,
-                        "maximum": 90,
-                        "description": "Latitud del chofer al confirmar. Obligatoria para el chofer."
-                    },
-                    "longitude": {
-                        "type": "number",
-                        "example": -55.8961,
-                        "minimum": -180,
-                        "maximum": 180,
-                        "description": "Longitud del chofer al confirmar. Obligatoria para el chofer."
-                    },
-                    "accuracyMeters": {
-                        "type": "number",
-                        "example": 12.5,
-                        "minimum": 0,
-                        "maximum": 10000,
-                        "description": "Precisión del GPS, en metros."
-                    },
-                    "reason": {
-                        "type": "string",
-                        "minLength": 10,
-                        "maxLength": 500,
-                        "description": "Motivo de la entrega. Obligatorio SIEMPRE que confirma un admin o super admin (10 a 500 caracteres; 400 si falta o es corto), mande o no el `code`; el chofer no lo manda.",
-                        "example": "El cliente no tiene celular: confirmó por teléfono"
-                    }
-                }
             }
         }
     }

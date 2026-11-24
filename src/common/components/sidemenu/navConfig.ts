@@ -28,6 +28,7 @@ import {
   CalendarClock,
   CalendarOff,
   CalendarDays,
+  CalendarX2,
   ChartLine,
   ClipboardList,
   Cylinder,
@@ -135,6 +136,7 @@ export const NAV_SECTIONS: NavSection[] = [
         module: 'route_planning',
       },
       { title: 'Reservas', path: '/reservations', icon: CalendarDays },
+      { title: 'Visitas fallidas', path: '/failed-visits', icon: CalendarX2 },
     ],
   },
   {
