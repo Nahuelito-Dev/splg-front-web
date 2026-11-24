@@ -1,20 +1,20 @@
 import { RankBarsChart } from '../../../common/components/ui';
-import type { VentasPorChofer } from '../../../services/api/types';
-import { useSalesByDriver } from '../../../services/queries/reports';
+import type { DriverSalesRow } from '../../../services/api/reports';
+import { useReportsDriverSales } from '../../../services/queries/reports';
 import type { DayRange } from '../../../utils/dateRange';
 import { formatCurrency, formatNumber } from '../../../utils/format';
 import { ReportSection } from './ReportSection';
 import type { ReportColumn } from './ReportTable';
 
-const nameOf = (row: VentasPorChofer) => row.driverName ?? 'Sin nombre';
+const nameOf = (row: DriverSalesRow) => row.driverName ?? 'Sin nombre';
 
 export const DriverSales = ({ range }: { range: DayRange }) => {
-  const { data: report, isLoading, error, refetch } = useSalesByDriver(range);
+  const { data: report, isLoading, error, refetch } = useReportsDriverSales(range);
   // El back manda las filas de mayor a menor venta y los totales: la tabla y el gráfico muestran el mismo ranking.
   const data = report?.rows ?? [];
   const totals = report?.totals;
 
-  const columns: ReportColumn<VentasPorChofer>[] = [
+  const columns: ReportColumn<DriverSalesRow>[] = [
     { header: 'Chofer', render: (r) => <span className="font-medium">{nameOf(r)}</span>, csv: nameOf },
     {
       header: 'Pedidos',

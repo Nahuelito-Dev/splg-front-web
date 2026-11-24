@@ -1,7 +1,7 @@
 import { PackageCheck, Receipt, ShoppingBag, Wallet } from 'lucide-react';
 import { ErrorState, KpiCard, KpiGrid } from '../../../common/components/ui';
 import { useOrders } from '../../../services/queries/orders';
-import { useSalesSummary } from '../../../services/queries/reports';
+import { useReportsSummary } from '../../../services/queries/reports';
 import { previousRange, type DayRange } from '../../../utils/dateRange';
 import { formatCurrency, formatNumber } from '../../../utils/format';
 import { variationPill } from './variation';
@@ -13,7 +13,7 @@ const ONE = { page: 0, pageSize: 1 };
  * creados en cada uno (del listado).
  */
 const usePeriodTotals = (range: DayRange) => {
-  const summary = useSalesSummary(range);
+  const summary = useReportsSummary(range);
   const orders = useOrders(ONE, range);
   const before = useOrders(ONE, previousRange(range));
   const now = summary.data?.current;

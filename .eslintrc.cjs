@@ -11,7 +11,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended-type-checked',
     'plugin:react-hooks/recommended',
   ],
-  ignorePatterns: ['dist', '.eslintrc.cjs', 'scripts', 'src/services/api/schema.d.ts', 'vite.config.ts', 'tailwind.config.js', 'postcss.config.js'],
+  ignorePatterns: ['dist', '.eslintrc.cjs', 'scripts', 'src/services/api/schema.d.ts', 'src/services/api/gql', 'vite.config.ts', 'tailwind.config.js', 'postcss.config.js'],
   parser: '@typescript-eslint/parser',
   parserOptions: { project: ['./tsconfig.json'], tsconfigRootDir: __dirname },
   plugins: ['react-refresh'],

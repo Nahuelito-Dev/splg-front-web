@@ -107,6 +107,19 @@ export function toApiError(error: unknown): ApiError {
   return new ApiError(null, ['Error inesperado']);
 }
 
+/** Un error de la API GraphQL: el texto y, en `extensions`, el `code` y el estado HTTP equivalente. */
+export interface GraphqlErrorBody {
+  message: string;
+  extensions?: { code?: unknown; statusCode?: unknown };
+}
+
+/** Convierte un error de la API GraphQL en el mismo ApiError que un error REST con ese estado y `code`. */
+export function apiErrorFromGraphql({ message, extensions }: GraphqlErrorBody): ApiError {
+  const status = typeof extensions?.statusCode === 'number' ? extensions.statusCode : null;
+  const code = typeof extensions?.code === 'string' ? extensions.code : null;
+  return new ApiError(status, friendly(status, [message], code), code);
+}
+
 /** El mensaje para mostrarle al usuario. */
 export const errorMessage = (error: unknown): string => toApiError(error).messages.join('. ');
 
