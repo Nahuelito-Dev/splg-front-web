@@ -9,6 +9,7 @@ import {
   getUnpaidTotal,
   getSalesEvolution,
   getSalesSummary,
+  getVehicleUtilization,
   type ReportsDateRange,
   type SalesSummaryParams,
   type SalesEvolutionParams,
@@ -82,3 +83,10 @@ export const useReportsSummary = (range: ReportsDateRange) => useReportsOverview
 
 /** Ventas por chofer, de mayor a menor, con los totales del back (GraphQL `salesByDriver`). */
 export const useReportsDriverSales = (range: ReportsDateRange) => useReportsOverview(range, pickDriverSales);
+
+export const useVehicleUtilization = (range: ReportsDateRange, enabled = true) =>
+  useQuery({
+    queryKey: keys.list({ report: 'vehicle-utilization', ...range }),
+    queryFn: () => getVehicleUtilization(range),
+    enabled,
+  });

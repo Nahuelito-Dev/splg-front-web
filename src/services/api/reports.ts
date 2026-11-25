@@ -15,6 +15,36 @@ import type {
 
 /** Los informes con totales sólo existen en la v2 de la API. */
 const v2 = { baseURL: env.apiUrlV2 };
+const v3 = { baseURL: env.apiUrlV3 };
+
+// TODO tipos generados: reemplazar al regenerar OpenAPI desde /docs-json.
+export interface VehicleUtilizationCosts {
+  fuel: number;
+  maintenance: number;
+  insurance: number;
+  other: number;
+  total: number;
+}
+
+export interface VehicleUtilizationRow {
+  vehicleId: string;
+  plate: string | null;
+  name: string | null;
+  model: string | null;
+  photo: string | null;
+  daysInUse: number;
+  km: number;
+  deliveries: number;
+  insuranceEstimated: boolean;
+  costs: VehicleUtilizationCosts;
+  costPerDelivery: number | null;
+  costPerKm: number | null;
+}
+
+export interface VehicleUtilizationReport {
+  rows: VehicleUtilizationRow[];
+  totals: Omit<VehicleUtilizationRow, 'vehicleId' | 'plate' | 'name' | 'model' | 'photo'> & { vehicles: number };
+}
 
 export interface ReportsDateRange {
   /** YYYY-MM-DD. Sin rango, el back usa "hoy 00:00 hasta ahora". */
@@ -69,6 +99,15 @@ export const getSalesSummary = async (range: SalesSummaryParams): Promise<Compar
 /** GET /v2/reports/unpaid-total: pedidos con el cobro impago y lo adeudado en total. */
 export const getUnpaidTotal = async (): Promise<Impagos> => {
   const { data } = await http.get<Impagos>('/reports/unpaid-total', v2);
+  return data;
+};
+
+/** GET /v3/reports/vehicle-utilization: uso y costos de cada vehículo del período. */
+export const getVehicleUtilization = async (range: ReportsDateRange): Promise<VehicleUtilizationReport> => {
+  const { data } = await http.get<VehicleUtilizationReport>('/reports/vehicle-utilization', {
+    ...v3,
+    params: dateQuery(range),
+  });
   return data;
 };
 

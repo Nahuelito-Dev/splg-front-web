@@ -18,6 +18,8 @@ import { ProductSales } from './components/ProductSales';
 import { SalesTrend } from './components/SalesTrend';
 import type { Granularity } from './components/salesSeries';
 import { SummaryCards } from './components/SummaryCards';
+import { VehicleUtilization } from './components/VehicleUtilization';
+import { usePermiso } from '../../hooks';
 
 const GRANULARITIES: Granularity[] = ['day', 'week', 'month'];
 
@@ -65,12 +67,14 @@ export const Reports = () => {
   // El PDF es de una distribuidora; sin «Ver como» la pantalla muestra cifras globales que el PDF no puede repetir.
   const { operateHint } = usePermissions();
   const { range, preset, granularity, setRange, setGranularity } = useReportsParams();
+  // Los costos de la flota son de flota.ver, igual que su tablero (el back responde 403 sin ese permiso).
+  const fleetView = usePermiso('flota.ver');
 
   return (
     <PageContainer stack>
       <PageHeader
         title="Reportes"
-        description={`Ventas cobradas del ${formatDay(range.from)} al ${formatDay(range.to)}: el efectivo cuenta recién cuando el chofer confirma el cobro o un administrador lo registra, y la transferencia, cuando un administrador confirma que llegó.`}
+        description={`Ventas cobradas y utilización de flota del ${formatDay(range.from)} al ${formatDay(range.to)}: el efectivo cuenta recién cuando el chofer confirma el cobro o un administrador lo registra, y la transferencia, cuando un administrador confirma que llegó.`}
         actions={
           <>
             <DateRangePicker value={range} preset={preset} onChange={setRange} />
@@ -85,6 +89,7 @@ export const Reports = () => {
       <SummaryCards range={range} />
       <CollectionsCards range={range} />
       <SalesTrend range={range} granularity={granularity} onGranularityChange={setGranularity} />
+      {fleetView.allowed && <VehicleUtilization range={range} />}
       <ProductSales range={range} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <DriverSales range={range} />
