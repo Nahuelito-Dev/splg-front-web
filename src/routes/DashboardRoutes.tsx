@@ -6,6 +6,7 @@ import { RouteProgressBar } from '../common/layout/RouteProgressBar';
 import { LoadingState } from '../common/components/ui';
 import { RequireCompanyAdmin, RequireCompanyScope } from '../common/components/RequireCompanyScope';
 import { RequireModule } from '../common/components/RequireModule';
+import { RequirePermiso } from '../common/components/RequirePermiso';
 import { RequireSuperAdmin } from '../common/components/RequireSuperAdmin';
 import { lazyPage } from './lazyPage';
 import { CheckingAuth } from '../common/components/Spinner';
@@ -96,6 +97,7 @@ const UnpaidCollections = lazyPage(() => import('../pages/UnpaidCollections/Unpa
 const Claims = lazyPage(() => import('../pages/Claims/Claims'), 'Claims');
 const Notifications = lazyPage(() => import('../pages/Notifications/Notifications'), 'Notifications');
 const FailedVisits = lazyPage(() => import('../pages/FailedVisits/FailedVisits'), 'FailedVisits');
+const SentNotifications = lazyPage(() => import('../pages/SentNotifications/SentNotifications'), 'SentNotifications');
 const Incidents = lazyPage(() => import('../pages/Incidents/Incidents'), 'Incidents');
 const CoverageZones = lazyPage(() => import('../pages/CoverageZones/CoverageZones'), 'CoverageZones');
 const Reservations = lazyPage(() => import('../pages/Reservations/Reservations'), 'Reservations');
@@ -252,6 +254,9 @@ export const DashboardRoutes = () => {
           <Route element={<RequireCompanyScope />}>
             {/* La auditoría de datos es de una empresa: la plataforma tiene la suya en `/platform/activity`. */}
             <Route path="audit" element={<Audit />} />
+            <Route element={<RequirePermiso permiso="auditoria.ver" />}>
+              <Route path="sent-notifications" element={<SentNotifications />} />
+            </Route>
             <Route path="customers" element={<Customers />} />
             <Route element={<RequireModule module="repurchase" />}>
               <Route path="customers/repurchase" element={<Repurchase />} />

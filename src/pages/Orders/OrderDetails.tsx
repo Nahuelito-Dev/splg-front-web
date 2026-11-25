@@ -14,6 +14,7 @@ import { OrderCashSettlementCard } from './components/details/OrderCashSettlemen
 import { OrderDepositCard } from './components/details/OrderDepositCard';
 import { OrderDetailsToolbar } from './components/details/OrderDetailsToolbar';
 import { OrderFailedVisits } from './components/details/OrderFailedVisits';
+import { OrderNotifications } from './components/details/OrderNotifications';
 import { OrderHistoryCard } from './components/details/OrderHistoryCard';
 import { OrderIncidents } from './components/details/OrderIncidents';
 import { OrderItemsSummary } from './components/details/OrderItemsSummary';
@@ -93,6 +94,7 @@ export const OrderDetails = () => {
                 <OrderCashSettlementCard orderId={order.order_id} />
               )}
               <OrderFailedVisits order={order} />
+              <OrderNotifications orderId={order.order_id} />
               <OrderHistoryCard orderId={order.order_id} />
               <CylinderLinksCard
                 title="Envases"

@@ -30895,6 +30895,189 @@
                 ]
             }
         },
+        "/api/v3/notification-log": {
+            "get": {
+                "description": "Los más nuevos primero, paginado. Filtros: `channel`, `status` (`sent`, `failed`, `skipped`), `type`, `from`/`to` (días, hora de Argentina), `term` (destinatario enmascarado o asunto) y `orderId`. Siempre dentro de una distribuidora: el admin ve los de la suya; el super admin, los de la empresa de su sesión de soporte (sin sesión, 403; no hay vista global). Nunca devuelve el correo ni el token completos ni el id del destinatario.",
+                "operationId": "NotificationLogController_listar",
+                "parameters": [
+                    {
+                        "name": "channel",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "push",
+                                "email"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "sent",
+                                "failed",
+                                "skipped"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "required": false,
+                        "in": "query",
+                        "description": "Tipo exacto del aviso",
+                        "schema": {
+                            "example": "ORDER_CONFIRMATION",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde este día (inclusive, hora de Argentina)",
+                        "schema": {
+                            "format": "date",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta este día (inclusive, hora de Argentina)",
+                        "schema": {
+                            "format": "date",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "term",
+                        "required": false,
+                        "in": "query",
+                        "description": "Parte del destinatario enmascarado o del asunto/título",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "orderId",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "maximum": 100,
+                            "default": 20,
+                            "type": "number"
+                        }
+                    },
+                    {
+                        "name": "offset",
+                        "required": false,
+                        "in": "query",
+                        "schema": {
+                            "default": 0,
+                            "type": "number"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotificationLogPageDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Filtro inválido: `channel` o `status` fuera del enum, `from`/`to` que no son fecha, `orderId` que no es UUID, `limit` fuera de 1 a 100 u `offset` negativo"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Avisos enviados (push y correo)",
+                "tags": [
+                    "Avisos enviados (v3)"
+                ]
+            }
+        },
+        "/api/v3/orders/{id}/notifications": {
+            "get": {
+                "description": "Push y correos que se mandaron por este pedido, del más nuevo al más viejo (hasta 200). Con el destino enmascarado. Pide el mismo permiso que el listado (`auditoria.ver`); el super admin entra con sesión de soporte de la empresa.",
+                "operationId": "OrderNotificationsController_deUnPedido",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "required": true,
+                        "in": "path",
+                        "description": "Order UUID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/NotificationLogItemDto"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El id no es un UUID"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin"
+                    },
+                    "404": {
+                        "description": "Pedido inexistente o de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Los avisos enviados de un pedido",
+                "tags": [
+                    "Avisos enviados (v3)"
+                ]
+            }
+        },
         "/api/v1/reports/sales-by-driver": {
             "get": {
                 "description": "Días en hora argentina (America/Argentina/Buenos_Aires); `to` es inclusivo. Cuenta pedidos entregados en el rango, por fecha de entrega (el listado de pedidos filtra por fecha de creación). Suma el total del pedido (con recargos) de los pedidos entregados. Cuenta sólo lo COBRADO: `paymentStatus: paid` (cualquier medio); el efectivo pendiente de confirmar, las transferencias sin confirmar o no recibidas, los impagos y las pérdidas no suman (ver `GET /reports/collections`).",
@@ -73888,6 +74071,106 @@
                     "errorFingerprint",
                     "traceId",
                     "notifications"
+                ]
+            },
+            "NotificationLogItemDto": {
+                "type": "object",
+                "properties": {
+                    "notificationLogId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "channel": {
+                        "type": "string",
+                        "enum": [
+                            "push",
+                            "email"
+                        ]
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "ORDER_CONFIRMATION",
+                        "description": "Tipo del aviso; `UNKNOWN` si quien envió no lo informó"
+                    },
+                    "recipientMasked": {
+                        "type": "string",
+                        "example": "n***@dominio.com",
+                        "description": "Correo enmascarado, o `***` más los últimos 6 del token"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Asunto del correo o título del push"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "sent",
+                            "failed",
+                            "skipped"
+                        ]
+                    },
+                    "error": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "Motivo corto cuando `status` es `failed` o `skipped`"
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                    },
+                    "distributorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "`null` en los avisos que no se pudieron ubicar en una empresa"
+                    }
+                },
+                "required": [
+                    "notificationLogId",
+                    "createdAt",
+                    "channel",
+                    "type",
+                    "recipientMasked",
+                    "subject",
+                    "status",
+                    "error",
+                    "orderId",
+                    "distributorId"
+                ]
+            },
+            "NotificationLogPageDto": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/NotificationLogItemDto"
+                        }
+                    },
+                    "total": {
+                        "type": "number",
+                        "example": 120
+                    },
+                    "limit": {
+                        "type": "number",
+                        "example": 20
+                    },
+                    "offset": {
+                        "type": "number",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "data",
+                    "total",
+                    "limit",
+                    "offset"
                 ]
             },
             "VentasPorChoferDto": {

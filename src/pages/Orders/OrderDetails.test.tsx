@@ -20,6 +20,7 @@ vi.mock('./components/details/OrderItemsSummary', () => ({ OrderItemsSummary: ()
 vi.mock('./components/details/OrderHistoryCard', () => ({ OrderHistoryCard: () => <div>Historial</div> }));
 vi.mock('./components/details/OrderSideCards', () => ({ OrderSideCards: () => <div>Laterales</div> }));
 vi.mock('./components/details/OrderIncidents', () => ({ OrderIncidents: () => <div>Incidencias</div> }));
+vi.mock('./components/details/OrderNotifications', () => ({ OrderNotifications: () => <div>Avisos</div> }));
 vi.mock('../PhysicalCylinders/components/CylinderLinksCard', () => ({ CylinderLinksCard: () => <div>Envases</div> }));
 vi.mock('./components/details/OrderCashSettlementCard', () => ({
   OrderCashSettlementCard: ({ orderId }: { orderId: string }) => <div>Cobro en caja de {orderId}</div>,

@@ -7470,6 +7470,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v3/notification-log': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Avisos enviados (push y correo)
+     * @description Los más nuevos primero, paginado. Filtros: `channel`, `status` (`sent`, `failed`, `skipped`), `type`, `from`/`to` (días, hora de Argentina), `term` (destinatario enmascarado o asunto) y `orderId`. Siempre dentro de una distribuidora: el admin ve los de la suya; el super admin, los de la empresa de su sesión de soporte (sin sesión, 403; no hay vista global). Nunca devuelve el correo ni el token completos ni el id del destinatario.
+     */
+    get: operations['NotificationLogController_listar'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/orders/{id}/notifications': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Los avisos enviados de un pedido
+     * @description Push y correos que se mandaron por este pedido, del más nuevo al más viejo (hasta 200). Con el destino enmascarado. Pide el mismo permiso que el listado (`auditoria.ver`); el super admin entra con sesión de soporte de la empresa.
+     */
+    get: operations['OrderNotificationsController_deUnPedido'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/reports/sales-by-driver': {
     parameters: {
       query?: never;
@@ -23250,6 +23290,46 @@ export interface components {
       traceId: string | null;
       /** @description Avisos de la bandeja con la misma traza */
       notifications: components['schemas']['ProcessRunNotificationDto'][];
+    };
+    NotificationLogItemDto: {
+      /** Format: uuid */
+      notificationLogId: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** @enum {string} */
+      channel: 'push' | 'email';
+      /**
+       * @description Tipo del aviso; `UNKNOWN` si quien envió no lo informó
+       * @example ORDER_CONFIRMATION
+       */
+      type: string;
+      /**
+       * @description Correo enmascarado, o `***` más los últimos 6 del token
+       * @example n***@dominio.com
+       */
+      recipientMasked: string;
+      /** @description Asunto del correo o título del push */
+      subject: string | null;
+      /** @enum {string} */
+      status: 'sent' | 'failed' | 'skipped';
+      /** @description Motivo corto cuando `status` es `failed` o `skipped` */
+      error: string | null;
+      /** Format: uuid */
+      orderId: string | null;
+      /**
+       * Format: uuid
+       * @description `null` en los avisos que no se pudieron ubicar en una empresa
+       */
+      distributorId: string | null;
+    };
+    NotificationLogPageDto: {
+      data: components['schemas']['NotificationLogItemDto'][];
+      /** @example 120 */
+      total: number;
+      /** @example 20 */
+      limit: number;
+      /** @example 0 */
+      offset: number;
     };
     VentasPorChoferDto: {
       /**
@@ -56173,6 +56253,110 @@ export interface operations {
         content?: never;
       };
       /** @description No existe esa corrida o ya se depuró por antigüedad (`PROCESS_RUN_NOT_FOUND`) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  NotificationLogController_listar: {
+    parameters: {
+      query?: {
+        channel?: 'push' | 'email';
+        status?: 'sent' | 'failed' | 'skipped';
+        /** @description Tipo exacto del aviso */
+        type?: string;
+        /** @description Desde este día (inclusive, hora de Argentina) */
+        from?: string;
+        /** @description Hasta este día (inclusive, hora de Argentina) */
+        to?: string;
+        /** @description Parte del destinatario enmascarado o del asunto/título */
+        term?: string;
+        orderId?: string;
+        limit?: number;
+        offset?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NotificationLogPageDto'];
+        };
+      };
+      /** @description Filtro inválido: `channel` o `status` fuera del enum, `from`/`to` que no son fecha, `orderId` que no es UUID, `limit` fuera de 1 a 100 u `offset` negativo */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  OrderNotificationsController_deUnPedido: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Order UUID */
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['NotificationLogItemDto'][];
+        };
+      };
+      /** @description El id no es un UUID */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Requiere rol: admin, super_admin. Super admin: sin sesión de soporte en lo de una empresa (`SUPPORT_SESSION_REQUIRED`), escribiendo en modo soporte (`SUPPORT_READ_ONLY`) o con una sesión pendiente, vencida o revocada en `X-Support-Session` (`SUPPORT_SESSION_ENDED`), o un archivo o exporte sin ese alcance en la sesión (`SUPPORT_SCOPE_REQUIRED`). En una empresa propia de la plataforma (`X-Distributor`) opera sin sesión, como un admin */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Pedido inexistente o de otra distribuidora */
       404: {
         headers: {
           [name: string]: unknown;
