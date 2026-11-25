@@ -74,7 +74,7 @@ export const Reports = () => {
     <PageContainer stack>
       <PageHeader
         title="Reportes"
-        description={`Ventas cobradas y utilización de flota del ${formatDay(range.from)} al ${formatDay(range.to)}: el efectivo cuenta recién cuando el chofer confirma el cobro o un administrador lo registra, y la transferencia, cuando un administrador confirma que llegó.`}
+        description={`Ventas cobradas y utilización de flota del ${formatDay(range.from)} al ${formatDay(range.to)}: el efectivo cuenta recién cuando el chofer confirma el cobro o un administrador lo registra.`}
         actions={
           <>
             <DateRangePicker value={range} preset={preset} onChange={setRange} />

@@ -10,41 +10,13 @@ import type {
   Impagos,
   VentasPorChoferV2,
   VentasPorMedioDePagoV2,
+  VehicleUtilizationReport,
   VentasPorProductoV2,
 } from './types';
 
 /** Los informes con totales sólo existen en la v2 de la API. */
 const v2 = { baseURL: env.apiUrlV2 };
 const v3 = { baseURL: env.apiUrlV3 };
-
-// TODO tipos generados: reemplazar al regenerar OpenAPI desde /docs-json.
-export interface VehicleUtilizationCosts {
-  fuel: number;
-  maintenance: number;
-  insurance: number;
-  other: number;
-  total: number;
-}
-
-export interface VehicleUtilizationRow {
-  vehicleId: string;
-  plate: string | null;
-  name: string | null;
-  model: string | null;
-  photo: string | null;
-  daysInUse: number;
-  km: number;
-  deliveries: number;
-  insuranceEstimated: boolean;
-  costs: VehicleUtilizationCosts;
-  costPerDelivery: number | null;
-  costPerKm: number | null;
-}
-
-export interface VehicleUtilizationReport {
-  rows: VehicleUtilizationRow[];
-  totals: Omit<VehicleUtilizationRow, 'vehicleId' | 'plate' | 'name' | 'model' | 'photo'> & { vehicles: number };
-}
 
 export interface ReportsDateRange {
   /** YYYY-MM-DD. Sin rango, el back usa "hoy 00:00 hasta ahora". */

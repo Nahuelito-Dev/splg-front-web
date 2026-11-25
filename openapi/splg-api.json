@@ -31585,6 +31585,80 @@
                 ]
             }
         },
+        "/api/v3/reports/vehicle-utilization": {
+            "get": {
+                "description": "Días con uso, kilómetros, entregas y costos del vehículo. El rango usa días argentinos y `to` es inclusivo.",
+                "operationId": "ReportsV3Controller_utilization",
+                "parameters": [
+                    {
+                        "name": "from",
+                        "required": false,
+                        "in": "query",
+                        "description": "Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.",
+                        "schema": {
+                            "example": "2026-09-01",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "required": false,
+                        "in": "query",
+                        "description": "Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy.",
+                        "schema": {
+                            "example": "2026-09-30",
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "vehicleId",
+                        "required": false,
+                        "in": "query",
+                        "description": "Vehículo a informar. Si no viene, se informan todos.",
+                        "schema": {
+                            "format": "uuid",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VehicleUtilizationReportDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Fecha inválida, rango invertido o superior al máximo permitido"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`)"
+                    },
+                    "404": {
+                        "description": "Vehículo no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    },
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Utilización y costos por vehículo",
+                "tags": [
+                    "Reports (v3)"
+                ]
+            }
+        },
         "/api/v2/orders/{id}/remito.pdf": {
             "get": {
                 "description": "Ítems, cantidades, precios, recargos, total, cliente, dirección, chofer, vehículo y estado del pago. El código de entrega sólo sale para admin y super admin. El cliente baja sólo los suyos; el personal, los de su distribuidora (el super admin con `X-Distributor`). Lo ajeno responde 404.",
@@ -74187,6 +74261,156 @@
                     "day",
                     "deliveredOrders",
                     "totalAmount"
+                ]
+            },
+            "VehicleUtilizationCostsDto": {
+                "type": "object",
+                "properties": {
+                    "fuel": {
+                        "type": "number"
+                    },
+                    "maintenance": {
+                        "type": "number"
+                    },
+                    "insurance": {
+                        "type": "number"
+                    },
+                    "other": {
+                        "type": "number",
+                        "description": "Multas y siniestros netos del vehículo"
+                    },
+                    "total": {
+                        "type": "number"
+                    }
+                },
+                "required": [
+                    "fuel",
+                    "maintenance",
+                    "insurance",
+                    "other",
+                    "total"
+                ]
+            },
+            "VehicleUtilizationRowDto": {
+                "type": "object",
+                "properties": {
+                    "vehicleId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "plate": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "model": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "photo": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "daysInUse": {
+                        "type": "number"
+                    },
+                    "km": {
+                        "type": "number"
+                    },
+                    "deliveries": {
+                        "type": "number"
+                    },
+                    "insuranceEstimated": {
+                        "type": "boolean"
+                    },
+                    "costs": {
+                        "$ref": "#/components/schemas/VehicleUtilizationCostsDto"
+                    },
+                    "costPerDelivery": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "costPerKm": {
+                        "type": "number",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "vehicleId",
+                    "plate",
+                    "name",
+                    "model",
+                    "photo",
+                    "daysInUse",
+                    "km",
+                    "deliveries",
+                    "insuranceEstimated",
+                    "costs",
+                    "costPerDelivery",
+                    "costPerKm"
+                ]
+            },
+            "VehicleUtilizationTotalsDto": {
+                "type": "object",
+                "properties": {
+                    "vehicles": {
+                        "type": "number"
+                    },
+                    "daysInUse": {
+                        "type": "number"
+                    },
+                    "km": {
+                        "type": "number"
+                    },
+                    "deliveries": {
+                        "type": "number"
+                    },
+                    "insuranceEstimated": {
+                        "type": "boolean",
+                        "description": "Al menos un seguro se calculó con una vigencia estimada"
+                    },
+                    "costs": {
+                        "$ref": "#/components/schemas/VehicleUtilizationCostsDto"
+                    },
+                    "costPerDelivery": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "costPerKm": {
+                        "type": "number",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "vehicles",
+                    "daysInUse",
+                    "km",
+                    "deliveries",
+                    "insuranceEstimated",
+                    "costs",
+                    "costPerDelivery",
+                    "costPerKm"
+                ]
+            },
+            "VehicleUtilizationReportDto": {
+                "type": "object",
+                "properties": {
+                    "rows": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VehicleUtilizationRowDto"
+                        }
+                    },
+                    "totals": {
+                        "$ref": "#/components/schemas/VehicleUtilizationTotalsDto"
+                    }
+                },
+                "required": [
+                    "rows",
+                    "totals"
                 ]
             },
             "RoutePointDto": {

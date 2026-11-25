@@ -10,7 +10,7 @@ vi.mock('../../../common/components/ui', async (importOriginal) => ({
 }));
 
 import { VehicleUtilization } from './VehicleUtilization';
-import type { VehicleUtilizationReport, VehicleUtilizationRow } from '../../../services/api/reports';
+import type { VehicleUtilizationReport, VehicleUtilizationRow } from '../../../services/api/types';
 
 afterEach(() => {
   cleanup();
@@ -57,12 +57,14 @@ const respond = (data: VehicleUtilizationReport) =>
   reports.useVehicleUtilization.mockReturnValue({ data, isLoading: false, error: null, refetch: vi.fn() });
 
 describe('VehicleUtilization', () => {
-  it('muestra los totales calculados por el back, el gráfico y el detalle de costo por km', () => {
+  it('muestra los totales calculados por el back, el gráfico y el costo por km una sola vez, en su columna', () => {
     respond(report([row()]));
     render(<VehicleUtilization range={range} />);
     expect(screen.getByRole('heading', { name: 'Utilización por vehículo' })).toBeInTheDocument();
     expect(screen.getByText('AA123BB')).toBeInTheDocument();
-    expect(screen.getByText(/1,13\/km/)).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Costo/km' })).toBeInTheDocument();
+    expect(screen.getByText(/^\$\s?1,13$/)).toBeInTheDocument();
+    expect(screen.queryByText(/\d\/km$/)).not.toBeInTheDocument();
     expect(screen.getByText(/123\.456/)).toBeInTheDocument();
     expect(screen.getByTestId('vehicle-chart')).toBeInTheDocument();
   });
@@ -91,6 +93,7 @@ describe('VehicleUtilization', () => {
     render(<VehicleUtilization range={range} />);
     expect(screen.queryByText('Sin uso de vehículos en el período')).not.toBeInTheDocument();
     expect(screen.getByText('AA123BB')).toBeInTheDocument();
+    expect(screen.queryByText('Sin km')).not.toBeInTheDocument();
   });
 
   it('marca el seguro estimado en el detalle y en el total sólo si el back lo informa', () => {

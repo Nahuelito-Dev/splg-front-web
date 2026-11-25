@@ -7690,6 +7690,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v3/reports/vehicle-utilization': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Utilización y costos por vehículo
+     * @description Días con uso, kilómetros, entregas y costos del vehículo. El rango usa días argentinos y `to` es inclusivo.
+     */
+    get: operations['ReportsV3Controller_utilization'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/orders/{id}/remito.pdf': {
     parameters: {
       query?: never;
@@ -23344,6 +23364,44 @@ export interface components {
       deliveredOrders: number;
       /** @description Lo que había que cobrar de esos pedidos: el total menos la seña ya paga */
       totalAmount: number;
+    };
+    VehicleUtilizationCostsDto: {
+      fuel: number;
+      maintenance: number;
+      insurance: number;
+      /** @description Multas y siniestros netos del vehículo */
+      other: number;
+      total: number;
+    };
+    VehicleUtilizationRowDto: {
+      /** Format: uuid */
+      vehicleId: string;
+      plate: string | null;
+      name: string | null;
+      model: string | null;
+      photo: string | null;
+      daysInUse: number;
+      km: number;
+      deliveries: number;
+      insuranceEstimated: boolean;
+      costs: components['schemas']['VehicleUtilizationCostsDto'];
+      costPerDelivery: number | null;
+      costPerKm: number | null;
+    };
+    VehicleUtilizationTotalsDto: {
+      vehicles: number;
+      daysInUse: number;
+      km: number;
+      deliveries: number;
+      /** @description Al menos un seguro se calculó con una vigencia estimada */
+      insuranceEstimated: boolean;
+      costs: components['schemas']['VehicleUtilizationCostsDto'];
+      costPerDelivery: number | null;
+      costPerKm: number | null;
+    };
+    VehicleUtilizationReportDto: {
+      rows: components['schemas']['VehicleUtilizationRowDto'][];
+      totals: components['schemas']['VehicleUtilizationTotalsDto'];
     };
     RoutePointDto: {
       /** @example -34.6037 */
@@ -56603,6 +56661,60 @@ export interface operations {
       };
       /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver los reportes (`reportes.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ReportsV3Controller_utilization: {
+    parameters: {
+      query?: {
+        /** @description Desde (día en hora argentina), formato YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`. */
+        from?: string;
+        /** @description Hasta (día en hora argentina, inclusive), formato YYYY-MM-DD. Si no viene: igual a `from`, o hoy. */
+        to?: string;
+        /** @description Vehículo a informar. Si no viene, se informan todos. */
+        vehicleId?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['VehicleUtilizationReportDto'];
+        };
+      };
+      /** @description Fecha inválida, rango invertido o superior al máximo permitido */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver la flota (`flota.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Vehículo no encontrado */
+      404: {
         headers: {
           [name: string]: unknown;
         };

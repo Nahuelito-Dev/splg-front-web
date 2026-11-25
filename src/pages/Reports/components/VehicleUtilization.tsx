@@ -1,6 +1,6 @@
 import { Gauge } from 'lucide-react';
 import { IdentityCell, RankBarsChart } from '../../../common/components/ui';
-import type { VehicleUtilizationRow } from '../../../services/api/reports';
+import type { VehicleUtilizationRow } from '../../../services/api/types';
 import { useVehicleUtilization } from '../../../services/queries/reports';
 import type { DayRange } from '../../../utils/dateRange';
 import { formatCurrency, formatCurrencyExact, formatNumber } from '../../../utils/format';
@@ -53,14 +53,7 @@ export const VehicleUtilization = ({ range }: { range: DayRange }) => {
     {
       header: 'Costo total',
       numeric: true,
-      render: (row) => (
-        <div>
-          <p>{formatCurrency(row.costs.total)}</p>
-          <p className="text-xs font-normal text-muted">
-            {row.costPerKm === null ? 'Sin km' : `${formatCurrencyExact(row.costPerKm)}/km`}
-          </p>
-        </div>
-      ),
+      render: (row) => formatCurrency(row.costs.total),
       csv: (row) => row.costs.total,
       total: totals?.costs && (
         <>
