@@ -23935,7 +23935,7 @@
         },
         "/api/v2/dispatch/metrics": {
             "get": {
-                "description": "Pedidos despachados, ofertas por pedido, porcentaje de ofertas aceptadas, rechazadas y vencidas (sobre las ya resueltas), tiempo de respuesta del chofer y tiempo hasta asignar (mediana y p90, en segundos), pedidos que se quedaron sin chofer y los 5 choferes con mejor tasa de aceptación. El tiempo de respuesta sólo cuenta ofertas con respuesta registrada: las anteriores a esta función no la tienen. Por omisión, los últimos 30 días; el período puede ser de hasta 366 días. El super admin tiene que mandar `X-Distributor`.",
+                "description": "Pedidos despachados, ofertas por pedido, porcentaje de ofertas aceptadas, rechazadas y vencidas (sobre las ya resueltas), tiempo de respuesta del chofer y tiempo hasta asignar (mediana y p90, en segundos), pedidos que se quedaron sin chofer, los 5 choferes con mejor tasa de aceptación y, de los pedidos asignados en el período, cuántos se asignaron por despacho automático, asignación manual, hoja de ruta o lote (`asignacionPorMetodo`; los pedidos anteriores al registro del método van en `asignadosSinMetodo`). El tiempo de respuesta sólo cuenta ofertas con respuesta registrada: las anteriores a esta función no la tienen. Por omisión, los últimos 30 días; el período puede ser de hasta 366 días. El super admin tiene que mandar `X-Distributor`.",
                 "operationId": "DispatchMetricsController_obtener",
                 "parameters": [
                     {
@@ -66815,6 +66815,17 @@
                                 "$ref": "#/components/schemas/RevisitDeOrderDto"
                             }
                         ]
+                    },
+                    "assignmentMethod": {
+                        "type": "string",
+                        "enum": [
+                            "automatic",
+                            "manual_override",
+                            "route_sheet",
+                            "batch"
+                        ],
+                        "nullable": true,
+                        "description": "`automatic` (despacho automático), `manual_override` (asignación manual), `route_sheet` (hoja de ruta) o `batch` (lote de recorrido)"
                     }
                 },
                 "required": [
@@ -67836,6 +67847,17 @@
                             }
                         ]
                     },
+                    "assignmentMethod": {
+                        "type": "string",
+                        "enum": [
+                            "automatic",
+                            "manual_override",
+                            "route_sheet",
+                            "batch"
+                        ],
+                        "nullable": true,
+                        "description": "`automatic` (despacho automático), `manual_override` (asignación manual), `route_sheet` (hoja de ruta) o `batch` (lote de recorrido)"
+                    },
                     "alreadyResolved": {
                         "type": "boolean",
                         "example": false,
@@ -68397,6 +68419,35 @@
                     "reason"
                 ]
             },
+            "AsignacionPorMetodoDto": {
+                "type": "object",
+                "properties": {
+                    "method": {
+                        "type": "string",
+                        "enum": [
+                            "automatic",
+                            "manual_override",
+                            "route_sheet",
+                            "batch"
+                        ],
+                        "description": "`automatic` (despacho automático), `manual_override` (asignación manual), `route_sheet` (hoja de ruta), `batch` (lote de recorrido)"
+                    },
+                    "cantidad": {
+                        "type": "number",
+                        "example": 12
+                    },
+                    "porcentaje": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Sobre los pedidos asignados que tienen método, 0 a 100; null si ninguno lo tiene"
+                    }
+                },
+                "required": [
+                    "method",
+                    "cantidad",
+                    "porcentaje"
+                ]
+            },
             "TiempoEnSegundosDto": {
                 "type": "object",
                 "properties": {
@@ -68464,6 +68515,21 @@
                         "type": "string",
                         "format": "date-time"
                     },
+                    "pedidosAsignados": {
+                        "type": "number",
+                        "description": "Pedidos del período que hoy tienen chofer, por cualquier camino. Cuenta la asignación vigente: un pedido liberado no entra y uno reasignado cuenta con su último método (no es un historial)"
+                    },
+                    "asignadosSinMetodo": {
+                        "type": "number",
+                        "description": "De los asignados, los anteriores al registro del método (no se les inventa uno)"
+                    },
+                    "asignacionPorMetodo": {
+                        "description": "Siempre los cuatro métodos, aunque tengan 0",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AsignacionPorMetodoDto"
+                        }
+                    },
                     "pedidosDespachados": {
                         "type": "number",
                         "description": "Pedidos con al menos una oferta en el período"
@@ -68515,6 +68581,9 @@
                 "required": [
                     "from",
                     "to",
+                    "pedidosAsignados",
+                    "asignadosSinMetodo",
+                    "asignacionPorMetodo",
                     "pedidosDespachados",
                     "ofertasPorPedido",
                     "porcentajeAceptadas",

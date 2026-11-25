@@ -30,7 +30,7 @@ export const ORDER_SOCKET_EVENTS = {
 export type OrderSocketEventName = (typeof ORDER_SOCKET_EVENTS)[keyof typeof ORDER_SOCKET_EVENTS];
 
 /** Motivos por los que un pedido pendiente se queda sin chofer a quien ofrecerlo (`MotivoSinChoferes` del back). */
-export type NoDriversReason = 'no_drivers_in_range' | 'all_drivers_exhausted' | 'no_delivery_point';
+export type NoDriversReason = 'no_drivers_in_range' | 'all_drivers_exhausted' | 'no_delivery_point' | 'no_stock';
 
 /**
  * Evento que emite el DispatchOrchestratorService a los admins de la distribuidora cuando un pedido pendiente ya no

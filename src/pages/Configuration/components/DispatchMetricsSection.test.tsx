@@ -19,6 +19,14 @@ const metrics = (over: Record<string, unknown> = {}) => ({
   respuestaDelChofer: { mediana: 12, p90: 28 },
   hastaAsignar: { mediana: 95, p90: 240 },
   pedidosSinChofer: 3,
+  pedidosAsignados: 40,
+  asignadosSinMetodo: 8,
+  asignacionPorMetodo: [
+    { method: 'automatic', cantidad: 24, porcentaje: 75 },
+    { method: 'manual_override', cantidad: 4, porcentaje: 12.5 },
+    { method: 'route_sheet', cantidad: 3, porcentaje: 9.4 },
+    { method: 'batch', cantidad: 1, porcentaje: 3.1 },
+  ],
   topChoferes: [
     { driverId: 'd1', nombre: 'Ana Pérez', ofertas: 10, aceptadas: 9, tasaAceptacion: 90, medianaRespuestaSegundos: 8 },
     {
@@ -52,8 +60,40 @@ describe('DispatchMetricsSection', () => {
     expect(within(table).getByText('—')).toBeInTheDocument();
   });
 
+  it('muestra el porcentaje por método de asignación y avisa de los pedidos viejos sin método', () => {
+    state.query = ok(metrics());
+    render(<DispatchMetricsSection />);
+    const lista = screen.getByRole('list', { name: 'Pedidos asignados por método' });
+    expect(within(lista).getByText('Automático')).toBeInTheDocument();
+    expect(within(lista).getByText('75 %')).toBeInTheDocument();
+    expect(within(lista).getByText('24 pedidos')).toBeInTheDocument();
+    expect(within(lista).getByText('Hoja de ruta')).toBeInTheDocument();
+    expect(screen.getByText(/8 pedidos anteriores no tienen el método registrado/)).toBeInTheDocument();
+  });
+
+  it('si ningún pedido asignado tiene método, lo dice en vez de mostrar ceros', () => {
+    state.query = ok(
+      metrics({
+        pedidosAsignados: 5,
+        asignadosSinMetodo: 5,
+        asignacionPorMetodo: metrics().asignacionPorMetodo.map((m) => ({ ...m, cantidad: 0, porcentaje: null })),
+      }),
+    );
+    render(<DispatchMetricsSection />);
+    expect(screen.queryByRole('list', { name: 'Pedidos asignados por método' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Todavía no hay pedidos asignados con el método registrado/)).toBeInTheDocument();
+  });
+
   it('sin pedidos explica que todavía no hay datos', () => {
-    state.query = ok(metrics({ pedidosDespachados: 0, pedidosSinChofer: 0, topChoferes: [] }));
+    state.query = ok(
+      metrics({
+        pedidosDespachados: 0,
+        pedidosSinChofer: 0,
+        pedidosAsignados: 0,
+        asignadosSinMetodo: 0,
+        topChoferes: [],
+      }),
+    );
     render(<DispatchMetricsSection />);
     expect(screen.getByText('Todavía no hay pedidos despachados')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();

@@ -16,6 +16,7 @@ import { OrderMercadoPagoPayment } from './OrderMercadoPagoPayment';
 import { OrderRefunds } from './OrderRefunds';
 import { OrderDeliveryConfirmation } from './OrderDeliveryConfirmation';
 import { orderCoordinates } from './orderLocation';
+import { assignmentLabel } from '../orderAssignment';
 
 const Section = ({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) => (
   <section className="p-5">
@@ -144,6 +145,9 @@ const DriverSection = ({ order }: { order: Order }) => {
             <PersonAvatar name={order.delivery_name} deliveryId={order.delivery_id} size="lg" />
             <div className="min-w-0">
               <p className="break-words font-semibold text-ink">{order.delivery_name}</p>
+              {assignmentLabel(order.assignmentMethod) && (
+                <p className="text-xs text-muted">{assignmentLabel(order.assignmentMethod)}</p>
+              )}
               {!vehicle && <p className="text-xs text-muted">Sin vehículo registrado al aceptar el pedido</p>}
             </div>
           </div>

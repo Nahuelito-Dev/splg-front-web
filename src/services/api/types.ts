@@ -31,6 +31,7 @@ export type ApproveDriverSettlementBody = S['ApproveDriverSettlementDto'];
 export type ApproveSupportAccessBody = S['ApproveSupportAccessDto'];
 export type ArrivedBody = S['ArrivedDto'];
 export type AsientoDeAuditoria = S['AsientoDeAuditoriaDto'];
+export type AsignacionPorMetodo = S['AsignacionPorMetodoDto'];
 export type AssignConversationBody = S['AssignConversationDto'];
 export type AssignCylindersBody = S['AssignCylindersDto'];
 export type AssignStaffRoleBody = S['AssignStaffRoleDto'];

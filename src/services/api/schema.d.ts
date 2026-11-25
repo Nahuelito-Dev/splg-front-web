@@ -5775,7 +5775,7 @@ export interface paths {
     };
     /**
      * Cómo viene el despacho
-     * @description Pedidos despachados, ofertas por pedido, porcentaje de ofertas aceptadas, rechazadas y vencidas (sobre las ya resueltas), tiempo de respuesta del chofer y tiempo hasta asignar (mediana y p90, en segundos), pedidos que se quedaron sin chofer y los 5 choferes con mejor tasa de aceptación. El tiempo de respuesta sólo cuenta ofertas con respuesta registrada: las anteriores a esta función no la tienen. Por omisión, los últimos 30 días; el período puede ser de hasta 366 días. El super admin tiene que mandar `X-Distributor`.
+     * @description Pedidos despachados, ofertas por pedido, porcentaje de ofertas aceptadas, rechazadas y vencidas (sobre las ya resueltas), tiempo de respuesta del chofer y tiempo hasta asignar (mediana y p90, en segundos), pedidos que se quedaron sin chofer, los 5 choferes con mejor tasa de aceptación y, de los pedidos asignados en el período, cuántos se asignaron por despacho automático, asignación manual, hoja de ruta o lote (`asignacionPorMetodo`; los pedidos anteriores al registro del método van en `asignadosSinMetodo`). El tiempo de respuesta sólo cuenta ofertas con respuesta registrada: las anteriores a esta función no la tienen. Por omisión, los últimos 30 días; el período puede ser de hasta 366 días. El super admin tiene que mandar `X-Distributor`.
      */
     get: operations['DispatchMetricsController_obtener'];
     put?: never;
@@ -20088,6 +20088,11 @@ export interface components {
       driver: components['schemas']['DriverDeOrderDto'] | null;
       deliveryConfirmation: components['schemas']['DeliveryConfirmationDto'] | null;
       revisit: components['schemas']['RevisitDeOrderDto'] | null;
+      /**
+       * @description `automatic` (despacho automático), `manual_override` (asignación manual), `route_sheet` (hoja de ruta) o `batch` (lote de recorrido)
+       * @enum {string|null}
+       */
+      assignmentMethod?: 'automatic' | 'manual_override' | 'route_sheet' | 'batch' | null;
     };
     OrderItemDto: {
       /** @description ID de la garrafa */
@@ -20524,6 +20529,11 @@ export interface components {
       deliveryConfirmation: components['schemas']['DeliveryConfirmationDto'] | null;
       revisit: components['schemas']['RevisitDeOrderDto'] | null;
       /**
+       * @description `automatic` (despacho automático), `manual_override` (asignación manual), `route_sheet` (hoja de ruta) o `batch` (lote de recorrido)
+       * @enum {string|null}
+       */
+      assignmentMethod?: 'automatic' | 'manual_override' | 'route_sheet' | 'batch' | null;
+      /**
        * @description `true` si el pedido ya estaba en el destino pedido (reintento o segundo admin): no se tocó nada, ni la nota del pedido ni la incidencia.
        * @example false
        */
@@ -20800,6 +20810,17 @@ export interface components {
        */
       reason: string;
     };
+    AsignacionPorMetodoDto: {
+      /**
+       * @description `automatic` (despacho automático), `manual_override` (asignación manual), `route_sheet` (hoja de ruta), `batch` (lote de recorrido)
+       * @enum {string}
+       */
+      method: 'automatic' | 'manual_override' | 'route_sheet' | 'batch';
+      /** @example 12 */
+      cantidad: number;
+      /** @description Sobre los pedidos asignados que tienen método, 0 a 100; null si ninguno lo tiene */
+      porcentaje: number | null;
+    };
     TiempoEnSegundosDto: {
       /** @example 14.5 */
       mediana: number | null;
@@ -20826,6 +20847,12 @@ export interface components {
       from: string;
       /** Format: date-time */
       to: string;
+      /** @description Pedidos del período que hoy tienen chofer, por cualquier camino. Cuenta la asignación vigente: un pedido liberado no entra y uno reasignado cuenta con su último método (no es un historial) */
+      pedidosAsignados: number;
+      /** @description De los asignados, los anteriores al registro del método (no se les inventa uno) */
+      asignadosSinMetodo: number;
+      /** @description Siempre los cuatro métodos, aunque tengan 0 */
+      asignacionPorMetodo: components['schemas']['AsignacionPorMetodoDto'][];
       /** @description Pedidos con al menos una oferta en el período */
       pedidosDespachados: number;
       ofertasPorPedido: number | null;
