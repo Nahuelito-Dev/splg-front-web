@@ -8340,6 +8340,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v3/cylinder-recovery/customers/{customerId}/score': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Puntaje de riesgo de recupero de un cliente
+     * @description Casos demorados históricos sobre pedidos entregados, suavizado hacia un valor neutro, con su banda (`low`, `medium`, `high`) y los plazos de tolerancia y de escalón que le rigen. Un cliente sin casos tiene puntaje neutro (`neutral: true`, banda media). El puntaje cambia cuándo se avisa, nunca los importes.
+     */
+    get: operations['CylinderRecoveryScoreController_puntaje'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v2/cylinder-recovery/mine': {
     parameters: {
       query?: never;
@@ -23925,6 +23945,15 @@ export interface components {
       /** Format: date-time */
       respondedAt: string | null;
       responseNote: string | null;
+      /**
+       * Format: uuid
+       * @description Hoja de ruta de la que se aprovechó el viaje (retiro aprovechando la hoja); `null` en la oferta común
+       */
+      routeBatchId?: string | null;
+      /** @description La oferta aprovecha una hoja de ruta que pasa cerca del cliente («Retiro aprovechando la hoja #N») */
+      opportunistic?: boolean;
+      /** @description Número de la hoja de ruta de la que se aprovechó el viaje */
+      routeSheetNumber?: number | null;
     };
     RecoveryPickupDto: {
       /** Format: uuid */
@@ -23942,6 +23971,28 @@ export interface components {
       orderStatus: 'reserved' | 'pending' | 'accepted' | 'on_the_way' | 'delivered' | 'cancelled' | null;
       /** Format: date-time */
       expiresAt: string;
+      /** @description El retiro aprovecha una hoja de ruta que pasa cerca del cliente: el pedido es de una parada vecina, no del cliente */
+      opportunistic?: boolean;
+      /** @description Número de la hoja de ruta que aprovecha el retiro */
+      routeSheetNumber?: number | null;
+    };
+    RecoveryRiskDto: {
+      /**
+       * @description Casos demorados históricos sobre pedidos entregados, suavizado hacia un valor neutro (0 a 1)
+       * @example 0.15
+       */
+      score: number;
+      /** @enum {string} */
+      band: 'low' | 'medium' | 'high';
+      delayedCases: number;
+      ordersTotal: number;
+      /** @description Sin historia de casos: puntaje neutro y banda media */
+      neutral: boolean;
+      /**
+       * Format: date-time
+       * @description Cuándo se recalculó (`null` si es neutro y nunca se calculó)
+       */
+      updatedAt: string | null;
     };
     RecoveryCaseDto: {
       /** Format: uuid */
@@ -23971,6 +24022,8 @@ export interface components {
       cylinder: components['schemas']['RecoveryCylinderDto'];
       lastNotice: components['schemas']['RecoveryNoticeDto'] | null;
       pickup: components['schemas']['RecoveryPickupDto'] | null;
+      /** @description Puntaje y banda de riesgo del cliente: cambia cuándo se avisa, nunca el importe */
+      risk?: components['schemas']['RecoveryRiskDto'];
     };
     RecoveryCasePageDto: {
       data: components['schemas']['RecoveryCaseDto'][];
@@ -24034,6 +24087,8 @@ export interface components {
       cylinder: components['schemas']['RecoveryCylinderDto'];
       lastNotice: components['schemas']['RecoveryNoticeDto'] | null;
       pickup: components['schemas']['RecoveryPickupDto'] | null;
+      /** @description Puntaje y banda de riesgo del cliente: cambia cuándo se avisa, nunca el importe */
+      risk?: components['schemas']['RecoveryRiskDto'];
       notices: components['schemas']['RecoveryNoticeDto'][];
       history: components['schemas']['RecoveryMovementDto'][];
       resolution?: components['schemas']['RecoveryResolutionDto'] | null;
@@ -24081,6 +24136,20 @@ export interface components {
       pickupOfferTtlHours?: number;
       /** @description Ventana, en días, en que una entrega programada sirve para el retiro (1 a 60) */
       pickupWindowDays?: number;
+      /** @description Porcentaje de la tolerancia para clientes de riesgo bajo (10 a 300; más de 100 da más margen) */
+      toleranceLowRiskPercent?: number;
+      /** @description Porcentaje de la tolerancia para clientes de riesgo medio y sin historia (10 a 300) */
+      toleranceMediumRiskPercent?: number;
+      /** @description Porcentaje de la tolerancia para clientes de riesgo alto (10 a 300; menos de 100 acorta el plazo) */
+      toleranceHighRiskPercent?: number;
+      /** @description Porcentaje del plazo de cada escalón para clientes de riesgo bajo (10 a 300) */
+      stepLowRiskPercent?: number;
+      /** @description Porcentaje del plazo de cada escalón para clientes de riesgo medio y sin historia (10 a 300) */
+      stepMediumRiskPercent?: number;
+      /** @description Porcentaje del plazo de cada escalón para clientes de riesgo alto (10 a 300) */
+      stepHighRiskPercent?: number;
+      /** @description Radio, en metros, para ofrecer el retiro aprovechando una hoja de ruta en curso (50 a 2000) */
+      opportunisticPickupRadiusMeters?: number;
       /** @description Hora de ejecución diaria (0 a 23, hora de Argentina) */
       runHour?: number;
       /** @description Encender el recupero (1) o apagarlo (0). Apagado por omisión: no abre casos ni manda avisos, y «correr ahora» responde 409 */
@@ -24096,6 +24165,30 @@ export interface components {
       /** @description Casos cerrados sin cargo porque, con «Cobrar envases» encendido, el envase quedó cubierto por los envases propios del cliente (cuenta de envases). Con el cobro apagado siempre es 0. */
       closedCoveredByOwned: number;
       manualReview: number;
+    };
+    RecoveryCustomerScoreDto: {
+      /**
+       * @description Casos demorados históricos sobre pedidos entregados, suavizado hacia un valor neutro (0 a 1)
+       * @example 0.15
+       */
+      score: number;
+      /** @enum {string} */
+      band: 'low' | 'medium' | 'high';
+      delayedCases: number;
+      ordersTotal: number;
+      /** @description Sin historia de casos: puntaje neutro y banda media */
+      neutral: boolean;
+      /**
+       * Format: date-time
+       * @description Cuándo se recalculó (`null` si es neutro y nunca se calculó)
+       */
+      updatedAt: string | null;
+      /** Format: uuid */
+      customerId: string;
+      /** @description «Plazo de tolerancia» que rige para este cliente, en días */
+      toleranceDays: number;
+      /** @description «Plazo de cada escalón» que rige para este cliente, en días */
+      escalationStepDays: number;
     };
     DriverPickupDto: {
       /** Format: uuid */
@@ -24115,6 +24208,8 @@ export interface components {
       depositAmount: number;
       customerName: string | null;
       customerPhone: string | null;
+      /** @description El retiro aprovecha tu hoja de ruta: el pedido es de una parada vecina, no del cliente que devuelve el envase */
+      opportunistic?: boolean;
     };
     PickupNotCollectedDto: {
       /** @example El cliente no estaba en casa */
@@ -59040,6 +59135,56 @@ export interface operations {
       };
       /** @description La `Idempotency-Key` ya se usó con otro body. Revisá si la operación anterior se registró antes de reintentar. */
       422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  CylinderRecoveryScoreController_puntaje: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description User UUID del cliente */
+        customerId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RecoveryCustomerScoreDto'];
+        };
+      };
+      /** @description El identificador no es válido o super admin sin X-Distributor ("Falta la distribuidora: enviá el header X-Distributor (slug o id)") */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Rol sin acceso o el módulo de recupero no está habilitado para la distribuidora. La función «Recupero de envases» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description El cliente no existe o es de otra distribuidora */
+      404: {
         headers: {
           [name: string]: unknown;
         };

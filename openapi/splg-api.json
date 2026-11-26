@@ -34093,6 +34093,56 @@
                 ]
             }
         },
+        "/api/v3/cylinder-recovery/customers/{customerId}/score": {
+            "get": {
+                "description": "Casos demorados históricos sobre pedidos entregados, suavizado hacia un valor neutro, con su banda (`low`, `medium`, `high`) y los plazos de tolerancia y de escalón que le rigen. Un cliente sin casos tiene puntaje neutro (`neutral: true`, banda media). El puntaje cambia cuándo se avisa, nunca los importes.",
+                "operationId": "CylinderRecoveryScoreController_puntaje",
+                "parameters": [
+                    {
+                        "name": "customerId",
+                        "required": true,
+                        "in": "path",
+                        "description": "User UUID del cliente",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RecoveryCustomerScoreDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "El identificador no es válido o super admin sin X-Distributor (\"Falta la distribuidora: enviá el header X-Distributor (slug o id)\")"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "Rol sin acceso o el módulo de recupero no está habilitado para la distribuidora. La función «Recupero de envases» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    },
+                    "404": {
+                        "description": "El cliente no existe o es de otra distribuidora"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Puntaje de riesgo de recupero de un cliente",
+                "tags": [
+                    "Cylinders · Recovery (v3)"
+                ]
+            }
+        },
         "/api/v2/cylinder-recovery/mine": {
             "get": {
                 "description": "Los casos abiertos o escalados del cliente, con el depósito comprometido, el vencimiento del escalón y la oferta de retiro vigente (`pickup`: pendiente de respuesta o aceptada).",
@@ -75768,6 +75818,21 @@
                     "responseNote": {
                         "type": "string",
                         "nullable": true
+                    },
+                    "routeBatchId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true,
+                        "description": "Hoja de ruta de la que se aprovechó el viaje (retiro aprovechando la hoja); `null` en la oferta común"
+                    },
+                    "opportunistic": {
+                        "type": "boolean",
+                        "description": "La oferta aprovecha una hoja de ruta que pasa cerca del cliente («Retiro aprovechando la hoja #N»)"
+                    },
+                    "routeSheetNumber": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Número de la hoja de ruta de la que se aprovechó el viaje"
                     }
                 },
                 "required": [
@@ -75823,6 +75888,15 @@
                     "expiresAt": {
                         "type": "string",
                         "format": "date-time"
+                    },
+                    "opportunistic": {
+                        "type": "boolean",
+                        "description": "El retiro aprovecha una hoja de ruta que pasa cerca del cliente: el pedido es de una parada vecina, no del cliente"
+                    },
+                    "routeSheetNumber": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Número de la hoja de ruta que aprovecha el retiro"
                     }
                 },
                 "required": [
@@ -75832,6 +75906,48 @@
                     "scheduledDate",
                     "orderStatus",
                     "expiresAt"
+                ]
+            },
+            "RecoveryRiskDto": {
+                "type": "object",
+                "properties": {
+                    "score": {
+                        "type": "number",
+                        "example": 0.15,
+                        "description": "Casos demorados históricos sobre pedidos entregados, suavizado hacia un valor neutro (0 a 1)"
+                    },
+                    "band": {
+                        "type": "string",
+                        "enum": [
+                            "low",
+                            "medium",
+                            "high"
+                        ]
+                    },
+                    "delayedCases": {
+                        "type": "number"
+                    },
+                    "ordersTotal": {
+                        "type": "number"
+                    },
+                    "neutral": {
+                        "type": "boolean",
+                        "description": "Sin historia de casos: puntaje neutro y banda media"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo se recalculó (`null` si es neutro y nunca se calculó)"
+                    }
+                },
+                "required": [
+                    "score",
+                    "band",
+                    "delayedCases",
+                    "ordersTotal",
+                    "neutral",
+                    "updatedAt"
                 ]
             },
             "RecoveryCaseDto": {
@@ -75909,6 +76025,14 @@
                         "allOf": [
                             {
                                 "$ref": "#/components/schemas/RecoveryPickupDto"
+                            }
+                        ]
+                    },
+                    "risk": {
+                        "description": "Puntaje y banda de riesgo del cliente: cambia cuándo se avisa, nunca el importe",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RecoveryRiskDto"
                             }
                         ]
                     }
@@ -76115,6 +76239,14 @@
                             }
                         ]
                     },
+                    "risk": {
+                        "description": "Puntaje y banda de riesgo del cliente: cambia cuándo se avisa, nunca el importe",
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/RecoveryRiskDto"
+                            }
+                        ]
+                    },
                     "notices": {
                         "type": "array",
                         "items": {
@@ -76288,6 +76420,34 @@
                         "type": "number",
                         "description": "Ventana, en días, en que una entrega programada sirve para el retiro (1 a 60)"
                     },
+                    "toleranceLowRiskPercent": {
+                        "type": "number",
+                        "description": "Porcentaje de la tolerancia para clientes de riesgo bajo (10 a 300; más de 100 da más margen)"
+                    },
+                    "toleranceMediumRiskPercent": {
+                        "type": "number",
+                        "description": "Porcentaje de la tolerancia para clientes de riesgo medio y sin historia (10 a 300)"
+                    },
+                    "toleranceHighRiskPercent": {
+                        "type": "number",
+                        "description": "Porcentaje de la tolerancia para clientes de riesgo alto (10 a 300; menos de 100 acorta el plazo)"
+                    },
+                    "stepLowRiskPercent": {
+                        "type": "number",
+                        "description": "Porcentaje del plazo de cada escalón para clientes de riesgo bajo (10 a 300)"
+                    },
+                    "stepMediumRiskPercent": {
+                        "type": "number",
+                        "description": "Porcentaje del plazo de cada escalón para clientes de riesgo medio y sin historia (10 a 300)"
+                    },
+                    "stepHighRiskPercent": {
+                        "type": "number",
+                        "description": "Porcentaje del plazo de cada escalón para clientes de riesgo alto (10 a 300)"
+                    },
+                    "opportunisticPickupRadiusMeters": {
+                        "type": "number",
+                        "description": "Radio, en metros, para ofrecer el retiro aprovechando una hoja de ruta en curso (50 a 2000)"
+                    },
                     "runHour": {
                         "type": "number",
                         "description": "Hora de ejecución diaria (0 a 23, hora de Argentina)"
@@ -76336,6 +76496,63 @@
                     "closedByReturn",
                     "closedCoveredByOwned",
                     "manualReview"
+                ]
+            },
+            "RecoveryCustomerScoreDto": {
+                "type": "object",
+                "properties": {
+                    "score": {
+                        "type": "number",
+                        "example": 0.15,
+                        "description": "Casos demorados históricos sobre pedidos entregados, suavizado hacia un valor neutro (0 a 1)"
+                    },
+                    "band": {
+                        "type": "string",
+                        "enum": [
+                            "low",
+                            "medium",
+                            "high"
+                        ]
+                    },
+                    "delayedCases": {
+                        "type": "number"
+                    },
+                    "ordersTotal": {
+                        "type": "number"
+                    },
+                    "neutral": {
+                        "type": "boolean",
+                        "description": "Sin historia de casos: puntaje neutro y banda media"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo se recalculó (`null` si es neutro y nunca se calculó)"
+                    },
+                    "customerId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "toleranceDays": {
+                        "type": "number",
+                        "description": "«Plazo de tolerancia» que rige para este cliente, en días"
+                    },
+                    "escalationStepDays": {
+                        "type": "number",
+                        "description": "«Plazo de cada escalón» que rige para este cliente, en días"
+                    }
+                },
+                "required": [
+                    "score",
+                    "band",
+                    "delayedCases",
+                    "ordersTotal",
+                    "neutral",
+                    "updatedAt",
+                    "customerId",
+                    "toleranceDays",
+                    "escalationStepDays"
                 ]
             },
             "DriverPickupDto": {
@@ -76388,6 +76605,10 @@
                     "customerPhone": {
                         "type": "string",
                         "nullable": true
+                    },
+                    "opportunistic": {
+                        "type": "boolean",
+                        "description": "El retiro aprovecha tu hoja de ruta: el pedido es de una parada vecina, no del cliente que devuelve el envase"
                     }
                 },
                 "required": [

@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { PackageSearch } from 'lucide-react';
 import { Badge, Card, CardHeader, EmptyState, ListSkeleton } from '../../../../common/components/ui';
-import { useRecoveryCases } from '../../../../services/queries/recovery';
+import { useRecoveryCases, useRecoveryCustomerScore } from '../../../../services/queries/recovery';
 import { formatCurrencyExact, formatDate } from '../../../../utils/format';
 import {
   RECOVERY_CASE_STATUS,
+  RECOVERY_RISK_BAND,
   nextStepText,
+  riskText,
   recoveryStepText,
 } from '../../../PhysicalCylinders/Recovery/recoveryLabels';
 
@@ -15,10 +17,20 @@ const LIMIT = 50;
 export const CustomerRecoveryCard = ({ userId }: { userId: string }) => {
   const { data, isPending, error } = useRecoveryCases({ page: 0, pageSize: LIMIT }, { customerId: userId, live: true });
   const live = data?.data ?? [];
+  const score = useRecoveryCustomerScore(userId).data;
 
   return (
     <Card>
       <CardHeader title="Envases sin devolver a tiempo" className="border-b border-outline p-4" />
+      {score && (
+        <p className="flex flex-wrap items-center gap-2 border-b border-outline-soft px-4 py-3 text-sm text-ink-2">
+          <Badge label={RECOVERY_RISK_BAND[score.band]} />
+          <span>
+            {riskText(score)}. Se le avisa a los {score.toleranceDays} días y cada escalón dura{' '}
+            {score.escalationStepDays} días.
+          </span>
+        </p>
+      )}
       {isPending ? (
         <ListSkeleton rows={2} columns={3} />
       ) : error ? (

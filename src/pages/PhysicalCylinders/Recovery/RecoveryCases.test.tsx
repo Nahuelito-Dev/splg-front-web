@@ -284,6 +284,31 @@ describe('RecoveryCases: legajo', () => {
     expect(screen.getByText(/decidís vos/)).toBeInTheDocument();
   });
 
+  it('muestra el riesgo del cliente y, en la oferta que aprovecha la hoja, «Retiro aprovechando la hoja #N»', () => {
+    const risk = { score: 0.344, band: 'high', delayedCases: 5, ordersTotal: 10, neutral: false, updatedAt: null };
+    const offer = {
+      ...DETAIL.notices[1],
+      status: 'pending',
+      respondedAt: null,
+      responseNote: null,
+      opportunistic: true,
+      routeBatchId: 'h-1',
+      routeSheetNumber: 12,
+    };
+    setup({ detail: ok({ ...DETAIL, risk, notices: [DETAIL.notices[0], offer] }) });
+    draw('/physical-cylinders/recovery?case=c-1');
+    expect(screen.getByText('Riesgo del cliente')).toBeInTheDocument();
+    expect(screen.getByText('Riesgo alto (puntaje 0,34)')).toBeInTheDocument();
+    expect(screen.getByText('Retiro aprovechando la hoja #12')).toBeInTheDocument();
+    expect(screen.queryByText('Oferta de retiro en la próxima entrega')).not.toBeInTheDocument();
+  });
+
+  it('sin riesgo en la respuesta no inventa la fila', () => {
+    setup();
+    draw('/physical-cylinders/recovery?case=c-1');
+    expect(screen.queryByText('Riesgo del cliente')).not.toBeInTheDocument();
+  });
+
   it('un caso que espera decisión deja decidir; uno en aviso no', () => {
     setup();
     draw('/physical-cylinders/recovery?case=c-1');
