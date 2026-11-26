@@ -4,7 +4,14 @@ import { Badge, Card, DetailList, EmptyState, ErrorState, ListSkeleton } from '.
 import { toApiError } from '../../../../services/api/errors';
 import type { RepurchaseCustomerForecast } from '../../../../services/api/types';
 import { formatDate, formatNumber } from '../../../../utils/format';
-import { daysLeftText, ESTIMATE_SOURCE, NO_FORECAST_REASON } from '../../Repurchase/repurchaseLabels';
+import {
+  daysLeftText,
+  ESTIMATE_SOURCE,
+  NO_FORECAST_REASON,
+  noticeScheduleText,
+  OFFSET_HELP,
+  offsetText,
+} from '../../Repurchase/repurchaseLabels';
 
 interface Props {
   /** Administrador general sin «Ver como»: la estimación es de una distribuidora. */
@@ -107,10 +114,14 @@ export const CustomerRepurchase = ({ needsDistributor, inactive = null, loading,
             label: 'Aviso previo',
             value: forecast.noticeEnabled ? `${forecast.noticeDays} días antes` : 'Desactivado por el cliente',
           },
+          { label: 'Ajuste de su fecha', value: offsetText(forecast.offsetDays) ?? 'Sin ajuste' },
+          ...(noticeScheduleText(forecast)
+            ? [{ label: 'Aviso de la invitación', value: noticeScheduleText(forecast) }]
+            : []),
         ]}
       />
       <p className="mt-4 text-[13px] text-muted">
-        La estimación sale sólo de las compras de esta distribuidora.{' '}
+        La estimación sale sólo de las compras de esta distribuidora. {OFFSET_HELP}{' '}
         <Link className="font-semibold text-primary-strong hover:underline" to="/customers/repurchase?tab=invitations">
           Ver las invitaciones
         </Link>

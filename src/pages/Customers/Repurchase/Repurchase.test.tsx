@@ -60,6 +60,9 @@ const ROW = {
   noticeEnabled: true,
   noticeDays: 3,
   openInvitation: null,
+  offsetDays: 0,
+  notifyAt: null,
+  notifiedAt: null,
 };
 
 const DECLARED = {
@@ -70,6 +73,8 @@ const DECLARED = {
   declaredKgPerMonth: 30,
   usualUnits: 1,
   openInvitation: { invitationId: 'i-1', expiresAt: '2026-11-01T12:00:00.000Z' },
+  offsetDays: 3,
+  notifyAt: '2026-11-01T21:00:00.000Z',
 };
 
 const INVITATION = {
@@ -164,6 +169,16 @@ describe('Repurchase: próximas recompras (CU-146)', () => {
       'href',
       '/customers/details/c-1?tab=repurchase',
     );
+  });
+
+  it('muestra el ajuste de cada cliente y la hora programada del aviso, con su ayuda', () => {
+    setup();
+    draw();
+    expect(screen.getByText(/\+3 días respecto del promedio/)).toBeInTheDocument();
+    expect(screen.getByText(/Se avisa .* a las 18:00/)).toBeInTheDocument();
+    expect(screen.getByText(/Sólo rige con consumo declarado o poca historia/)).toBeInTheDocument();
+    // Sin ajuste ni invitación abierta, la fila de Lucía no dice nada de eso.
+    expect(screen.getAllByText(/respecto del promedio/)).toHaveLength(1);
   });
 
   it('un cliente sin perfil de cliente se muestra sin enlace a la ficha', () => {

@@ -205,6 +205,9 @@ const FORECAST = {
   noticeEnabled: true,
   noticeDays: 3,
   openInvitation: null,
+  offsetDays: -2,
+  notifyAt: null,
+  notifiedAt: null,
 };
 beforeEach(() =>
   repurchaseOf.mockReturnValue({
@@ -471,6 +474,7 @@ describe('CustomerDetails: recompra estimada', () => {
     expect(screen.getByRole('heading', { name: /Se le acaba el gas el/ })).toBeInTheDocument();
     expect(screen.getByText('Sus compras')).toBeInTheDocument();
     expect(screen.getByText('3 días antes')).toBeInTheDocument();
+    expect(screen.getByText('−2 días respecto del promedio')).toBeInTheDocument();
   });
 
   it('sin fecha estimada la pestaña dice por qué', () => {

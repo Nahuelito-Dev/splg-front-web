@@ -31,6 +31,7 @@ export const AUDIT_ENTITY = {
   Payment: 'Pago',
   Rating: 'Calificación',
   RepurchaseInvitation: 'Invitación de recompra',
+  RepurchaseOffset: 'Ajuste de recompra del cliente',
   Role: 'Rol',
   Sesion: 'Sesión',
   RouteBatch: 'Lote de ruta',
