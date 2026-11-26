@@ -36,6 +36,7 @@ const config = (over: Record<string, unknown> = {}) => ({
   finishingRadiusMeters: 300,
   noDriverExpiryMinutes: 90,
   arrivalRadiusMeters: 200,
+  osrmCandidateCount: 6,
   isDefault: false,
   updatedAt: '2026-10-15T12:00:00.000Z',
   updatedByUserId: 'user-1',
@@ -71,6 +72,7 @@ afterEach(() => {
 
 const save = () => screen.getByRole('button', { name: 'Guardar cambios' });
 const expiryInput = () => screen.getByLabelText('Vencimiento de pedidos sin chofer (minutos)');
+const osrmInput = () => screen.getByLabelText('Choferes a medir por calle');
 const arrivalInput = () => screen.getByLabelText('Radio para marcar «Llegué» (metros)');
 
 describe('DispatchSettings', () => {
@@ -202,6 +204,7 @@ describe('DispatchSettings', () => {
       finishingRadiusMeters: 300,
       noDriverExpiryMinutes: 90,
       arrivalRadiusMeters: 200,
+      osrmCandidateCount: 6,
     });
   });
 
@@ -239,6 +242,21 @@ describe('DispatchSettings', () => {
     fireEvent.click(save());
     await waitFor(() => expect(update.mutate).toHaveBeenCalled());
     expect(update.mutate.mock.calls[0]?.[0]).toMatchObject({ arrivalRadiusMeters: 0, noDriverExpiryMinutes: 90 });
+  });
+
+  it('los choferes a medir por calle: fuera de 1..20 bloquea guardar y el valor válido viaja en el PUT', async () => {
+    const update = setup();
+    expect(osrmInput()).toHaveValue(6);
+    fireEvent.change(osrmInput(), { target: { value: '21' } });
+    expect(await screen.findByText(/entre 1 y 20 choferes/)).toBeInTheDocument();
+    await waitFor(() => expect(save()).toBeDisabled());
+    fireEvent.change(osrmInput(), { target: { value: '0' } });
+    expect(await screen.findByText(/entre 1 y 20 choferes/)).toBeInTheDocument();
+    fireEvent.change(osrmInput(), { target: { value: '12' } });
+    await waitFor(() => expect(save()).toBeEnabled());
+    fireEvent.click(save());
+    await waitFor(() => expect(update.mutate).toHaveBeenCalled());
+    expect(update.mutate.mock.calls[0]?.[0]).toMatchObject({ osrmCandidateCount: 12 });
   });
 
   it('muestra el mensaje del back cuando el guardado falla', async () => {

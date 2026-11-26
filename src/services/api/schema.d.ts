@@ -2906,7 +2906,7 @@ export interface paths {
     get: operations['ModuleConfigController_getDispatch'];
     /**
      * Cambiar los parámetros del despacho
-     * @description Reemplaza la configuración. De 1 a 8 pasos de radio, cada uno entre 1 y 100 km y estrictamente mayor que el anterior; ventana entre 10 y 300 s; radio de choferes por terminar entre 0 y 5000 m, entero (0 lo apaga: sólo se ofrece a choferes sin pedido en curso); minutos sin chofer antes de cancelar el pedido entre 1 y 1440, entero (por omisión 120). Rige para las ofertas que se creen desde ese momento (las ya enviadas conservan su vencimiento); en otras instancias del servidor, como máximo un minuto después. El plazo sin chofer se aplica en el próximo barrido del despacho a todos los pedidos que esperan, con el valor vigente.
+     * @description Reemplaza la configuración. De 1 a 8 pasos de radio, cada uno entre 1 y 100 km y estrictamente mayor que el anterior; ventana entre 10 y 300 s; radio de choferes por terminar entre 0 y 5000 m, entero (0 lo apaga: sólo se ofrece a choferes sin pedido en curso); minutos sin chofer antes de cancelar el pedido entre 1 y 1440, entero (por omisión 120); choferes a medir por calle en cada radio entre 1 y 20, entero (por omisión 8). Rige para las ofertas que se creen desde ese momento (las ya enviadas conservan su vencimiento); en otras instancias del servidor, como máximo un minuto después. El plazo sin chofer se aplica en el próximo barrido del despacho a todos los pedidos que esperan, con el valor vigente.
      */
     put: operations['ModuleConfigController_putDispatch'];
     post?: never;
@@ -16599,6 +16599,11 @@ export interface components {
       /** @example 150 */
       arrivalRadiusMeters: number;
       /**
+       * @description Choferes de cada paso de radio que se miden por calle para ofrecer al que llega antes
+       * @example 8
+       */
+      osrmCandidateCount: number;
+      /**
        * @description true si rigen los valores por omisión (no configuró nada o todo coincide con ellos)
        * @example true
        */
@@ -16647,6 +16652,12 @@ export interface components {
        * @example 150
        */
       arrivalRadiusMeters: number;
+      /**
+       * @description Cuántos choferes de cada paso de radio se miden por calle para ofrecer al que llega antes (1 a 20, entero). Con 1 sólo se mide al primero del radar. Si el servicio de calles no responde, se ofrece en el orden del radar
+       * @default 8
+       * @example 8
+       */
+      osrmCandidateCount: number;
     };
     ScheduledTasksConfigResponseDto: {
       /** @example 15 */
@@ -20906,6 +20917,12 @@ export interface components {
       hastaAsignar: components['schemas']['TiempoEnSegundosDto'];
       /** @description Pedidos que el sistema canceló porque ningún chofer los tomó */
       pedidosSinChofer: number;
+      /** @description Ofertas del período que guardaron el tiempo estimado al cliente (base de las dos cifras siguientes) */
+      ofertasConEstimacion: number;
+      /** @description De las ofertas con estimación, el porcentaje (0 a 100) que se ordenó por calle con OSRM y no con la línea recta; null si no hay ninguna */
+      porcentajeOrdenadasPorOsrm: number | null;
+      /** @description Promedio de minutos que se estimó que el chofer tardaba en llegar al cliente al ofrecerle el pedido; null si no hay datos */
+      minutosEstimadosPromedio: number | null;
       topChoferes: components['schemas']['ChoferEnElTopDto'][];
     };
     CustomerPurchaseStatsDto: {

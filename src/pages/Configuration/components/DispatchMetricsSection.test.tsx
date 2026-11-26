@@ -19,6 +19,9 @@ const metrics = (over: Record<string, unknown> = {}) => ({
   respuestaDelChofer: { mediana: 12, p90: 28 },
   hastaAsignar: { mediana: 95, p90: 240 },
   pedidosSinChofer: 3,
+  ofertasConEstimacion: 25,
+  porcentajeOrdenadasPorOsrm: 84,
+  minutosEstimadosPromedio: 7.4,
   pedidosAsignados: 40,
   asignadosSinMetodo: 8,
   asignacionPorMetodo: [
@@ -54,6 +57,8 @@ describe('DispatchMetricsSection', () => {
     expect(screen.getByText('58,8 %')).toBeInTheDocument();
     expect(screen.getByText('1,7')).toBeInTheDocument();
     expect(screen.getByText('1 min 35 s')).toBeInTheDocument();
+    expect(screen.getByText('84 %')).toBeInTheDocument();
+    expect(screen.getByText('7,4 min')).toBeInTheDocument();
     const table = screen.getByRole('table');
     expect(within(table).getByText('Ana Pérez')).toBeInTheDocument();
     expect(within(table).getByText('9 (90 %)')).toBeInTheDocument();
@@ -82,6 +87,15 @@ describe('DispatchMetricsSection', () => {
     render(<DispatchMetricsSection />);
     expect(screen.queryByRole('list', { name: 'Pedidos asignados por método' })).not.toBeInTheDocument();
     expect(screen.getByText(/Todavía no hay pedidos asignados con el método registrado/)).toBeInTheDocument();
+  });
+
+  it('sin ofertas medidas las dos cifras nuevas muestran un guion y lo explican', () => {
+    state.query = ok(
+      metrics({ ofertasConEstimacion: 0, porcentajeOrdenadasPorOsrm: null, minutosEstimadosPromedio: null }),
+    );
+    render(<DispatchMetricsSection />);
+    expect(screen.getByText('Todavía sin ofertas medidas')).toBeInTheDocument();
+    expect(screen.queryByText(/min$/, { selector: 'p' })).toBeNull();
   });
 
   it('sin pedidos explica que todavía no hay datos', () => {

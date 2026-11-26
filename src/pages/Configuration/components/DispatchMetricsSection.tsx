@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, PackageCheck, Repeat, Timer, Truck, UserX, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Route, PackageCheck, Repeat, Timer, Truck, UserX, XCircle } from 'lucide-react';
 import { Card, CardHeader, EmptyState, ErrorState, KpiCard, Skeleton } from '../../../common/components/ui';
 import { usePermiso } from '../../../hooks/usePermiso';
 import { useDispatchMetrics } from '../../../services/queries/dispatchMetrics';
@@ -79,6 +79,27 @@ export const DispatchMetricsSection = () => {
             value={formatSeconds(data.hastaAsignar.mediana)}
             hint={`Típico · 9 de cada 10 en ${formatSeconds(data.hastaAsignar.p90)}`}
           />
+        </div>
+        <div>
+          <h3 className="mb-2 text-sm font-semibold text-ink">Orden por calle</h3>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <KpiCard
+              title="Ordenadas por calle"
+              icon={Route}
+              value={formatPercent(data.porcentajeOrdenadasPorOsrm)}
+              hint={
+                data.ofertasConEstimacion === 0
+                  ? 'Todavía sin ofertas medidas'
+                  : `El resto, en línea recta · ${formatNumber(data.ofertasConEstimacion)} ofertas medidas`
+              }
+            />
+            <KpiCard
+              title="Llegada estimada"
+              icon={Timer}
+              value={data.minutosEstimadosPromedio === null ? '—' : `${formatRatio(data.minutosEstimadosPromedio)} min`}
+              hint="Promedio al ofrecer el pedido"
+            />
+          </div>
         </div>
         <div>
           <h3 className="mb-2 text-sm font-semibold text-ink">Cómo se asignaron los pedidos</h3>

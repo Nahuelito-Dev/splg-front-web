@@ -21,6 +21,11 @@ export const ARRIVAL_RADIUS_MAX_METERS = 5000;
 /** Lo que rige en el back si la distribuidora no configuró nada (y lo que se muestra si un back viejo no lo manda). */
 export const ARRIVAL_RADIUS_DEFAULT_METERS = 150;
 
+export const OSRM_CANDIDATES_MIN = 1;
+export const OSRM_CANDIDATES_MAX = 20;
+/** Lo que rige en el back si la distribuidora no configuró nada. */
+export const OSRM_CANDIDATES_DEFAULT = 8;
+
 export interface DispatchErrors {
   /** Un mensaje por paso (misma posición que la lista); `undefined` si el paso está bien. */
   steps: (string | undefined)[];
@@ -30,6 +35,7 @@ export interface DispatchErrors {
   finishing?: string;
   expiry?: string;
   arrival?: string;
+  osrm?: string;
 }
 
 const toNumber = (raw: string): number => (raw.trim() === '' ? Number.NaN : Number(raw));
@@ -44,7 +50,7 @@ const wholeInRange = (raw: string, min: number, max: number, unit: string): stri
 
 /**
  * Valida lo tipeado con las reglas del back: 1 a 8 pasos, 1 a 100 km y estrictamente crecientes; ventana 10 a 300 s;
- * radio de «por terminar» 0 a 5000 m; vencimiento sin chofer 1 a 1440 min; radio de «Llegué» 0 a 5000 m.
+ * radio de «por terminar» 0 a 5000 m; vencimiento sin chofer 1 a 1440 min; radio de «Llegué» 0 a 5000 m; choferes a medir por calle 1 a 20.
  */
 export const validateDispatch = (
   steps: string[],
@@ -52,6 +58,7 @@ export const validateDispatch = (
   finishing: string,
   expiry: string,
   arrival: string,
+  osrm: string = String(OSRM_CANDIDATES_DEFAULT),
 ): DispatchErrors => {
   const errors: DispatchErrors = { steps: [] };
   if (steps.length < 1) errors.list = 'Tiene que haber al menos un paso de radio';
@@ -75,12 +82,19 @@ export const validateDispatch = (
   errors.finishing = wholeInRange(finishing, FINISHING_RADIUS_MIN_METERS, FINISHING_RADIUS_MAX_METERS, 'metros');
   errors.expiry = wholeInRange(expiry, NO_DRIVER_EXPIRY_MIN_MINUTES, NO_DRIVER_EXPIRY_MAX_MINUTES, 'minutos');
   errors.arrival = wholeInRange(arrival, ARRIVAL_RADIUS_MIN_METERS, ARRIVAL_RADIUS_MAX_METERS, 'metros');
+  errors.osrm = wholeInRange(osrm, OSRM_CANDIDATES_MIN, OSRM_CANDIDATES_MAX, 'choferes');
   return errors;
 };
 
 export const hasDispatchErrors = (errors: DispatchErrors): boolean =>
   Boolean(
-    errors.list || errors.ttl || errors.finishing || errors.expiry || errors.arrival || errors.steps.some(Boolean),
+    errors.list ||
+    errors.ttl ||
+    errors.finishing ||
+    errors.expiry ||
+    errors.arrival ||
+    errors.osrm ||
+    errors.steps.some(Boolean),
   );
 
 /** Lo que tipea la persona: cada paso en su propio objeto (lo pide `useFieldArray`) y la ventana como texto. */
@@ -90,6 +104,7 @@ export interface DispatchFormValues {
   finishing: string;
   expiry: string;
   arrival: string;
+  osrm: string;
 }
 
 /** El esquema del formulario: las reglas de `validateDispatch`, con cada mensaje en el campo que corresponde. */
@@ -100,6 +115,7 @@ export const dispatchSchema = z
     finishing: z.string(),
     expiry: z.string(),
     arrival: z.string(),
+    osrm: z.string(),
   })
   .superRefine((values, ctx) => {
     const errors = validateDispatch(
@@ -108,6 +124,7 @@ export const dispatchSchema = z
       values.finishing,
       values.expiry,
       values.arrival,
+      values.osrm,
     );
     errors.steps.forEach((message, index) => {
       if (message) ctx.addIssue({ code: 'custom', message, path: ['steps', index, 'value'] });
@@ -117,6 +134,7 @@ export const dispatchSchema = z
     if (errors.finishing) ctx.addIssue({ code: 'custom', message: errors.finishing, path: ['finishing'] });
     if (errors.expiry) ctx.addIssue({ code: 'custom', message: errors.expiry, path: ['expiry'] });
     if (errors.arrival) ctx.addIssue({ code: 'custom', message: errors.arrival, path: ['arrival'] });
+    if (errors.osrm) ctx.addIssue({ code: 'custom', message: errors.osrm, path: ['osrm'] });
   });
 
 /** El cuerpo del PUT a partir de lo tipeado (sólo llamar si no hay errores). */
@@ -126,6 +144,7 @@ export const toDispatchBody = (values: DispatchFormValues): DispatchSettingsBody
   finishingRadiusMeters: Number(values.finishing),
   noDriverExpiryMinutes: Number(values.expiry),
   arrivalRadiusMeters: Number(values.arrival),
+  osrmCandidateCount: Number(values.osrm),
 });
 
 /** Lo que muestra el formulario; si el back todavía no manda un campo nuevo, rige su valor por omisión. */
@@ -135,4 +154,5 @@ export const toDispatchValues = (config: DispatchSettingsConfig): DispatchFormVa
   finishing: String(config.finishingRadiusMeters),
   expiry: String(config.noDriverExpiryMinutes),
   arrival: String(config.arrivalRadiusMeters),
+  osrm: String(config.osrmCandidateCount ?? OSRM_CANDIDATES_DEFAULT),
 });
