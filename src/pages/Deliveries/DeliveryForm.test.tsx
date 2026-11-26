@@ -95,7 +95,9 @@ describe('DeliveryForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Crear chofer' }));
     expect(await screen.findByText('Ingresá el nombre completo')).toBeInTheDocument();
     expect(screen.getByText('Email inválido')).toBeInTheDocument();
-    expect(screen.getByText('Mínimo 6 caracteres')).toBeInTheDocument();
+    expect(
+      screen.getByText('Entre 8 y 128 caracteres, con una mayúscula, una minúscula y un número'),
+    ).toBeInTheDocument();
     expect(accountFree).not.toHaveBeenCalled();
     expect(create.mutate).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.getByLabelText(/^Nombre completo/)).toHaveFocus());
@@ -107,7 +109,7 @@ describe('DeliveryForm', () => {
     fireEvent.change(screen.getByLabelText(/^Nombre completo/), { target: { value: 'Luis Gómez' } });
     fireEvent.change(screen.getByLabelText(/^Teléfono/), { target: { value: '+5493764000000' } });
     fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: 'luis@x.com' } });
-    fireEvent.change(screen.getByLabelText(/^Contraseña/), { target: { value: 'Test1234' } });
+    fireEvent.change(screen.getByLabelText(/^Contraseña/), { target: { value: 'Ejemplo2026x' } });
     fireEvent.change(screen.getByLabelText(/^Repetir contraseña/), { target: { value: 'Otra1234' } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear chofer' }));
     expect(await screen.findByText('Las contraseñas no coinciden')).toBeInTheDocument();
@@ -120,15 +122,15 @@ describe('DeliveryForm', () => {
     fireEvent.change(screen.getByLabelText(/^Nombre completo/), { target: { value: 'Luis Gómez' } });
     fireEvent.change(screen.getByLabelText(/^Teléfono/), { target: { value: '+5493764000000' } });
     fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: 'luis@x.com' } });
-    fireEvent.change(screen.getByLabelText(/^Contraseña/), { target: { value: 'Test1234' } });
-    fireEvent.change(screen.getByLabelText(/^Repetir contraseña/), { target: { value: 'Test1234' } });
+    fireEvent.change(screen.getByLabelText(/^Contraseña/), { target: { value: 'Ejemplo2026x' } });
+    fireEvent.change(screen.getByLabelText(/^Repetir contraseña/), { target: { value: 'Ejemplo2026x' } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear chofer' }));
     await waitFor(() => expect(create.mutate).toHaveBeenCalled());
     expect(create.mutate.mock.calls[0][0]).toEqual({
       full_name: 'Luis Gómez',
       phone_number: '+5493764000000',
       email: 'luis@x.com',
-      password: 'Test1234',
+      password: 'Ejemplo2026x',
       distributorId: undefined,
       validated: false,
       isActive: true,
@@ -144,8 +146,8 @@ describe('DeliveryForm', () => {
     fireEvent.change(screen.getByLabelText(/^Nombre completo/), { target: { value: 'Luis Gómez' } });
     fireEvent.change(screen.getByLabelText(/^Teléfono/), { target: { value: '+5493764000000' } });
     fireEvent.change(screen.getByLabelText(/^Email/), { target: { value: 'luis@x.com' } });
-    fireEvent.change(screen.getByLabelText(/^Contraseña/), { target: { value: 'Test1234' } });
-    fireEvent.change(screen.getByLabelText(/^Repetir contraseña/), { target: { value: 'Test1234' } });
+    fireEvent.change(screen.getByLabelText(/^Contraseña/), { target: { value: 'Ejemplo2026x' } });
+    fireEvent.change(screen.getByLabelText(/^Repetir contraseña/), { target: { value: 'Ejemplo2026x' } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear chofer' }));
     await waitFor(() => expect(accountFree).toHaveBeenCalled());
     expect(create.mutate).not.toHaveBeenCalled();

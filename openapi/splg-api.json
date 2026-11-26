@@ -34126,7 +34126,7 @@
                         "description": "Sin token o token inválido"
                     },
                     "403": {
-                        "description": "Rol sin acceso o el módulo de recupero no está habilitado para la distribuidora. La función «Recupero de envases» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Recupero de envases» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
                     },
                     "404": {
                         "description": "El cliente no existe o es de otra distribuidora"
@@ -51756,8 +51756,8 @@
                     },
                     "password": {
                         "type": "string",
-                        "minLength": 6,
-                        "description": "Sólo administradores: contraseña nueva, se cambia en el proveedor de identidad (H-75)"
+                        "minLength": 8,
+                        "description": "Sólo administradores: contraseña nueva (de 8 a 128 caracteres, con una mayúscula, una minúscula y un número; no puede ser común), se cambia en el proveedor de identidad (H-75)"
                     }
                 }
             },
@@ -65393,8 +65393,9 @@
                     },
                     "password": {
                         "type": "string",
-                        "example": "Test1234",
-                        "minLength": 6
+                        "example": "Ejemplo2026x",
+                        "minLength": 8,
+                        "description": "De 8 a 128 caracteres, con una mayúscula, una minúscula y un número; no puede ser una contraseña común"
                     },
                     "full_name": {
                         "type": "string",
@@ -65483,8 +65484,9 @@
                     },
                     "password": {
                         "type": "string",
-                        "example": "Test1234",
-                        "minLength": 6
+                        "example": "Ejemplo2026x",
+                        "minLength": 8,
+                        "description": "De 8 a 128 caracteres, con una mayúscula, una minúscula y un número; no puede ser una contraseña común"
                     },
                     "full_name": {
                         "type": "string",
@@ -65577,8 +65579,9 @@
                     },
                     "password": {
                         "type": "string",
-                        "example": "Test1234",
-                        "minLength": 6
+                        "example": "Ejemplo2026x",
+                        "minLength": 8,
+                        "description": "De 8 a 128 caracteres, con una mayúscula, una minúscula y un número; no puede ser una contraseña común"
                     },
                     "phoneNumber": {
                         "type": "string",

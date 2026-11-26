@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { grantAccountBody, grantAccountSchema, jobPositionSchema } from './employeeAccessSchemas';
 
-const account = { email: 'ana@correo.com', password: 'Test1234', phoneNumber: '' };
+const account = { email: 'ana@correo.com', password: 'Ejemplo2026x', phoneNumber: '' };
 
 describe('grantAccountSchema', () => {
   it('acepta correo, contraseña y sin teléfono', () =>
     expect(grantAccountSchema.safeParse(account).success).toBe(true));
-  it('exige 6 caracteres de contraseña como Firebase', () =>
-    expect(grantAccountSchema.safeParse({ ...account, password: '12345' }).success).toBe(false));
+  it.each(['Abcde12', 'abcdef12', 'ABCDEF12', 'Abcdefgh', 'Test1234'])('rechaza la contraseña %s', (password) =>
+    expect(grantAccountSchema.safeParse({ ...account, password }).success).toBe(false),
+  );
   it('rechaza un correo inválido', () =>
     expect(grantAccountSchema.safeParse({ ...account, email: 'ana' }).success).toBe(false));
   it('el teléfono tiene que ser E.164', () => {
@@ -15,7 +16,7 @@ describe('grantAccountSchema', () => {
     expect(grantAccountSchema.safeParse({ ...account, phoneNumber: '+5493764000000' }).success).toBe(true);
   });
   it('sin teléfono no lo manda (el back usa el del legajo)', () =>
-    expect(grantAccountBody(account)).toEqual({ email: 'ana@correo.com', password: 'Test1234' }));
+    expect(grantAccountBody(account)).toEqual({ email: 'ana@correo.com', password: 'Ejemplo2026x' }));
 });
 
 describe('jobPositionSchema', () => {

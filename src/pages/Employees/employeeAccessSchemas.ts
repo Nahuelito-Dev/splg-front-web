@@ -1,13 +1,14 @@
 import { z } from 'zod';
+import { newPassword } from '../../common/forms/accountSchema';
 
 /** `ReinstateEmployeeDto`: la fecha de ingreso nueva es opcional (si falta, el back usa hoy). */
 export const reinstateSchema = z.object({ hireDate: z.string() });
 export type ReinstateFormValues = z.infer<typeof reinstateSchema>;
 
-/** `GrantEmployeeAccountDto`: correo, contraseña de 6 o más y teléfono E.164 opcional (si falta se usa el del legajo). */
+/** `GrantEmployeeAccountDto`: correo, contraseña con la política de contraseñas y teléfono E.164 opcional (si falta se usa el del legajo). */
 export const grantAccountSchema = z.object({
   email: z.string().trim().min(1, 'Ingresá el correo').email('Correo inválido'),
-  password: z.string().min(6, 'Al menos 6 caracteres'),
+  password: newPassword,
   phoneNumber: z
     .string()
     .trim()

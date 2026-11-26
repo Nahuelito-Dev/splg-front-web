@@ -13753,7 +13753,7 @@ export interface components {
       phone_number?: string;
       /** @description Sólo administradores */
       blocked?: boolean;
-      /** @description Sólo administradores: contraseña nueva, se cambia en el proveedor de identidad (H-75) */
+      /** @description Sólo administradores: contraseña nueva (de 8 a 128 caracteres, con una mayúscula, una minúscula y un número; no puede ser común), se cambia en el proveedor de identidad (H-75) */
       password?: string;
     };
     BlockUserDto: {
@@ -19478,7 +19478,10 @@ export interface components {
     RegistrarClienteDto: {
       /** @example ana@correo.com */
       email: string;
-      /** @example Test1234 */
+      /**
+       * @description De 8 a 128 caracteres, con una mayúscula, una minúscula y un número; no puede ser una contraseña común
+       * @example Ejemplo2026x
+       */
       password: string;
       /** @example Ana Pérez */
       full_name: string;
@@ -19526,7 +19529,10 @@ export interface components {
     RegistrarUsuarioDto: {
       /** @example ana@correo.com */
       email: string;
-      /** @example Test1234 */
+      /**
+       * @description De 8 a 128 caracteres, con una mayúscula, una minúscula y un número; no puede ser una contraseña común
+       * @example Ejemplo2026x
+       */
       password: string;
       /** @example Ana Pérez */
       full_name: string;
@@ -19572,7 +19578,10 @@ export interface components {
     GrantEmployeeAccountDto: {
       /** @example ana@correo.com */
       email: string;
-      /** @example Test1234 */
+      /**
+       * @description De 8 a 128 caracteres, con una mayúscula, una minúscula y un número; no puede ser una contraseña común
+       * @example Ejemplo2026x
+       */
       password: string;
       /**
        * @description Formato E.164. Si falta se usa el teléfono del legajo, que tiene que estar en ese formato
@@ -59176,7 +59185,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Rol sin acceso o el módulo de recupero no está habilitado para la distribuidora. La función «Recupero de envases» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para ver el stock (`stock.ver`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Recupero de envases» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
       403: {
         headers: {
           [name: string]: unknown;

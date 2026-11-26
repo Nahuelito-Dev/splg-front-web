@@ -48,8 +48,8 @@ const fill = () => {
   type(/Nombre completo/, 'Ana Pérez');
   type(/Teléfono/, '+5493764000000');
   type(/^Email/, 'ana@splg.com');
-  type(/^Contraseña/, 'secreta1');
-  type(/Repetir contraseña/, 'secreta1');
+  type(/^Contraseña/, 'Secreta-2026x');
+  type(/Repetir contraseña/, 'Secreta-2026x');
 };
 const submit = () => fireEvent.click(screen.getByRole('button', { name: 'Crear admin' }));
 const staffRoleSelect = () => screen.getByLabelText<HTMLSelectElement>(/Rol del personal/);
