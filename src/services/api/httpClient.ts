@@ -121,7 +121,14 @@ interface BodyWithCode {
   code?: string;
 }
 
-http.interceptors.response.use(undefined, async (error: unknown) => {
+/**
+ * Los efectos de un error de la API: reporte a Sentry (5xx y red), un reintento con el token renovado tras un 401,
+ * salir del modo soporte o de la empresa propia cuando la API los da por terminados, refrescar los módulos ante un
+ * `MODULE_DISABLED` y cerrar la sesión. Lo usan el interceptor de respuesta (REST) y `graphqlRequest` (un error de
+ * GraphQL viaja con 200 y se le pasa acá como el error HTTP equivalente). Resuelve con la respuesta del reintento, o
+ * rechaza con el mismo error.
+ */
+export const handleApiError = async (error: unknown): Promise<AxiosResponse> => {
   // Sólo 5xx y fallas de red/timeout van a Sentry; un 4xx lo resuelve la pantalla.
   reportApiError(error);
   if (axios.isAxiosError(error)) {
@@ -167,7 +174,9 @@ http.interceptors.response.use(undefined, async (error: unknown) => {
     }
   }
   return Promise.reject(error);
-});
+};
+
+http.interceptors.response.use(undefined, handleApiError);
 
 /** Un listado paginado: la página pedida y el total sin paginar. */
 export interface Page<T> {

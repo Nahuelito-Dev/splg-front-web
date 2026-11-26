@@ -1,0 +1,197 @@
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+"""Días en hora argentina, ambos inclusive (YYYY-MM-DD)"""
+type DayRange {
+  from: String!
+  to: String!
+}
+
+"""
+Cómo se agrupan las ventas: por día, por semana ISO (lunes a domingo) o por mes, en hora argentina
+"""
+enum Granularity {
+  DAY
+  MONTH
+  WEEK
+}
+
+"""Totales de todas las filas, calculados por el back"""
+type ProductSalesTotals {
+  """Suma de unidades de todas las filas"""
+  totalQuantity: Int!
+
+  """Suma de ventas de todas las filas"""
+  totalSales: Float!
+}
+
+type Query {
+  """
+  Ventas por chofer, de mayor a menor, con los totales. Mismos criterios que la API REST: días en hora argentina, `to` inclusivo, sólo lo COBRADO.
+  """
+  salesByDriver(
+    """
+    Desde (día en hora argentina), YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.
+    """
+    from: String
+
+    """
+    Hasta (día en hora argentina, inclusive), YYYY-MM-DD. Si no viene: igual a `from`, o hoy.
+    """
+    to: String
+  ): SalesByDriver!
+
+  """
+  Ventas por medio de pago, de mayor a menor, con los totales. Mismos criterios que la API REST: días en hora argentina, `to` inclusivo, sólo lo COBRADO.
+  """
+  salesByPayment(
+    """
+    Desde (día en hora argentina), YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.
+    """
+    from: String
+
+    """
+    Hasta (día en hora argentina, inclusive), YYYY-MM-DD. Si no viene: igual a `from`, o hoy.
+    """
+    to: String
+  ): SalesByPayment!
+
+  """
+  Ventas por producto (subtotales de los renglones, sin recargos), de mayor a menor, con los totales. Mismos criterios que la API REST: días en hora argentina, `to` inclusivo, sólo lo COBRADO.
+  """
+  salesByProduct(
+    """
+    Desde (día en hora argentina), YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.
+    """
+    from: String
+
+    """
+    Hasta (día en hora argentina, inclusive), YYYY-MM-DD. Si no viene: igual a `from`, o hoy.
+    """
+    to: String
+  ): SalesByProduct!
+
+  """
+  Ventas por período (día, semana o mes), por fecha de entrega y con el total del pedido (con recargos). Mismos criterios que la API REST: días en hora argentina, `to` inclusivo, sólo lo COBRADO.
+  """
+  salesEvolution(
+    """
+    Desde (día en hora argentina), YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.
+    """
+    from: String
+
+    """Cómo se agrupan las ventas; por defecto, por día"""
+    granularity: Granularity = DAY
+
+    """
+    Hasta (día en hora argentina, inclusive), YYYY-MM-DD. Si no viene: igual a `from`, o hoy.
+    """
+    to: String
+  ): [SalesPeriod!]!
+
+  """
+  Ventas, pedidos y ticket promedio del rango y del período inmediato anterior. Mismos criterios que la API REST: días en hora argentina, `to` inclusivo, sólo lo COBRADO.
+  """
+  salesSummary(
+    """
+    Si es false no se calcula el período anterior (`previous` y `previousRange` vienen en null)
+    """
+    compare: Boolean = true
+
+    """
+    Desde (día en hora argentina), YYYY-MM-DD. Si no viene: igual a `to`, o hoy si tampoco viene `to`.
+    """
+    from: String
+
+    """
+    Hasta (día en hora argentina, inclusive), YYYY-MM-DD. Si no viene: igual a `from`, o hoy.
+    """
+    to: String
+  ): SalesComparison!
+}
+
+type SalesByDriver {
+  """De mayor a menor venta"""
+  rows: [SalesByDriverRow!]!
+  totals: SalesTotals!
+}
+
+"""Ventas cobradas de un chofer"""
+type SalesByDriverRow {
+  """user_id del chofer"""
+  driverId: String!
+  driverName: String
+  totalOrders: Int!
+  totalSales: Float!
+}
+
+type SalesByPayment {
+  """De mayor a menor venta"""
+  rows: [SalesByPaymentRow!]!
+  totals: SalesTotals!
+}
+
+"""Ventas cobradas de un medio de pago"""
+type SalesByPaymentRow {
+  """Medio de pago (cash, transfer, mercadopago…)"""
+  method: String!
+  totalOrders: Int!
+  totalSales: Float!
+}
+
+type SalesByProduct {
+  """De mayor a menor venta"""
+  rows: [SalesByProductRow!]!
+  totals: ProductSalesTotals!
+}
+
+"""Unidades y ventas cobradas de un producto"""
+type SalesByProductRow {
+  description: String
+  productType: String!
+  totalQuantity: Int!
+  totalSales: Float!
+}
+
+"""Resumen del período y del inmediato anterior"""
+type SalesComparison {
+  current: SalesSummary!
+  currentRange: DayRange!
+
+  """
+  El período inmediato anterior, de la misma cantidad de días; null con compare en false
+  """
+  previous: SalesSummary
+  previousRange: DayRange
+}
+
+"""Ventas cobradas de un período"""
+type SalesPeriod {
+  """Instante en que arranca el período (hora argentina)"""
+  period: DateTime!
+  totalOrders: Int!
+  totalSales: Float!
+}
+
+"""Ventas cobradas, pedidos y ticket promedio de un período"""
+type SalesSummary {
+  """Ventas / pedidos, a 2 decimales; 0 si no hubo pedidos"""
+  averageTicket: Float!
+
+  """Pedidos entregados y cobrados del período"""
+  totalOrders: Int!
+
+  """Ventas cobradas del período"""
+  totalSales: Float!
+}
+
+"""Totales de todas las filas, calculados por el back"""
+type SalesTotals {
+  """Suma de pedidos de todas las filas"""
+  totalOrders: Int!
+
+  """Suma de ventas de todas las filas"""
+  totalSales: Float!
+}

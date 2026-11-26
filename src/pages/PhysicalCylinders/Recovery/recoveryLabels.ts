@@ -1,4 +1,4 @@
-import type { RecoveryCase, RecoveryManualReview, RecoveryNotice } from '../../../services/api/types';
+import type { RecoveryCase, RecoveryManualReview, RecoveryNotice, RecoveryRisk } from '../../../services/api/types';
 import type { RecoveryDecision } from '../../../services/api/recovery';
 import { formatCurrencyExact, formatDate } from '../../../utils/format';
 import type { Label } from '../../../utils/statusLabels';
@@ -39,6 +39,23 @@ export const OFFER_STATUS: Map<NonNullable<RecoveryNotice['status']>> = {
   expired: { text: 'Vencida', tone: 'warn' },
 };
 
+/** La banda de riesgo del cliente para devolver a tiempo (M5): cambia cuándo se avisa, nunca el importe. */
+export const RECOVERY_RISK_BAND: Map<RecoveryRisk['band']> = {
+  low: { text: 'Riesgo bajo', tone: 'success' },
+  medium: { text: 'Riesgo medio', tone: 'info' },
+  high: { text: 'Riesgo alto', tone: 'danger' },
+};
+
+/** El puntaje en una línea: «Riesgo alto (puntaje 0,34)» o, sin historia, «Riesgo medio: sin historia todavía». */
+export const riskText = (risk: Pick<RecoveryRisk, 'band' | 'score' | 'neutral'>): string =>
+  risk.neutral
+    ? `${RECOVERY_RISK_BAND[risk.band].text}: sin historia todavía`
+    : `${RECOVERY_RISK_BAND[risk.band].text} (puntaje ${risk.score.toFixed(2).replace('.', ',')})`;
+
+/** «Retiro aprovechando la hoja #12» (el número puede faltar si la hoja todavía no lo tiene). */
+export const opportunisticText = (routeSheetNumber: number | null | undefined): string =>
+  routeSheetNumber ? `Retiro aprovechando la hoja #${routeSheetNumber}` : 'Retiro aprovechando la hoja de ruta';
+
 export const MANUAL_REVIEW_REASON: Record<RecoveryManualReview['reason'], string> = {
   sin_cliente: 'No se sabe en poder de quién está',
   sin_entrega_registrada: 'No hay un movimiento de entrega registrado',
@@ -75,6 +92,11 @@ export const DECISION_LABEL: Record<RecoveryDecision, string> = Object.fromEntri
 export const nextStepText = (c: RecoveryCase): string => {
   switch (c.status) {
     case 'open':
+      if (c.pickup?.opportunistic && c.pickup.status !== 'rejected' && c.pickup.status !== 'expired') {
+        return c.pickup.status === 'accepted'
+          ? `${opportunisticText(c.pickup.routeSheetNumber)}: espera al chofer`
+          : `${opportunisticText(c.pickup.routeSheetNumber)}: esperando respuesta`;
+      }
       return c.pickup?.status === 'accepted'
         ? 'Espera el retiro del chofer en la entrega'
         : `Pasa al próximo escalón el ${formatDate(c.stepDueAt)}`;

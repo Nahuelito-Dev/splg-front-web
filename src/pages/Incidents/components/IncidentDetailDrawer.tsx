@@ -89,7 +89,11 @@ export const IncidentDetailDrawer = ({ open, onClose, incident, onEdit, onDiscar
             {operateHint && <p className="mr-auto self-center text-sm text-muted">{operateHint}</p>}
             {unpaidOrder && (
               <ResolveUnpaidAction
-                order={{ order_id: unpaidOrder.order_id, total_amount: Number(unpaidOrder.totalAmount) }}
+                order={{
+                  order_id: unpaidOrder.order_id,
+                  total_amount: Number(unpaidOrder.totalAmount),
+                  paymentMethodDetail: unpaidOrder.paymentMethod,
+                }}
               />
             )}
             {onEdit && incident.type !== 'unpaid_collection' && (

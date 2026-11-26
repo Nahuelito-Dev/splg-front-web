@@ -11,6 +11,9 @@ import {
   DECISION_LABEL,
   NOTICE_KIND,
   OFFER_STATUS,
+  RECOVERY_RISK_BAND,
+  opportunisticText,
+  riskText,
   RECOVERY_CASE_STATUS,
   isPendingDecision,
   recoveryStepText,
@@ -49,7 +52,9 @@ const Notices = ({ recoveryCase }: { recoveryCase: RecoveryCaseDetail }) =>
       {recoveryCase.notices.map((n) => (
         <li key={n.noticeId} className="rounded-xl border border-outline p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span className="text-sm font-medium text-ink">{NOTICE_KIND[n.kind]}</span>
+            <span className="text-sm font-medium text-ink">
+              {n.opportunistic ? opportunisticText(n.routeSheetNumber) : NOTICE_KIND[n.kind]}
+            </span>
             {n.status && <Badge label={OFFER_STATUS[n.status]} />}
           </div>
           <p className="mt-1 text-xs text-muted">
@@ -164,6 +169,19 @@ export const RecoveryCaseDrawer = ({ caseId, onClose }: Props) => {
                 { label: 'Entregado', value: formatDateTime(recoveryCase.deliveredAt) },
                 { label: 'Días en su poder', value: String(recoveryCase.daysOut) },
                 { label: 'Escalón', value: recoveryStepText(recoveryCase.step) },
+                ...(recoveryCase.risk
+                  ? [
+                      {
+                        label: 'Riesgo del cliente',
+                        value: (
+                          <span className="flex flex-wrap items-center gap-2">
+                            <Badge label={RECOVERY_RISK_BAND[recoveryCase.risk.band]} />
+                            <span className="text-sm text-ink-2">{riskText(recoveryCase.risk)}</span>
+                          </span>
+                        ),
+                      },
+                    ]
+                  : []),
                 {
                   label: recoveryCase.status === 'open' ? 'Vence el escalón' : 'Caso abierto',
                   value: formatDateTime(

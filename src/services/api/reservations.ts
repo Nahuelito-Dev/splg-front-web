@@ -10,8 +10,8 @@ export const listReservations = async (): Promise<Reserva[]> => {
 };
 
 /**
- * PATCH /v2/orders/:id/confirm-deposit: confirma la seña recibida en efectivo o por transferencia y la asienta en una
- * caja (efectivo: la elegida en `cashBoxId`; transferencia: la de «Cajas de cobro»). Habilita la activación automática.
+ * PATCH /v2/orders/:id/confirm-deposit: confirma la seña recibida en efectivo y la asienta en la
+ * caja elegida en `cashBoxId`. Habilita la activación automática.
  */
 export const confirmReservationDeposit = async (
   orderId: string,

@@ -14,11 +14,12 @@ import type {
   LateOrder,
   LoadSuggestion,
   MoveRouteSheetStopBody,
-  PatchRoutePlanningSettingsBody,
+  PatchRoutePlanningSettingsV3Body,
   ProcessConfig,
   RoutePlanDay,
   RoutePlanProposal,
   RoutePlanningHoliday,
+  ServiceTime,
   RouteSheet,
   RouteSheetExecution,
   RouteSheetMove,
@@ -36,6 +37,7 @@ import type {
 } from './types';
 
 const v2 = { baseURL: env.apiUrlV2 };
+const v3 = { baseURL: env.apiUrlV3 };
 
 /** Códigos del back que el panel trata aparte (ver HOJA-DE-RUTA.md, «Versión optimista»). */
 export const ROUTE_SHEET_CODES = {
@@ -152,9 +154,18 @@ export const getRoutePlanningSettings = async (): Promise<ProcessConfig> => {
   return data;
 };
 
-/** PATCH /v2/route-planning/settings: cambia sólo los parámetros que vienen. */
-export const patchRoutePlanningSettings = async (body: PatchRoutePlanningSettingsBody): Promise<ProcessConfig> => {
-  const { data } = await http.patch<ProcessConfig>('/route-planning/settings', body, v2);
+/**
+ * PATCH /v3/route-planning/settings: cambia sólo los parámetros que vienen. La v3 suma `serviceMinutesMode`
+ * (`fixed` | `learned`) a los de la v2.
+ */
+export const patchRoutePlanningSettings = async (body: PatchRoutePlanningSettingsV3Body): Promise<ProcessConfig> => {
+  const { data } = await http.patch<ProcessConfig>('/route-planning/settings', body, v3);
+  return data;
+};
+
+/** GET /v3/route-planning/service-time: el tiempo de atención aprendido (sugerido) frente al que rige (vigente). */
+export const getRouteServiceTime = async (): Promise<ServiceTime> => {
+  const { data } = await http.get<ServiceTime>('/route-planning/service-time', v3);
   return data;
 };
 

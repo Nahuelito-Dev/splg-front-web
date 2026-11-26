@@ -4,8 +4,11 @@ import {
   customerHref,
   daysLeftText,
   INVITATION_STATUS,
+  noticeScheduleText,
+  offsetText,
   runSummary,
   SKIP_REASON,
+  whenText,
 } from './repurchaseLabels';
 
 describe('repurchaseLabels', () => {
@@ -41,5 +44,35 @@ describe('repurchaseLabels', () => {
       `2 invitación(es) · 1 vencida(s) · sin invitar: 4 ${SKIP_REASON.not_yet.toLowerCase()}, 1 ${SKIP_REASON.recent_order.toLowerCase()}, 2 raro`,
     );
     expect(runSummary({ invited: 0, expired: 0, skipped: {} })).toBe('0 invitación(es)');
+  });
+
+  it('el ajuste se dice con signo y sólo si lo hay', () => {
+    expect(offsetText(0)).toBeNull();
+    expect(offsetText(3)).toBe('+3 días respecto del promedio');
+    expect(offsetText(1)).toBe('+1 día respecto del promedio');
+    expect(offsetText(-2)).toBe('−2 días respecto del promedio');
+  });
+
+  it('la hora del aviso se dice en hora de Buenos Aires: hoy, mañana o con fecha', () => {
+    const now = new Date('2026-11-25T12:00:00Z');
+    expect(whenText('2026-11-25T21:00:00.000Z', now)).toBe('hoy a las 18:00');
+    expect(whenText('2026-11-26T12:05:00.000Z', now)).toBe('mañana a las 09:05');
+    expect(whenText('2026-12-03T21:00:00.000Z', now)).toMatch(/^el .*2026 a las 18:00$/);
+  });
+
+  it('el aviso programado, el ya enviado y la ausencia de invitación', () => {
+    const now = new Date('2026-11-25T12:00:00Z');
+    const open = { invitationId: 'i-1', expiresAt: '2026-11-26T12:00:00.000Z' };
+    expect(noticeScheduleText({ openInvitation: null, notifyAt: null, notifiedAt: null }, now)).toBeNull();
+    expect(
+      noticeScheduleText({ openInvitation: open, notifyAt: '2026-11-25T21:00:00.000Z', notifiedAt: null }, now),
+    ).toBe('Se avisa hoy a las 18:00');
+    expect(
+      noticeScheduleText(
+        { openInvitation: open, notifyAt: '2026-11-25T12:00:00.000Z', notifiedAt: '2026-11-25T12:05:00.000Z' },
+        now,
+      ),
+    ).toBe('Avisado hoy a las 09:05');
+    expect(noticeScheduleText({ openInvitation: open, notifyAt: null, notifiedAt: null }, now)).toBeNull();
   });
 });

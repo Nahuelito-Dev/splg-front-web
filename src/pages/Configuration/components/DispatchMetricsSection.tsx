@@ -1,9 +1,17 @@
-import { CheckCircle2, Clock, PackageCheck, Repeat, Timer, Truck, UserX, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, Route, PackageCheck, Repeat, Timer, Truck, UserX, XCircle } from 'lucide-react';
 import { Card, CardHeader, EmptyState, ErrorState, KpiCard, Skeleton } from '../../../common/components/ui';
 import { usePermiso } from '../../../hooks/usePermiso';
 import { useDispatchMetrics } from '../../../services/queries/dispatchMetrics';
+import type { DispatchMetrics } from '../../../services/api/types';
 import { formatNumber } from '../../../utils/format';
 import { formatPercent, formatRatio, formatSeconds } from '../dispatchMetricsFormat';
+
+const METHOD_LABELS: Record<DispatchMetrics['asignacionPorMetodo'][number]['method'], string> = {
+  automatic: 'Automático',
+  manual_override: 'Manual',
+  route_sheet: 'Hoja de ruta',
+  batch: 'Lote',
+};
 
 const TOP_TABLE = 'w-full text-left text-[13.5px]';
 const CELL = 'py-2 pr-3 align-middle tabular-nums';
@@ -32,7 +40,7 @@ export const DispatchMetricsSection = () => {
         </div>
       );
     }
-    if (data.pedidosDespachados === 0 && data.pedidosSinChofer === 0) {
+    if (data.pedidosDespachados === 0 && data.pedidosSinChofer === 0 && data.pedidosAsignados === 0) {
       return (
         <EmptyState
           title="Todavía no hay pedidos despachados"
@@ -71,6 +79,54 @@ export const DispatchMetricsSection = () => {
             value={formatSeconds(data.hastaAsignar.mediana)}
             hint={`Típico · 9 de cada 10 en ${formatSeconds(data.hastaAsignar.p90)}`}
           />
+        </div>
+        <div>
+          <h3 className="mb-2 text-sm font-semibold text-ink">Orden por calle</h3>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <KpiCard
+              title="Ordenadas por calle"
+              icon={Route}
+              value={formatPercent(data.porcentajeOrdenadasPorOsrm)}
+              hint={
+                data.ofertasConEstimacion === 0
+                  ? 'Todavía sin ofertas medidas'
+                  : `El resto, en línea recta · ${formatNumber(data.ofertasConEstimacion)} ofertas medidas`
+              }
+            />
+            <KpiCard
+              title="Llegada estimada"
+              icon={Timer}
+              value={data.minutosEstimadosPromedio === null ? '—' : `${formatRatio(data.minutosEstimadosPromedio)} min`}
+              hint="Promedio al ofrecer el pedido"
+            />
+          </div>
+        </div>
+        <div>
+          <h3 className="mb-2 text-sm font-semibold text-ink">Cómo se asignaron los pedidos</h3>
+          <p className="mb-2 text-[13px] text-muted">
+            Según la asignación vigente de cada pedido: si se reasignó, cuenta el último chofer.
+          </p>
+          {data.pedidosAsignados === data.asignadosSinMetodo ? (
+            <p className="text-[13.5px] text-muted">
+              Todavía no hay pedidos asignados con el método registrado en este período.
+            </p>
+          ) : (
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Pedidos asignados por método">
+              {data.asignacionPorMetodo.map((item) => (
+                <li key={item.method} className="rounded-xl border border-outline-soft p-3">
+                  <p className="text-[12.5px] font-medium text-muted">{METHOD_LABELS[item.method]}</p>
+                  <p className="text-lg font-semibold tabular-nums text-ink">{formatPercent(item.porcentaje)}</p>
+                  <p className="text-xs tabular-nums text-muted">{formatNumber(item.cantidad)} pedidos</p>
+                </li>
+              ))}
+            </ul>
+          )}
+          {data.asignadosSinMetodo > 0 && data.pedidosAsignados !== data.asignadosSinMetodo && (
+            <p className="mt-2 text-xs text-muted">
+              {formatNumber(data.asignadosSinMetodo)} pedidos anteriores no tienen el método registrado y no entran en
+              el porcentaje.
+            </p>
+          )}
         </div>
         <div>
           <h3 className="mb-2 text-sm font-semibold text-ink">Choferes que más aceptan</h3>

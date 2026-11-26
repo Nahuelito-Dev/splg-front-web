@@ -31,6 +31,9 @@ import {
   FINISHING_RADIUS_MIN_METERS,
   NO_DRIVER_EXPIRY_MAX_MINUTES,
   NO_DRIVER_EXPIRY_MIN_MINUTES,
+  OSRM_CANDIDATES_DEFAULT,
+  OSRM_CANDIDATES_MAX,
+  OSRM_CANDIDATES_MIN,
   OFFER_TTL_MAX_SECONDS,
   OFFER_TTL_MIN_SECONDS,
   RADIUS_MAX_KM,
@@ -249,6 +252,28 @@ const DispatchForm = ({ config, canWrite, writeHint }: FormProps) => {
         <p className="mt-2 text-sm text-muted">
           El chofer sólo puede marcar «Llegué» si está a esta distancia o menos del punto de entrega. Con 0 se apaga el
           control de distancia. Por omisión, {ARRIVAL_RADIUS_DEFAULT_METERS} metros.
+        </p>
+      </Card>
+
+      <Card className="p-6">
+        <CardHeader title="Quién llega antes" className="" />
+        <div className="mt-4 w-48">
+          <FormInput
+            name="osrm"
+            label="Choferes a medir por calle"
+            type="number"
+            inputMode="numeric"
+            min={OSRM_CANDIDATES_MIN}
+            max={OSRM_CANDIDATES_MAX}
+            disabled={!canWrite}
+            hint={`${OSRM_CANDIDATES_MIN} a ${OSRM_CANDIDATES_MAX}`}
+          />
+        </div>
+        <p className="mt-2 text-sm text-muted">
+          En cada paso de radio, el sistema mide cuánto tarda por calle cada uno de los primeros choferes disponibles
+          (los que tienen la posición al día) y ofrece el pedido al que llega antes, no al más cercano en línea recta.
+          Con 1 sólo se mide al primero. Si el servicio de calles no responde, se ofrece igual, en el orden de cercanía.
+          Por omisión, {OSRM_CANDIDATES_DEFAULT} choferes.
         </p>
       </Card>
 

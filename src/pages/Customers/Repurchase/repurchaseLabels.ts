@@ -5,6 +5,7 @@ import type {
   RepurchaseForecastRow,
   RepurchaseRun,
 } from '../../../services/api/types';
+import { argentinaDay, formatDate } from '../../../utils/format';
 import type { Label } from '../../../utils/statusLabels';
 
 /** Las ventanas de días que se pueden mirar hacia adelante en «Próximas recompras». */
@@ -72,4 +73,54 @@ export const runSummary = (run: Pick<RepurchaseRun, 'invited' | 'expired' | 'ski
   ]
     .filter(Boolean)
     .join(' · ');
+};
+
+/** El ajuste del cliente sobre su fecha: «+3 días respecto del promedio». Sin ajuste, nada que decir. */
+export const offsetText = (offsetDays: number): string | null => {
+  if (offsetDays === 0) return null;
+  const days = Math.abs(offsetDays);
+  return `${offsetDays > 0 ? '+' : '−'}${days} ${days === 1 ? 'día' : 'días'} respecto del promedio`;
+};
+
+/** Ayuda corta de las dos columnas nuevas, para quien se pregunta de dónde sale cada cosa. */
+export const OFFSET_HELP =
+  'El ajuste corre la fecha de cada cliente según cuánto le acertó la estimación en sus invitaciones anteriores (hasta 15 días para cada lado). Sólo rige con consumo declarado o poca historia: con más compras, el ritmo propio ya corrige.';
+export const NOTICE_HELP =
+  'El aviso sale en el horario de la franja que el cliente suele elegir; sin franja, cuando se abre la invitación.';
+
+/** 18:00, siempre en 24 horas y en hora de Buenos Aires (no la del navegador). */
+const clock24 = new Intl.DateTimeFormat('es-AR', {
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: 'America/Argentina/Buenos_Aires',
+});
+
+const dayAfter = (day: string): string => {
+  const next = new Date(`${day}T12:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString().slice(0, 10);
+};
+
+/** «hoy a las 18:00», «mañana a las 09:00» o «el 3 dic 2026 a las 18:00» (hora de Buenos Aires). */
+export const whenText = (iso: string, now: Date = new Date()): string => {
+  const day = argentinaDay(iso);
+  const today = argentinaDay(now);
+  const time = clock24.format(new Date(iso));
+  if (day === today) return `hoy a las ${time}`;
+  if (day === dayAfter(today)) return `mañana a las ${time}`;
+  return `el ${formatDate(iso)} a las ${time}`;
+};
+
+/**
+ * Qué pasa con el aviso de la invitación abierta: «Se avisa hoy a las 18:00» o «Avisado hoy a las 09:05».
+ * Sin invitación abierta (o sin hora programada) no hay nada que decir.
+ */
+export const noticeScheduleText = (
+  row: Pick<RepurchaseForecastRow, 'openInvitation' | 'notifyAt' | 'notifiedAt'>,
+  now: Date = new Date(),
+): string | null => {
+  if (!row.openInvitation) return null;
+  if (row.notifiedAt) return `Avisado ${whenText(row.notifiedAt, now)}`;
+  return row.notifyAt ? `Se avisa ${whenText(row.notifyAt, now)}` : null;
 };

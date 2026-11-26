@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { Card, PageHeader, PageContainer } from '../../common/components/ui';
 import { usePermissions } from '../../hooks';
 import { useCurrentDistributor } from '../../services/queries/distributors';
-import { BankDetailsCard } from './components/BankDetailsCard';
 import { ContainerChargeCard } from './components/ContainerChargeCard';
 import { MercadoPagoCard } from './components/MercadoPagoCard';
 import { PaymentSurchargesCard } from './components/PaymentSurchargesCard';
@@ -27,7 +26,6 @@ export const Configuration = () => {
             </Link>
           </Card>
         )}
-        <BankDetailsCard />
         <MercadoPagoCard />
         <PaymentSurchargesCard />
         <ContainerChargeCard />

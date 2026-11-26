@@ -35,9 +35,17 @@ const CONFIG = {
   fields: [
     field('toleranceDays', 'integer', 1, 365, 30, 'días', 'Tolerancia de devolución'),
     field('escalationAmountThreshold', 'number', 0, 100000000, 50000, '$', 'Umbral para escalar'),
+    field('toleranceHighRiskPercent', 'integer', 10, 300, 70, '%', 'Porcentaje de tolerancia (riesgo alto)'),
+    field('opportunisticPickupRadiusMeters', 'integer', 50, 2000, 300, 'm', 'Radio del retiro aprovechando la hoja'),
     field('enabled', 'integer', 0, 1, 0, '', 'Encender el recupero'),
   ],
-  params: { toleranceDays: 30, escalationAmountThreshold: 50000, enabled: 0 },
+  params: {
+    toleranceDays: 30,
+    escalationAmountThreshold: 50000,
+    toleranceHighRiskPercent: 70,
+    opportunisticPickupRadiusMeters: 300,
+    enabled: 0,
+  },
   isDefault: true,
   updatedAt: null,
   updatedByUserId: null,
@@ -67,8 +75,27 @@ describe('RecoverySettingsModal', () => {
     expect(update.current.mutate.mock.calls[0][0]).toEqual({
       toleranceDays: 45,
       escalationAmountThreshold: 1234.5,
+      toleranceHighRiskPercent: 70,
+      opportunisticPickupRadiusMeters: 300,
       enabled: 0,
     });
+  });
+
+  it('muestra los parámetros por banda de riesgo y el radio, con su rango, y los manda como números', async () => {
+    open();
+    expect(screen.getByLabelText('Porcentaje de tolerancia (riesgo alto)')).toHaveValue(70);
+    expect(screen.getByText('10 a 300 %')).toBeInTheDocument();
+    expect(screen.getByText('50 a 2000 m')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Radio del retiro aprovechando la hoja'), { target: { value: '45' } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled());
+    fireEvent.change(screen.getByLabelText('Radio del retiro aprovechando la hoja'), { target: { value: '400' } });
+    fireEvent.change(screen.getByLabelText('Porcentaje de tolerancia (riesgo alto)'), { target: { value: '50' } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() => expect(update.current.mutate).toHaveBeenCalled());
+    expect(update.current.mutate.mock.calls[0][0]).toEqual(
+      expect.objectContaining({ opportunisticPickupRadiusMeters: 400, toleranceHighRiskPercent: 50 }),
+    );
   });
 
   it('el interruptor arranca apagado y al encenderlo manda enabled en 1', async () => {
@@ -82,6 +109,8 @@ describe('RecoverySettingsModal', () => {
     expect(update.current.mutate.mock.calls[0][0]).toEqual({
       toleranceDays: 30,
       escalationAmountThreshold: 50000,
+      toleranceHighRiskPercent: 70,
+      opportunisticPickupRadiusMeters: 300,
       enabled: 1,
     });
   });

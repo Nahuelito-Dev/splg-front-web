@@ -5,7 +5,16 @@ import { useUrlParam } from '../../../hooks';
 import type { RepurchaseForecastRow } from '../../../services/api/types';
 import { useRepurchaseForecast } from '../../../services/queries/repurchase';
 import { formatDate, formatNumber } from '../../../utils/format';
-import { daysLeftText, DEFAULT_FORECAST_WINDOW, ESTIMATE_SOURCE, FORECAST_WINDOWS } from './repurchaseLabels';
+import {
+  daysLeftText,
+  DEFAULT_FORECAST_WINDOW,
+  ESTIMATE_SOURCE,
+  FORECAST_WINDOWS,
+  NOTICE_HELP,
+  noticeScheduleText,
+  OFFSET_HELP,
+  offsetText,
+} from './repurchaseLabels';
 import { RepurchaseCustomerLink } from './RepurchaseCustomerLink';
 
 const unitsText = (units: number): string => `${units} ${units === 1 ? 'garrafa' : 'garrafas'}`;
@@ -44,11 +53,14 @@ export const RepurchaseForecastTab = () => {
       {
         field: 'estimatedAt',
         headerName: 'Se le acaba',
-        width: 170,
+        width: 220,
         renderCell: ({ row }) => (
           <div className="leading-tight">
             <span className="block text-ink">{formatDate(row.estimatedAt)}</span>
             <span className="block text-[11.5px] text-muted">{daysLeftText(row.daysLeft)}</span>
+            {offsetText(row.offsetDays) && (
+              <span className="block text-[11.5px] text-muted">{offsetText(row.offsetDays)}</span>
+            )}
           </div>
         ),
       },
@@ -83,12 +95,16 @@ export const RepurchaseForecastTab = () => {
       {
         field: 'invitation',
         headerName: 'Aviso',
-        width: 170,
+        width: 230,
         sortable: false,
         renderCell: ({ row }) => {
           const label = invitationLabel(row);
+          const schedule = noticeScheduleText(row);
           return label ? (
-            <Badge label={label} />
+            <div className="leading-tight">
+              <Badge label={label} />
+              {schedule && <span className="mt-0.5 block text-[11.5px] text-muted">{schedule}</span>}
+            </div>
           ) : (
             <span className="text-[13px] text-muted">{`${row.noticeDays} d de anticipación`}</span>
           );
@@ -117,6 +133,9 @@ export const RepurchaseForecastTab = () => {
           </Button>
         ))}
       </div>
+      <p className="text-[12.5px] text-muted">
+        {OFFSET_HELP} {NOTICE_HELP}
+      </p>
       {error && !data ? (
         <ErrorState error={error} resource="Las próximas recompras" onRetry={() => void refetch()} />
       ) : (
@@ -144,6 +163,7 @@ export const RepurchaseForecastTab = () => {
               </div>
               <p className="text-xs text-muted">
                 {formatDate(row.estimatedAt)} · {ESTIMATE_SOURCE[row.source]}
+                {offsetText(row.offsetDays) ? ` · ${offsetText(row.offsetDays)}` : ''}
               </p>
               <p className="text-xs text-muted">
                 Última compra {formatDate(row.lastPurchaseAt)} · {unitsText(row.usualUnits)}
@@ -151,6 +171,9 @@ export const RepurchaseForecastTab = () => {
               {invitationLabel(row) && (
                 <div className="mt-1.5">
                   <Badge label={invitationLabel(row) as NonNullable<ReturnType<typeof invitationLabel>>} />
+                  {noticeScheduleText(row) && (
+                    <span className="mt-0.5 block text-xs text-muted">{noticeScheduleText(row)}</span>
+                  )}
                 </div>
               )}
             </RepurchaseCustomerLink>

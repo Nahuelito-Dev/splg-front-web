@@ -13,7 +13,7 @@ export const useReservations = (options: { enabled?: boolean } = {}) =>
   });
 
 /**
- * Confirma la seña de una reserva (efectivo o transferencia) y la asienta en una caja. Invalida reservas, pedidos y
+ * Confirma la seña de una reserva (en efectivo) y la asienta en una caja. Invalida reservas, pedidos y
  * todo lo que la seña mueve (cajas, movimientos, cobros sin asentar).
  */
 export const useConfirmReservationDeposit = () => {

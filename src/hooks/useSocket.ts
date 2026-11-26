@@ -22,12 +22,15 @@ export const ORDER_SOCKET_EVENTS = {
   ASSIGNMENT_DECLINED: 'order:assignment-declined',
   // El cliente cambió la dirección de entrega (CU-127): la ficha y las listas se refrescan.
   ADDRESS_CHANGED: 'order:address-changed',
+  // Entrega fallida y nueva visita (C5): el chofer no pudo entregar, o el cliente o el admin movieron la visita.
+  FAILED_VISIT: 'order:failed-visit',
+  REVISIT_UPDATED: 'order:revisit-updated',
 } as const;
 
 export type OrderSocketEventName = (typeof ORDER_SOCKET_EVENTS)[keyof typeof ORDER_SOCKET_EVENTS];
 
 /** Motivos por los que un pedido pendiente se queda sin chofer a quien ofrecerlo (`MotivoSinChoferes` del back). */
-export type NoDriversReason = 'no_drivers_in_range' | 'all_drivers_exhausted' | 'no_delivery_point';
+export type NoDriversReason = 'no_drivers_in_range' | 'all_drivers_exhausted' | 'no_delivery_point' | 'no_stock';
 
 /**
  * Evento que emite el DispatchOrchestratorService a los admins de la distribuidora cuando un pedido pendiente ya no
@@ -155,21 +158,6 @@ export interface PaymentRefundedPayload {
   kind?: string;
   amount: number;
   at: string;
-  distributorId?: string | null;
-}
-
-/**
- * Evento que emite el back a los admins de la distribuidora cuando el cliente sube el comprobante de una
- * transferencia (API v2).
- */
-export const TRANSFER_RECEIPT_UPLOADED_EVENT = 'order:transfer-receipt-uploaded';
-
-/** Payload de TRANSFER_RECEIPT_UPLOADED_EVENT. */
-export interface TransferReceiptUploadedPayload {
-  orderId: string;
-  customerId: string;
-  attachmentId: string;
-  uploadedAt: string;
   distributorId?: string | null;
 }
 

@@ -20,12 +20,10 @@ vi.mock('./components/details/OrderItemsSummary', () => ({ OrderItemsSummary: ()
 vi.mock('./components/details/OrderHistoryCard', () => ({ OrderHistoryCard: () => <div>Historial</div> }));
 vi.mock('./components/details/OrderSideCards', () => ({ OrderSideCards: () => <div>Laterales</div> }));
 vi.mock('./components/details/OrderIncidents', () => ({ OrderIncidents: () => <div>Incidencias</div> }));
+vi.mock('./components/details/OrderNotifications', () => ({ OrderNotifications: () => <div>Avisos</div> }));
 vi.mock('../PhysicalCylinders/components/CylinderLinksCard', () => ({ CylinderLinksCard: () => <div>Envases</div> }));
 vi.mock('./components/details/OrderCashSettlementCard', () => ({
   OrderCashSettlementCard: ({ orderId }: { orderId: string }) => <div>Cobro en caja de {orderId}</div>,
-}));
-vi.mock('./components/details/OrderTransferReceipts', () => ({
-  OrderTransferReceipts: ({ orderId }: { orderId: string }) => <div>Comprobantes de {orderId}</div>,
 }));
 
 import { OrderDetails } from './OrderDetails';
@@ -53,21 +51,6 @@ describe('OrderDetails', () => {
     renderPage();
     expect(screen.getByText('Elegí una distribuidora')).toBeInTheDocument();
     expect(useOrder).toHaveBeenCalledWith('o-1', expect.objectContaining({ enabled: false }));
-  });
-
-  it.each([
-    ['transfer', true],
-    ['cash', false],
-  ])('con pago %s, los comprobantes de transferencia se muestran: %s', (metodo, visibles) => {
-    permissions.mockReturnValue({ needsDistributor: false, canWrite: true, canOperate: true });
-    useOrder.mockReturnValue({
-      data: { order_id: 'o-1', status: 'pending', paymentMethodDetail: metodo },
-      isPending: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-    renderPage();
-    expect(screen.queryByText('Comprobantes de o-1') !== null).toBe(visibles);
   });
 
   it.each([

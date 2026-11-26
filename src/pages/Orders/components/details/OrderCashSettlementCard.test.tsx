@@ -34,9 +34,9 @@ describe('OrderCashSettlementCard', () => {
   });
 
   it('un cobro sin asentar lo dice y lleva a configurar las cajas', () => {
-    render([entry({ kind: 'transfer', settled: false, movementId: null, cashBoxId: null, cashBoxName: null })]);
+    render([entry({ kind: 'deposit', settled: false, movementId: null, cashBoxId: null, cashBoxName: null })]);
     expect(screen.getByText('Cobrado sin asentar')).toBeInTheDocument();
-    expect(screen.getByText(/Transferencia/)).toBeInTheDocument();
+    expect(screen.getByText(/Seña de la reserva/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Configurar cajas de cobro' })).toHaveAttribute(
       'href',
       '/finance/collection-settings',

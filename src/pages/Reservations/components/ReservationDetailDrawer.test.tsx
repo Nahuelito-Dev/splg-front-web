@@ -98,12 +98,11 @@ describe('ReservationDetailDrawer', () => {
     expect(screen.getByText('Sólo el día')).toBeInTheDocument();
   });
 
-  it('una seña por transferencia sin cobrar se confirma a mano, con su texto', () => {
-    const onConfirm = vi.fn();
-    renderDrawer(reservation({ paymentMethod: 'transfer' }), onConfirm);
-    fireEvent.click(screen.getByRole('button', { name: 'Confirmar transferencia recibida' }));
-    expect(onConfirm).toHaveBeenCalledWith('abcdef123456', undefined);
-    expect(screen.getByText(/caja de transferencias que elegiste/)).toBeInTheDocument();
+  it('una seña vieja por transferencia se confirma sin caja y explica que no entra a ninguna', () => {
+    renderDrawer(reservation({ paymentMethod: 'transfer' }));
+    expect(screen.getByRole('button', { name: 'Confirmar seña de transferencia anterior' })).toBeInTheDocument();
+    expect(screen.getByText(/no entra a\s+ninguna caja/)).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /Caja/ })).not.toBeInTheDocument();
   });
 
   it('una seña por MercadoPago no se confirma a mano y muestra el enlace de pago', () => {

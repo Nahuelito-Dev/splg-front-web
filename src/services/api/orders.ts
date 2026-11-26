@@ -5,7 +5,6 @@ import type {
   CancelOrderBody,
   CodigoDeEntrega,
   ConfirmDeliveryV3Body,
-  ConfirmTransferBody,
   CreateOrderBody,
   CustomerPurchaseStats,
   DeliveryOptions,
@@ -14,7 +13,6 @@ import type {
   MotivoDeCobroBody,
   Order,
   OrderPaymentState,
-  OrderReceiptFile,
   OrderStatusHistoryEntry,
   PaginatedOrders,
   Quote,
@@ -297,34 +295,10 @@ export const registerUnpaidPayment = async (
 };
 
 /**
- * PATCH /orders/:id/payment/confirm-transfer: el admin confirma que la transferencia llegó (`received: true`, pasa a
- * `paid` desde `pending` o `failed`) o que no llegó (`received: false`, `failed`; sólo desde `pending` y sobre un pedido
- * entregado). 409 si la contraria ya estaba decidida (`paid` → `failed`).
- */
-export const confirmTransfer = async (
-  id: string,
-  body: ConfirmTransferBody,
-  idempotencyKey: string,
-): Promise<Order> => {
-  const { data } = await http.patch<Order>(`/orders/${id}/payment/confirm-transfer`, body, {
-    headers: idempotencyHeaders(idempotencyKey),
-  });
-  return data;
-};
-
-/**
  * GET /orders/delivery-options: modalidades de entrega para una dirección (CU-148). La programada siempre figura;
  * la express sólo con cobertura, horario y una moto cerca. No escribe nada: el alta vuelve a evaluar.
  */
 export const getDeliveryOptions = async (addressId: string, customerId: string): Promise<DeliveryOptions> => {
   const { data } = await http.get<DeliveryOptions>('/orders/delivery-options', { params: { addressId, customerId } });
-  return data;
-};
-
-/** GET /v2/orders/:id/transfer-receipt: los comprobantes del pedido, del más nuevo al más viejo, con su URL firmada (vence en `expiresAt`). */
-export const listOrderTransferReceipts = async (orderId: string): Promise<OrderReceiptFile[]> => {
-  const { data } = await http.get<OrderReceiptFile[]>(`/orders/${orderId}/transfer-receipt`, {
-    baseURL: env.apiUrlV2,
-  });
   return data;
 };

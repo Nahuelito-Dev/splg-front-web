@@ -22,6 +22,8 @@ export const env = {
   apiUrlV2: `${apiBase}/v2`,
   /** Base de la v3: el código de entrega al revés (lo ve el cliente, lo tipea el chofer). */
   apiUrlV3: `${apiBase}/v3`,
+  /** API GraphQL (sólo lectura, informes): no tiene versión en la ruta. */
+  graphqlUrl: `${apiBase}/graphql`,
   /** Servidor de sockets; por defecto, la API sin el sufijo /api. */
   socketUrl: import.meta.env.VITE_APP_SOCKET_URL ?? apiBase.replace(/\/api$/, ''),
   /**

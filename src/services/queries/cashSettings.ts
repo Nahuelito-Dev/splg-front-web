@@ -14,7 +14,7 @@ interface Options {
   enabled?: boolean;
 }
 
-/** Las cajas a las que entra lo cobrado por Mercado Pago y por transferencia. */
+/** La caja a la que entra lo cobrado por Mercado Pago. */
 export const useCashSettings = ({ enabled = true }: Options = {}) =>
   useQuery({ queryKey: queryKeys.cashSettings.list({ kind: 'settings' }), queryFn: getCashSettings, enabled });
 
@@ -26,7 +26,7 @@ export const usePendingCollections = (from: string, { enabled = true }: Options 
     enabled: enabled && Boolean(from),
   });
 
-/** A qué caja entró lo cobrado de un pedido (si fue por Mercado Pago o transferencia). */
+/** A qué caja entró lo cobrado de un pedido (Mercado Pago; en un pedido viejo, transferencia). */
 export const useOrderCashSettlement = (orderId: string | undefined, { enabled = true }: Options = {}) =>
   useQuery({
     queryKey: queryKeys.cashSettings.detail(orderId ?? ''),

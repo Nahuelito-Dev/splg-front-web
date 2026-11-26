@@ -71,7 +71,7 @@ export const GrantAccountModal = ({ open, onClose, employee }: Props) => {
           required
           type="password"
           autoComplete="new-password"
-          hint="Al menos 6 caracteres."
+          hint="De 8 a 128 caracteres, con una mayúscula, una minúscula y un número."
         />
         <FormInput
           name="phoneNumber"

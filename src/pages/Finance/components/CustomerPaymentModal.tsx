@@ -11,7 +11,7 @@ import { optionalText, parseMoney, positiveMoney } from '../financeSchemas';
 
 const schema = z.object({
   amount: positiveMoney(),
-  method: z.enum(['cash', 'transfer', 'card', 'mercadopago', 'check']),
+  method: z.enum(['cash', 'card', 'mercadopago', 'check']),
   cashBoxId: z.string().min(1, 'Elegí la caja donde entra el pago'),
   description: optionalText(255),
 });
@@ -19,7 +19,6 @@ type Values = z.infer<typeof schema>;
 
 const METHODS = [
   { value: 'cash', label: 'Efectivo' },
-  { value: 'transfer', label: 'Transferencia' },
   { value: 'card', label: 'Tarjeta' },
   { value: 'mercadopago', label: 'MercadoPago' },
   { value: 'check', label: 'Cheque' },

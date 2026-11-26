@@ -11,6 +11,11 @@ const ADMIN: NavViewer = { mode: 'company', permissions: 'all' };
 const OWNED: NavViewer = { mode: 'owned', permissions: 'all' };
 
 describe('menú por alcance', () => {
+  it('«Avisos enviados» se oculta sin el permiso de auditoría', () => {
+    expect(visiblePaths({ mode: 'company', permissions: ['auditoria.ver'] })).toContain('/sent-notifications');
+    expect(visiblePaths({ mode: 'company', permissions: ['pedidos.ver'] })).not.toContain('/sent-notifications');
+  });
+
   it('«Ayuda» (chat con la plataforma y tickets) es del admin de la empresa con soporte.ver', () => {
     expect(visiblePaths({ mode: 'company', permissions: ['soporte.ver'] })).toContain('/support');
     expect(visiblePaths({ mode: 'company', permissions: [] })).not.toContain('/support');

@@ -26,6 +26,9 @@ import type {
   FleetPlan,
   FleetTask,
   FuelLoad,
+  FailedVisit,
+  FailedVisitOrder,
+  NotificationLogItem,
   Incident,
   InsuranceInstallment,
   InsurancePolicy,
@@ -283,6 +286,86 @@ export const INCIDENT_STATUS: LabelMap<Incident['status']> = {
   open: { text: 'Abierta', tone: 'warn' },
   resolved: { text: 'Resuelta', tone: 'success' },
   discarded: { text: 'Descartada', tone: 'neutral' },
+};
+
+/** Por qué no se pudo entregar (lo elige el chofer). */
+export const FAILED_VISIT_REASON: LabelMap<FailedVisit['reason']> = {
+  customer_absent: { text: 'El cliente no estaba', tone: 'warn' },
+  address_closed: { text: 'Domicilio cerrado', tone: 'warn' },
+  rejected: { text: 'Rechazó el pedido', tone: 'danger' },
+  other: { text: 'Otro motivo', tone: 'neutral' },
+};
+
+/** En qué está la nueva visita de un pedido con una entrega fallida. */
+export const REVISIT_STATUS: LabelMap<NonNullable<FailedVisitOrder['revisitStatus']>> = {
+  awaiting_admin: { text: 'Decidís vos', tone: 'danger' },
+  proposed: { text: 'Propuesta al cliente', tone: 'warn' },
+  confirmed: { text: 'Confirmada', tone: 'success' },
+};
+
+export const NOTIFICATION_CHANNEL: LabelMap<NotificationLogItem['channel']> = {
+  push: { text: 'Notificación', tone: 'info' },
+  email: { text: 'Correo', tone: 'primary' },
+};
+
+/** Cómo salió un aviso: `skipped` es que el sistema no pudo mandarlo (p. ej. sin el envío de correo configurado). */
+export const NOTIFICATION_STATUS: LabelMap<NotificationLogItem['status']> = {
+  sent: { text: 'Enviado', tone: 'success' },
+  failed: { text: 'Falló', tone: 'danger' },
+  skipped: { text: 'No salió', tone: 'warn' },
+};
+
+/** Qué aviso fue: el código del sistema con su nombre en castellano. Uno desconocido se muestra tal cual. */
+const NOTIFICATION_TYPE: Record<string, string> = {
+  ORDER_CONFIRMATION: 'Pedido confirmado',
+  ORDER_STATUS_UPDATE: 'Cambio de estado del pedido',
+  NEW_ORDER: 'Oferta de entrega al chofer',
+  ORDER_ARRIVED: 'El repartidor llegó',
+  CASH_READY: 'Tené listo el efectivo',
+  DEPOSIT_APPROVED: 'Seña recibida',
+  PAYMENT_APPROVED: 'Pago aprobado',
+  ORDER_ETA_UPDATED: 'Horario estimado del pedido',
+  ORDER_TRIP_STARTED: 'El pedido está en camino',
+  ORDER_DELIVERY_RETRY: 'El pedido vuelve a pasar',
+  ORDER_DELIVERY_FAILED: 'No se pudo entregar el pedido',
+  ORDER_RESCHEDULED: 'Pedido reprogramado',
+  PAYMENT_REFUNDED: 'Pago devuelto',
+  EXPRESS_DEGRADED: 'El pedido express pasó al reparto común',
+  REVISIT_NOTICE: 'Nueva visita del pedido',
+  CYLINDER_RECOVERY: 'Recupero de envases',
+  REPURCHASE_INVITATION: 'Invitación a recomprar',
+  ROUTE_BATCH_OFFER: 'Oferta de lote de ruta',
+  ROUTE_SHEET_ASSIGNED: 'Hoja de ruta asignada',
+  ROUTE_SHEET_CHANGED: 'Hoja de ruta modificada',
+  ROUTE_SHEET_WAIT_EXPIRED: 'Venció la espera en la puerta',
+  MAINTENANCE_PROPOSAL: 'Propuesta de turno de taller',
+  MAINTENANCE_CONFIRMED: 'Turno de taller confirmado',
+  FLEET_ALERT: 'Vencimientos de la flota',
+  FLEET_EXPENSE: 'Gasto de la flota',
+  STOCK_ALERT: 'Alerta de stock',
+  ADMIN_NOTIFICATION: 'Aviso al administrador',
+  DRIVER_SETTLEMENT_PENDING: 'Rendiciones sin cerrar',
+  ATTENDANCE_OPEN: 'Jornadas abiertas',
+  SUPPORT_NOTICE: 'Aviso de soporte',
+  PASSWORD_RESET: 'Recuperar contraseña',
+  EMAIL_VERIFICATION: 'Verificar correo',
+  EMAIL_CHANGE_NOTIFICATION: 'Cambio de correo',
+  WELCOME: 'Bienvenida',
+  TEST: 'Prueba',
+  UNKNOWN: 'Sin tipo',
+};
+
+export const notificationTypeLabel = (type: string): string => NOTIFICATION_TYPE[type] ?? type;
+
+/** Tipos para el filtro del listado, en el orden en que se muestran. */
+export const NOTIFICATION_TYPE_OPTIONS = Object.entries(NOTIFICATION_TYPE).map(([value, label]) => ({ value, label }));
+
+/** En qué quedó cada visita fallida. */
+export const FAILED_VISIT_OUTCOME: LabelMap<FailedVisit['outcome']> = {
+  requeued: { text: 'Volvió a pasar ese día', tone: 'info' },
+  proposed: { text: 'Se propuso otra visita', tone: 'warn' },
+  agreed: { text: 'Acordada con el cliente', tone: 'success' },
+  awaiting_admin: { text: 'Quedó para el administrador', tone: 'danger' },
 };
 
 export const DISTRIBUTOR_STATUS: LabelMap<Distributor['status']> = {

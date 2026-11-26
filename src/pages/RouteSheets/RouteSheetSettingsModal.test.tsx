@@ -4,7 +4,11 @@ import type { ProcessConfig } from '../../services/api/types';
 import { mutation } from '../../test/pageTest';
 
 const update = vi.hoisted(() => ({ current: {} as Record<string, unknown> }));
-vi.mock('../../services/queries/routeSheets', () => ({ useUpdateRoutePlanningSettings: () => update.current }));
+const serviceTime = vi.hoisted(() => ({ current: {} as Record<string, unknown> }));
+vi.mock('../../services/queries/routeSheets', () => ({
+  useUpdateRoutePlanningSettings: () => update.current,
+  useRouteServiceTime: () => serviceTime.current,
+}));
 vi.mock('../Configuration/components/SettingsMeta', () => ({ SettingsMeta: () => null }));
 vi.mock('../../utils/notifications', () => ({ notify: { success: vi.fn(), error: vi.fn() } }));
 
@@ -43,6 +47,37 @@ const config: ProcessConfig = {
 } as ProcessConfig;
 
 afterEach(cleanup);
+
+const modeField = {
+  key: 'serviceMinutesMode',
+  type: 'integer',
+  min: 0,
+  max: 1,
+  default: 0,
+  unit: null,
+  description: 'Cómo se calculan los minutos de cada parada',
+};
+const withMode = {
+  ...config,
+  fields: [config.fields[1], modeField],
+  params: { maxStopsPerSheet: 20, serviceMinutesMode: 0 },
+} as ProcessConfig;
+const timeFor = (over: Record<string, unknown> = {}) => ({
+  data: {
+    mode: 'fixed',
+    fixedMinutes: 10,
+    suggestedMinutes: 8,
+    p90Minutes: 12,
+    effectiveMinutes: 10,
+    samples: 42,
+    minSamples: 20,
+    windowDays: 30,
+    computedAt: '2026-11-25T06:15:00.000Z',
+  },
+  isPending: false,
+  isError: false,
+  ...over,
+});
 
 describe('RouteSheetSettingsModal', () => {
   it('valida con los límites del back y manda los parámetros como números', async () => {
@@ -101,5 +136,48 @@ describe('RouteSheetSettingsModal', () => {
     await waitFor(() =>
       expect(update.current.mutate).toHaveBeenCalledWith({ autoConfirm: 0, workingDays: 65 }, expect.anything()),
     );
+  });
+
+  it('el modo de los minutos de servicio no es una casilla más: muestra «sugerido X, vigente Y» y se manda como fixed o learned', async () => {
+    update.current = mutation();
+    serviceTime.current = timeFor();
+    render(<RouteSheetSettingsModal config={withMode} canWrite onClose={vi.fn()} />);
+    expect(screen.getByText('Sugerido: 8 min (42 entregas, 30 días) · Vigente: 10 min')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Cómo se calculan los minutos de cada parada/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Todas las paradas se planifican con los minutos fijos/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Cómo se calculan los minutos'), { target: { value: '1' } });
+    expect(await screen.findByText(/Cambia las horas que se les prometen a los clientes/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() =>
+      expect(update.current.mutate).toHaveBeenCalledWith(
+        { maxStopsPerSheet: 20, serviceMinutesMode: 'learned' },
+        expect.anything(),
+      ),
+    );
+  });
+
+  it('sin entregas suficientes dice cuántas hay de las que hacen falta; con el selector deshabilitado sin permiso', () => {
+    update.current = mutation();
+    serviceTime.current = timeFor({
+      data: { ...timeFor().data, suggestedMinutes: null, samples: 12, effectiveMinutes: 10 },
+    });
+    render(<RouteSheetSettingsModal config={withMode} canWrite={false} onClose={vi.fn()} />);
+    expect(
+      screen.getByText('Sugerido: todavía sin entregas suficientes (12 de 20, 30 días) · Vigente: 10 min'),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Cómo se calculan los minutos')).toBeDisabled();
+  });
+
+  it('mientras calcula o si falla la lectura, no bloquea el cambio del modo', () => {
+    update.current = mutation();
+    serviceTime.current = timeFor({ data: undefined, isPending: true });
+    const { unmount } = render(<RouteSheetSettingsModal config={withMode} canWrite onClose={vi.fn()} />);
+    expect(screen.getByText('Calculando el tiempo sugerido…')).toBeInTheDocument();
+    unmount();
+    serviceTime.current = timeFor({ data: undefined, isPending: false, isError: true });
+    render(<RouteSheetSettingsModal config={withMode} canWrite onClose={vi.fn()} />);
+    expect(screen.getByText(/No se pudo leer el tiempo sugerido/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Cómo se calculan los minutos')).toBeEnabled();
   });
 });

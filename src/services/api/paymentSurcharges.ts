@@ -2,7 +2,7 @@ import { env } from '../../config/env';
 import { http } from './httpClient';
 import type { PaymentSurchargeConfig, PaymentSurchargeConfigBody } from './types';
 
-/** GET /v2/payment-surcharges: recargo (%) de transferencia, Mercado Pago y efectivo de la distribuidora. */
+/** GET /v2/payment-surcharges: recargo (%) de Mercado Pago y efectivo de la distribuidora. */
 export const getPaymentSurcharges = async (): Promise<PaymentSurchargeConfig> => {
   const { data } = await http.get<PaymentSurchargeConfig>('/payment-surcharges', { baseURL: env.apiUrlV2 });
   return data;

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { RecoveryCase } from '../../../services/api/types';
-import { DECISIONS, isPendingDecision, nextStepText, recoveryStepText } from './recoveryLabels';
+import {
+  DECISIONS,
+  RECOVERY_RISK_BAND,
+  isPendingDecision,
+  nextStepText,
+  opportunisticText,
+  recoveryStepText,
+  riskText,
+} from './recoveryLabels';
 
 const CASE = {
   caseId: 'c-1',
@@ -42,6 +50,14 @@ describe('recoveryLabels', () => {
       expect(nextStepText(withPickup)).toBe('Espera el retiro del chofer en la entrega');
     });
 
+    it('con una oferta que aprovecha la hoja dice el número de la hoja y en qué está', () => {
+      const pickup = (status: string) =>
+        ({ ...CASE, pickup: { status, opportunistic: true, routeSheetNumber: 12 } }) as unknown as RecoveryCase;
+      expect(nextStepText(pickup('pending'))).toBe('Retiro aprovechando la hoja #12: esperando respuesta');
+      expect(nextStepText(pickup('accepted'))).toBe('Retiro aprovechando la hoja #12: espera al chofer');
+      expect(nextStepText(pickup('rejected'))).toMatch(/Pasa al próximo escalón/);
+    });
+
     it('esperando decisión muestra el importe en juego', () => {
       expect(nextStepText({ ...CASE, status: 'escalated' })).toMatch(/70\.000/);
     });
@@ -54,5 +70,16 @@ describe('recoveryLabels', () => {
         /Cerrado el/,
       );
     });
+  });
+
+  it('«Retiro aprovechando la hoja #N» con y sin número', () => {
+    expect(opportunisticText(7)).toBe('Retiro aprovechando la hoja #7');
+    expect(opportunisticText(null)).toBe('Retiro aprovechando la hoja de ruta');
+  });
+
+  it('el riesgo del cliente en castellano, con el puntaje o sin historia', () => {
+    expect(RECOVERY_RISK_BAND.high.text).toBe('Riesgo alto');
+    expect(riskText({ band: 'high', score: 0.344, neutral: false })).toBe('Riesgo alto (puntaje 0,34)');
+    expect(riskText({ band: 'medium', score: 0.15, neutral: true })).toBe('Riesgo medio: sin historia todavía');
   });
 });

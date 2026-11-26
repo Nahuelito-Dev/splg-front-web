@@ -64,6 +64,7 @@ describe('radio de por terminar', () => {
       finishing: '-3',
       expiry: '120',
       arrival: '150',
+      osrm: '8',
     });
     expect(result.success ? [] : result.error.issues.map((issue) => issue.path.join('.'))).toEqual(['finishing']);
   });
@@ -93,6 +94,17 @@ describe('radio para marcar «Llegué»', () => {
     expect(arrival('10.5')).toMatch(/entero/);
   });
 
+  const osrm = (raw: string) => validateDispatch(['5'], '30', '300', '120', '150', raw).osrm;
+
+  it('choferes a medir por calle: entero de 1 a 20', () => {
+    expect(osrm('1')).toBeUndefined();
+    expect(osrm('20')).toBeUndefined();
+    expect(osrm('0')).toMatch(/entre 1 y 20 choferes/);
+    expect(osrm('21')).toMatch(/entre 1 y 20 choferes/);
+    expect(osrm('2.5')).toMatch(/entero/);
+    expect(osrm('')).toMatch(/entero/);
+  });
+
   it('el esquema lleva cada error a su campo', () => {
     const result = dispatchSchema.safeParse({
       steps: [{ value: '5' }],
@@ -100,6 +112,7 @@ describe('radio para marcar «Llegué»', () => {
       finishing: '300',
       expiry: '0',
       arrival: '6000',
+      osrm: '8',
     });
     expect(result.success ? [] : result.error.issues.map((issue) => issue.path.join('.'))).toEqual([
       'expiry',
@@ -113,6 +126,7 @@ describe('valores del formulario', () => {
     radiusStepsKm: [5],
     offerTtlSeconds: 30,
     finishingRadiusMeters: 300,
+    osrmCandidateCount: 12,
     isDefault: true,
     updatedAt: null,
     updatedByUserId: null,
@@ -122,6 +136,7 @@ describe('valores del formulario', () => {
     expect(toDispatchValues({ ...base, noDriverExpiryMinutes: 45, arrivalRadiusMeters: 0 })).toMatchObject({
       expiry: '45',
       arrival: '0',
+      osrm: '12',
     });
   });
 });
@@ -133,6 +148,7 @@ describe('dispatchSchema', () => {
     finishing,
     expiry: '120',
     arrival: '150',
+    osrm: '8',
   });
 
   it('lleva cada mensaje al campo que corresponde', () => {
@@ -161,6 +177,7 @@ describe('cuerpo', () => {
         finishing: '150',
         expiry: '90',
         arrival: '0',
+        osrm: '3',
       }),
     ).toEqual({
       radiusStepsKm: [5, 10.5],
@@ -168,6 +185,7 @@ describe('cuerpo', () => {
       finishingRadiusMeters: 150,
       noDriverExpiryMinutes: 90,
       arrivalRadiusMeters: 0,
+      osrmCandidateCount: 3,
     });
   });
 });

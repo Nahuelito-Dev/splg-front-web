@@ -2,7 +2,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const reports = vi.hoisted(() => ({
-  useSalesByDriver: vi.fn(),
+  useReportsDriverSales: vi.fn(),
   useSalesByPayment: vi.fn(),
   useSalesByProduct: vi.fn(),
 }));
@@ -29,7 +29,7 @@ const footer = () => {
 // Los totales del back no coinciden a propósito con la suma de las filas: el panel tiene que mostrar los del back.
 describe('los reportes muestran los totales que manda el back', () => {
   it('ventas por chofer', () => {
-    reports.useSalesByDriver.mockReturnValue(
+    reports.useReportsDriverSales.mockReturnValue(
       state({
         rows: [{ driverId: 'a', driverName: 'Ana', totalOrders: 1, totalSales: 100 }],
         totals: { totalOrders: 7, totalSales: 99999 },

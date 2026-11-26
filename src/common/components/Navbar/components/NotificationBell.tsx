@@ -4,6 +4,8 @@ import {
   ArrowDownToLine,
   Bell,
   BellOff,
+  CalendarClock,
+  CalendarX2,
   CircleCheck,
   CircleX,
   MapPinned,
@@ -29,8 +31,6 @@ import {
   ORDER_SOCKET_EVENTS,
   ORDER_UPDATED_EVENT,
   PAYMENT_REFUNDED_EVENT,
-  TRANSFER_RECEIPT_UPLOADED_EVENT,
-  type TransferReceiptUploadedPayload,
   REFUND_FAILED_EVENT,
   type AdminNotificationPayload,
   type ClaimCreatedPayload,
@@ -118,6 +118,8 @@ const EVENT_LABELS: Record<NotificationEvent, string> = {
   [ORDER_SOCKET_EVENTS.RELEASED]: 'Pedido liberado, vuelve a buscar chofer',
   [ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED]: 'El chofer no confirmó la asignación',
   [ORDER_SOCKET_EVENTS.ADDRESS_CHANGED]: 'El cliente cambió la dirección de entrega',
+  [ORDER_SOCKET_EVENTS.FAILED_VISIT]: 'No se pudo entregar: se reprograma la visita',
+  [ORDER_SOCKET_EVENTS.REVISIT_UPDATED]: 'Cambió la nueva visita del pedido',
 };
 
 const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }> = {
@@ -133,6 +135,8 @@ const EVENT_VISUALS: Record<NotificationEvent, { icon: LucideIcon; tone: Tone }>
   [ORDER_SOCKET_EVENTS.RELEASED]: { icon: RotateCcw, tone: 'warn' },
   [ORDER_SOCKET_EVENTS.ASSIGNMENT_DECLINED]: { icon: UserRoundX, tone: 'warn' },
   [ORDER_SOCKET_EVENTS.ADDRESS_CHANGED]: { icon: MapPinned, tone: 'info' },
+  [ORDER_SOCKET_EVENTS.FAILED_VISIT]: { icon: CalendarX2, tone: 'warn' },
+  [ORDER_SOCKET_EVENTS.REVISIT_UPDATED]: { icon: CalendarClock, tone: 'info' },
 };
 
 const MAX_NOTIFICATIONS = 50;
@@ -276,15 +280,6 @@ export const NotificationBell = () => {
         });
         notify.info(`Se reintegró el pago del pedido ${formatShortId(payload.orderId)}`);
         void queryClient.invalidateQueries({ queryKey: queryKeys.refunds.all });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(payload.orderId) });
-      }),
-    );
-
-    // El cliente subió el comprobante de su transferencia: toast y se refresca el pedido (el aviso queda en la bandeja).
-    unsubscribers.push(
-      subscribe<TransferReceiptUploadedPayload>(TRANSFER_RECEIPT_UPLOADED_EVENT, (payload) => {
-        if (!belongsToView(payload)) return;
-        notify.info(`El cliente subió el comprobante del pedido ${formatShortId(payload.orderId)}`);
         void queryClient.invalidateQueries({ queryKey: queryKeys.orders.detail(payload.orderId) });
       }),
     );

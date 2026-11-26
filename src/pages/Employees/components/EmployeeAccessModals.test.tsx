@@ -35,7 +35,9 @@ describe('GrantAccountModal', () => {
     render(<GrantAccountModal open onClose={vi.fn()} employee={EMPLEADO} />);
     fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
     expect(await screen.findByText('Ingresá el correo')).toBeInTheDocument();
-    expect(screen.getByText('Al menos 6 caracteres')).toBeInTheDocument();
+    expect(
+      screen.getByText('Entre 8 y 128 caracteres, con una mayúscula, una minúscula y un número'),
+    ).toBeInTheDocument();
     expect(grant.mutate).not.toHaveBeenCalled();
   });
 
@@ -44,12 +46,12 @@ describe('GrantAccountModal', () => {
     state.grant.mockReturnValue(grant);
     render(<GrantAccountModal open onClose={vi.fn()} employee={EMPLEADO} />);
     fireEvent.change(screen.getByLabelText(/Correo/), { target: { value: 'ana@correo.com' } });
-    fireEvent.change(screen.getByLabelText(/Contraseña/), { target: { value: 'Test1234' } });
+    fireEvent.change(screen.getByLabelText(/Contraseña/), { target: { value: 'Ejemplo2026x' } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
     await waitFor(() => expect(grant.mutate).toHaveBeenCalled());
     expect(grant.mutate.mock.calls[0][0]).toEqual({
       id: 'e-1',
-      body: { email: 'ana@correo.com', password: 'Test1234' },
+      body: { email: 'ana@correo.com', password: 'Ejemplo2026x' },
     });
   });
 
@@ -61,7 +63,7 @@ describe('GrantAccountModal', () => {
     state.grant.mockReturnValue(grant);
     render(<GrantAccountModal open onClose={vi.fn()} employee={EMPLEADO} />);
     fireEvent.change(screen.getByLabelText(/Correo/), { target: { value: 'ana@correo.com' } });
-    fireEvent.change(screen.getByLabelText(/Contraseña/), { target: { value: 'Test1234' } });
+    fireEvent.change(screen.getByLabelText(/Contraseña/), { target: { value: 'Ejemplo2026x' } });
     grant.reset.mockClear();
     fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
     await waitFor(() => expect(grant.reset).toHaveBeenCalled());
@@ -71,7 +73,7 @@ describe('GrantAccountModal', () => {
   it('al cerrar y reabrir el formulario no conserva la contraseña', () => {
     state.grant.mockReturnValue(mutation());
     const { rerender } = render(<GrantAccountModal open onClose={vi.fn()} employee={EMPLEADO} />);
-    fireEvent.change(screen.getByLabelText(/Contraseña/), { target: { value: 'Test1234' } });
+    fireEvent.change(screen.getByLabelText(/Contraseña/), { target: { value: 'Ejemplo2026x' } });
     rerender(<GrantAccountModal open={false} onClose={vi.fn()} employee={EMPLEADO} />);
     rerender(<GrantAccountModal open onClose={vi.fn()} employee={EMPLEADO} />);
     expect(screen.getByLabelText(/Contraseña/)).toHaveValue('');
@@ -82,7 +84,7 @@ describe('GrantAccountModal', () => {
     state.grant.mockReturnValue(grant);
     render(<GrantAccountModal open onClose={vi.fn()} employee={EMPLEADO} />);
     fireEvent.change(screen.getByLabelText(/Correo/), { target: { value: 'ana@correo.com' } });
-    fireEvent.change(screen.getByLabelText(/Contraseña/), { target: { value: 'Test1234' } });
+    fireEvent.change(screen.getByLabelText(/Contraseña/), { target: { value: 'Ejemplo2026x' } });
     fireEvent.change(screen.getByLabelText(/Teléfono/), { target: { value: '3764000000' } });
     fireEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
     expect(await screen.findByText(/formato internacional/i)).toBeInTheDocument();

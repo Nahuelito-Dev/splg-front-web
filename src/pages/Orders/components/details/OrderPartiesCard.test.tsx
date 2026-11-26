@@ -5,8 +5,9 @@ import { OrderPartiesCard } from './OrderPartiesCard';
 
 afterEach(cleanup);
 
-const order = (photoUrl: string | null) =>
+const order = (photoUrl: string | null, assignmentMethod?: Order['assignmentMethod']) =>
   ({
+    assignmentMethod,
     order_id: 'o-1',
     customer: null,
     delivery_id: 'd-1',
@@ -24,5 +25,17 @@ describe('OrderPartiesCard: foto del vehículo', () => {
     const { container, getByText } = render(<OrderPartiesCard order={order(null)} />);
     expect(container.querySelector('img')).toBeNull();
     expect(getByText('AB123CD')).toBeInTheDocument();
+  });
+});
+
+describe('OrderPartiesCard: cómo se asignó', () => {
+  it('dice el método de asignación del chofer', () => {
+    const { getByText } = render(<OrderPartiesCard order={order(null, 'route_sheet')} />);
+    expect(getByText('Asignado: hoja de ruta')).toBeInTheDocument();
+  });
+
+  it('un pedido anterior al dato no muestra nada', () => {
+    const { queryByText } = render(<OrderPartiesCard order={order(null, null)} />);
+    expect(queryByText(/Asignado:/)).toBeNull();
   });
 });

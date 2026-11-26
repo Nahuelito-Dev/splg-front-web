@@ -1,4 +1,7 @@
 import { env } from '../../config/env';
+import { graphql } from './gql';
+import type { ReportsOverviewQuery } from './gql/graphql';
+import { graphqlRequest } from './graphqlClient';
 import { http } from './httpClient';
 import type {
   CobrosDeEfectivo,
@@ -7,11 +10,13 @@ import type {
   Impagos,
   VentasPorChoferV2,
   VentasPorMedioDePagoV2,
+  VehicleUtilizationReport,
   VentasPorProductoV2,
 } from './types';
 
 /** Los informes con totales sólo existen en la v2 de la API. */
 const v2 = { baseURL: env.apiUrlV2 };
+const v3 = { baseURL: env.apiUrlV3 };
 
 export interface ReportsDateRange {
   /** YYYY-MM-DD. Sin rango, el back usa "hoy 00:00 hasta ahora". */
@@ -69,6 +74,15 @@ export const getUnpaidTotal = async (): Promise<Impagos> => {
   return data;
 };
 
+/** GET /v3/reports/vehicle-utilization: uso y costos de cada vehículo del período. */
+export const getVehicleUtilization = async (range: ReportsDateRange): Promise<VehicleUtilizationReport> => {
+  const { data } = await http.get<VehicleUtilizationReport>('/reports/vehicle-utilization', {
+    ...v3,
+    params: dateQuery(range),
+  });
+  return data;
+};
+
 /** GET /reports/sales-evolution: ventas entregadas agrupadas por período (día/semana/mes). */
 export const getSalesEvolution = async ({
   granularity,
@@ -85,3 +99,40 @@ export const getCollections = async (range: ReportsDateRange): Promise<CobrosDeE
   const { data } = await http.get<CobrosDeEfectivo>('/reports/collections', { params: dateQuery(range) });
   return data;
 };
+
+/** Resumen del período (con el anterior) y ventas por chofer, en una sola consulta a la API GraphQL. */
+const REPORTS_OVERVIEW = graphql(`
+  query ReportsOverview($from: String, $to: String) {
+    salesSummary(from: $from, to: $to) {
+      current {
+        totalSales
+        totalOrders
+        averageTicket
+      }
+      previous {
+        totalSales
+        totalOrders
+        averageTicket
+      }
+    }
+    salesByDriver(from: $from, to: $to) {
+      rows {
+        driverId
+        driverName
+        totalOrders
+        totalSales
+      }
+      totals {
+        totalOrders
+        totalSales
+      }
+    }
+  }
+`);
+
+export type ReportsOverview = ReportsOverviewQuery;
+export type DriverSalesRow = ReportsOverviewQuery['salesByDriver']['rows'][number];
+
+/** GraphQL `salesSummary` + `salesByDriver`: lo que muestran las tarjetas y la tabla de choferes de Reportes. */
+export const getReportsOverview = (range: ReportsDateRange): Promise<ReportsOverview> =>
+  graphqlRequest(REPORTS_OVERVIEW, dateQuery(range));

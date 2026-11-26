@@ -18,6 +18,7 @@ import {
   getLoadSuggestion,
   getRoutePlanDay,
   getRoutePlanningSettings,
+  getRouteServiceTime,
   getRouteSheet,
   getRouteSheetExecution,
   listRoutePlanningHolidays,
@@ -42,6 +43,7 @@ vi.mock('./httpClient', async (importOriginal) => {
 });
 
 const V2 = expect.objectContaining({ baseURL: expect.stringContaining('/v2') as string }) as unknown;
+const V3 = expect.objectContaining({ baseURL: expect.stringContaining('/v3') as string }) as unknown;
 const ID = 'b1b1b1b1-0000-4000-8000-000000000001';
 const ORDER = 'a1a1a1a1-0000-4000-8000-000000000002';
 
@@ -76,11 +78,20 @@ describe('API de hojas de ruta (v2)', () => {
     expect(http.post).toHaveBeenNthCalledWith(5, '/route-plans/2026-11-14/confirm-all', undefined, V2);
   });
 
-  it('parámetros: GET y PATCH de /route-planning/settings', async () => {
+  it('parámetros: GET en la v2 y PATCH en la v3 (que suma el modo de los minutos de servicio)', async () => {
     await getRoutePlanningSettings();
-    await patchRoutePlanningSettings({ enabled: 1 });
+    await patchRoutePlanningSettings({ enabled: 1, serviceMinutesMode: 'learned' });
     expect(http.get).toHaveBeenCalledWith('/route-planning/settings', V2);
-    expect(http.patch).toHaveBeenCalledWith('/route-planning/settings', { enabled: 1 }, V2);
+    expect(http.patch).toHaveBeenCalledWith(
+      '/route-planning/settings',
+      { enabled: 1, serviceMinutesMode: 'learned' },
+      V3,
+    );
+  });
+
+  it('tiempo de atención: GET /v3/route-planning/service-time', async () => {
+    await getRouteServiceTime();
+    expect(http.get).toHaveBeenCalledWith('/route-planning/service-time', V3);
   });
 
   it('lista las hojas del día con sus filtros y lee una, con su carga sugerida', async () => {

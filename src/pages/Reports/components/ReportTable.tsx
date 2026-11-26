@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, useState, type ReactNode } from 'react';
 import { cx } from '../../../common/components/ui';
 
 export interface ReportColumn<T> {
@@ -18,10 +18,12 @@ interface Props<T> {
   columns: ReportColumn<T>[];
   rows: T[];
   getKey: (row: T) => string;
+  renderExpanded?: (row: T) => ReactNode;
 }
 
 /** Tabla simple de un reporte, con fila de totales. Se desplaza en horizontal si no entra. */
-export function ReportTable<T>({ caption, columns, rows, getKey }: Props<T>) {
+export function ReportTable<T>({ caption, columns, rows, getKey, renderExpanded }: Props<T>) {
+  const [expanded, setExpanded] = useState<string | null>(null);
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left text-[13px]">
@@ -40,22 +42,46 @@ export function ReportTable<T>({ caption, columns, rows, getKey }: Props<T>) {
           </tr>
         </thead>
         <tbody className="divide-y divide-outline-soft">
-          {rows.map((row) => (
-            <tr key={getKey(row)} className="hover:bg-surface-hover">
-              {columns.map((col) => (
-                <td
-                  key={col.header}
-                  className={cx(
-                    'px-3 py-2.5 text-ink sm:px-5',
-                    col.numeric && 'text-right tabular-nums',
-                    col.wide && 'hidden sm:table-cell',
-                  )}
-                >
-                  {col.render(row)}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {rows.map((row) => {
+            const key = getKey(row);
+            const open = expanded === key;
+            return (
+              <Fragment key={key}>
+                <tr className="hover:bg-surface-hover">
+                  {columns.map((col, index) => (
+                    <td
+                      key={col.header}
+                      className={cx(
+                        'px-3 py-2.5 text-ink sm:px-5',
+                        col.numeric && 'text-right tabular-nums',
+                        col.wide && 'hidden sm:table-cell',
+                      )}
+                    >
+                      {index === 0 && renderExpanded ? (
+                        <button
+                          type="button"
+                          className="w-full text-left"
+                          onClick={() => setExpanded(open ? null : key)}
+                          aria-expanded={open}
+                        >
+                          {col.render(row)}
+                        </button>
+                      ) : (
+                        col.render(row)
+                      )}
+                    </td>
+                  ))}
+                </tr>
+                {open && renderExpanded && (
+                  <tr className="bg-surface-sunken">
+                    <td colSpan={columns.length} className="px-3 py-3 sm:px-5">
+                      {renderExpanded(row)}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
         </tbody>
         <tfoot className="border-t border-outline bg-surface-sunken font-semibold text-ink">
           <tr>

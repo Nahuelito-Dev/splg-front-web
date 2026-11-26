@@ -5,11 +5,13 @@ import type {
   ProcessConfig,
   RecoveryCaseDetail,
   RecoveryCasePage,
+  RecoveryCustomerScore,
   RecoveryReport,
   RecoveryRun,
 } from './types';
 
 const v2 = { baseURL: env.apiUrlV2 };
+const v3 = { baseURL: env.apiUrlV3 };
 
 export type RecoveryCaseStatus = RecoveryCaseDetail['status'];
 
@@ -78,5 +80,11 @@ export const patchRecoverySettings = async (body: PatchRecoverySettingsBody): Pr
 /** POST /v2/cylinder-recovery/run: corre la recuperación ahora, sin esperar la hora diaria. */
 export const runRecovery = async (): Promise<RecoveryRun> => {
   const { data } = await http.post<RecoveryRun>('/cylinder-recovery/run', undefined, v2);
+  return data;
+};
+
+/** GET /v3/cylinder-recovery/customers/:customerId/score: el puntaje de riesgo del cliente y los plazos que le rigen (M5). */
+export const getRecoveryCustomerScore = async (customerId: string): Promise<RecoveryCustomerScore> => {
+  const { data } = await http.get<RecoveryCustomerScore>(`/cylinder-recovery/customers/${customerId}/score`, v3);
   return data;
 };

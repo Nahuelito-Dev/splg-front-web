@@ -19,6 +19,17 @@ const metrics = (over: Record<string, unknown> = {}) => ({
   respuestaDelChofer: { mediana: 12, p90: 28 },
   hastaAsignar: { mediana: 95, p90: 240 },
   pedidosSinChofer: 3,
+  ofertasConEstimacion: 25,
+  porcentajeOrdenadasPorOsrm: 84,
+  minutosEstimadosPromedio: 7.4,
+  pedidosAsignados: 40,
+  asignadosSinMetodo: 8,
+  asignacionPorMetodo: [
+    { method: 'automatic', cantidad: 24, porcentaje: 75 },
+    { method: 'manual_override', cantidad: 4, porcentaje: 12.5 },
+    { method: 'route_sheet', cantidad: 3, porcentaje: 9.4 },
+    { method: 'batch', cantidad: 1, porcentaje: 3.1 },
+  ],
   topChoferes: [
     { driverId: 'd1', nombre: 'Ana Pérez', ofertas: 10, aceptadas: 9, tasaAceptacion: 90, medianaRespuestaSegundos: 8 },
     {
@@ -46,14 +57,57 @@ describe('DispatchMetricsSection', () => {
     expect(screen.getByText('58,8 %')).toBeInTheDocument();
     expect(screen.getByText('1,7')).toBeInTheDocument();
     expect(screen.getByText('1 min 35 s')).toBeInTheDocument();
+    expect(screen.getByText('84 %')).toBeInTheDocument();
+    expect(screen.getByText('7,4 min')).toBeInTheDocument();
     const table = screen.getByRole('table');
     expect(within(table).getByText('Ana Pérez')).toBeInTheDocument();
     expect(within(table).getByText('9 (90 %)')).toBeInTheDocument();
     expect(within(table).getByText('—')).toBeInTheDocument();
   });
 
+  it('muestra el porcentaje por método de asignación y avisa de los pedidos viejos sin método', () => {
+    state.query = ok(metrics());
+    render(<DispatchMetricsSection />);
+    const lista = screen.getByRole('list', { name: 'Pedidos asignados por método' });
+    expect(within(lista).getByText('Automático')).toBeInTheDocument();
+    expect(within(lista).getByText('75 %')).toBeInTheDocument();
+    expect(within(lista).getByText('24 pedidos')).toBeInTheDocument();
+    expect(within(lista).getByText('Hoja de ruta')).toBeInTheDocument();
+    expect(screen.getByText(/8 pedidos anteriores no tienen el método registrado/)).toBeInTheDocument();
+  });
+
+  it('si ningún pedido asignado tiene método, lo dice en vez de mostrar ceros', () => {
+    state.query = ok(
+      metrics({
+        pedidosAsignados: 5,
+        asignadosSinMetodo: 5,
+        asignacionPorMetodo: metrics().asignacionPorMetodo.map((m) => ({ ...m, cantidad: 0, porcentaje: null })),
+      }),
+    );
+    render(<DispatchMetricsSection />);
+    expect(screen.queryByRole('list', { name: 'Pedidos asignados por método' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Todavía no hay pedidos asignados con el método registrado/)).toBeInTheDocument();
+  });
+
+  it('sin ofertas medidas las dos cifras nuevas muestran un guion y lo explican', () => {
+    state.query = ok(
+      metrics({ ofertasConEstimacion: 0, porcentajeOrdenadasPorOsrm: null, minutosEstimadosPromedio: null }),
+    );
+    render(<DispatchMetricsSection />);
+    expect(screen.getByText('Todavía sin ofertas medidas')).toBeInTheDocument();
+    expect(screen.queryByText(/min$/, { selector: 'p' })).toBeNull();
+  });
+
   it('sin pedidos explica que todavía no hay datos', () => {
-    state.query = ok(metrics({ pedidosDespachados: 0, pedidosSinChofer: 0, topChoferes: [] }));
+    state.query = ok(
+      metrics({
+        pedidosDespachados: 0,
+        pedidosSinChofer: 0,
+        pedidosAsignados: 0,
+        asignadosSinMetodo: 0,
+        topChoferes: [],
+      }),
+    );
     render(<DispatchMetricsSection />);
     expect(screen.getByText('Todavía no hay pedidos despachados')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();

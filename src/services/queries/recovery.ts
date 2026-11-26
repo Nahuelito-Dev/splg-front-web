@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import {
   getRecoveryCase,
+  getRecoveryCustomerScore,
   getRecoveryReport,
   getRecoverySettings,
   listRecoveryCases,
@@ -35,6 +36,14 @@ export const useRecoveryCases = (
 /** El legajo de un caso. */
 export const useRecoveryCase = (id: string | undefined) =>
   useQuery({ queryKey: keys.detail(`case:${id}`), queryFn: () => getRecoveryCase(id ?? ''), enabled: Boolean(id) });
+
+/** El puntaje de riesgo de recupero de un cliente (M5). */
+export const useRecoveryCustomerScore = (customerId: string | undefined) =>
+  useQuery({
+    queryKey: keys.detail(`score:${customerId}`),
+    queryFn: () => getRecoveryCustomerScore(customerId ?? ''),
+    enabled: Boolean(customerId),
+  });
 
 export const useRecoveryReport = ({ enabled = true }: Options = {}) =>
   useQuery({ queryKey: keys.detail('report'), queryFn: getRecoveryReport, enabled });
