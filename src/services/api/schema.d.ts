@@ -9130,6 +9130,46 @@ export interface paths {
     patch: operations['RoutePlanningSettingsController_patch'];
     trace?: never;
   };
+  '/api/v3/route-planning/service-time': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Tiempo de atención por parada: sugerido y vigente
+     * @description La mediana de «Llegué» a la entrega confirmada de los últimos 30 días (calculada cada noche), con el fijo que configuró el administrador, el modo elegido y con cuántos minutos se planifica hoy. Sólo lectura.
+     */
+    get: operations['RoutePlanningV3Controller_estado'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v3/route-planning/settings': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Cambiar parámetros de la hoja de ruta (con el modo de servicio)
+     * @description Cambia sólo los que vienen; el resto conserva su valor. `serviceMinutesMode` elige `fixed` o `learned`.
+     */
+    patch: operations['RoutePlanningV3Controller_patch'];
+    trace?: never;
+  };
   '/api/v2/driver/route-sheets/current': {
     parameters: {
       query?: never;
@@ -23051,6 +23091,7 @@ export interface components {
         | 'route_planning_propose'
         | 'route_planning_close_days'
         | 'route_sheet_watch'
+        | 'route_service_time_learn'
         | 'support_session_expiry'
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
@@ -23130,6 +23171,7 @@ export interface components {
         | 'route_planning_propose'
         | 'route_planning_close_days'
         | 'route_sheet_watch'
+        | 'route_service_time_learn'
         | 'support_session_expiry'
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
@@ -23238,6 +23280,7 @@ export interface components {
         | 'route_planning_propose'
         | 'route_planning_close_days'
         | 'route_sheet_watch'
+        | 'route_service_time_learn'
         | 'support_session_expiry'
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
@@ -25107,6 +25150,100 @@ export interface components {
        * @example 63
        */
       workingDays?: number;
+    };
+    ServiceTimeDto: {
+      /**
+       * @description El modo elegido por el administrador
+       * @enum {string}
+       */
+      mode: 'fixed' | 'learned';
+      /**
+       * @description «Minutos por parada» que configuró el administrador
+       * @example 10
+       */
+      fixedMinutes: number;
+      /**
+       * @description La mediana aprendida en minutos enteros (1 a 60); `null` si no hay entregas suficientes
+       * @example 8
+       */
+      suggestedMinutes: number | null;
+      /**
+       * @description El percentil 90 de lo que tardaron, en minutos
+       * @example 14.5
+       */
+      p90Minutes: number | null;
+      /**
+       * @description Con cuántos minutos se planifica hoy: el fijo, o el sugerido si el modo es `learned` y hay muestra
+       * @example 10
+       */
+      effectiveMinutes: number;
+      /**
+       * @description Entregas válidas de la ventana
+       * @example 42
+       */
+      samples: number;
+      /**
+       * @description Entregas mínimas para que se use el tiempo aprendido
+       * @example 20
+       */
+      minSamples: number;
+      /**
+       * @description Días de historia que se miran
+       * @example 30
+       */
+      windowDays: number;
+      /**
+       * Format: date-time
+       * @description Cuándo se calculó por última vez; `null` si todavía no
+       */
+      computedAt: string | null;
+    };
+    PatchRoutePlanningSettingsV3Dto: {
+      /**
+       * @description 1 enciende la hoja de ruta (por omisión, si la distribuidora no guardó otro valor); 0 la apaga
+       * @example 1
+       */
+      enabled?: number;
+      /** @description Hora del cierre del día anterior */
+      cutoffHour?: number;
+      cutoffMinute?: number;
+      /** @description Al cierre, el sistema arma la propuesta solo */
+      autoPropose?: number;
+      /**
+       * @description Pasada la ventana de revisión, el sistema confirma solo las hojas propuestas que se pueden confirmar (1, por omisión) o espera al administrador (0)
+       * @example 1
+       */
+      autoConfirm?: number;
+      /**
+       * @description Minutos desde la propuesta que tiene el administrador para revisarla antes de que se confirme sola (por omisión 60; 0: se confirma al proponer)
+       * @example 60
+       */
+      reviewMinutes?: number;
+      maxStopsPerSheet?: number;
+      /** @description Minutos por parada */
+      serviceMinutes?: number;
+      /** @description Multiplica los tiempos de OSRM */
+      trafficFactor?: number;
+      etaWindowMinutes?: number;
+      etaRecalcMinSeconds?: number;
+      etaRecalcMinMeters?: number;
+      etaNotifyShiftMinutes?: number;
+      /** @description 0: el tardío va a M1; 1: se sugiere la hoja */
+      lateOrderPolicy?: number;
+      notStartedAlertMinutes?: number;
+      /** @description Minutos que el chofer espera en la puerta desde «Llegué» antes de que el sistema le sugiera marcar «No pude entregar» (por omisión 10) */
+      arrivalWaitMinutes?: number;
+      /**
+       * @description Días en que se reparte, como máscara de bits de los días ISO: lunes 1, martes 2, miércoles 4, jueves 8, viernes 16, sábado 32, domingo 64 (se suman). Por omisión 63 (lunes a sábado). La propuesta automática no arma un plan para un día no hábil y la reprogramación los saltea, igual que los feriados
+       * @example 63
+       */
+      workingDays?: number;
+      /**
+       * @description `fixed` (por omisión): la propuesta usa `serviceMinutes`. `learned`: usa la mediana de lo que tardaron los choferes en los últimos 30 días, si hay entregas suficientes; si no, el fijo. Cambia las horas prometidas a los clientes
+       * @example fixed
+       * @enum {string}
+       */
+      serviceMinutesMode?: 'fixed' | 'learned';
     };
     RouteSheetArrivedResponseDto: {
       message: string;
@@ -28504,6 +28641,7 @@ export interface components {
         | 'route_planning_propose'
         | 'route_planning_close_days'
         | 'route_sheet_watch'
+        | 'route_service_time_learn'
         | 'support_session_expiry'
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
@@ -28643,6 +28781,7 @@ export interface components {
         | 'route_planning_propose'
         | 'route_planning_close_days'
         | 'route_sheet_watch'
+        | 'route_service_time_learn'
         | 'support_session_expiry'
         | 'support_housekeeping'
         | 'assistant_ai_sweep'
@@ -56188,6 +56327,7 @@ export interface operations {
           | 'route_planning_propose'
           | 'route_planning_close_days'
           | 'route_sheet_watch'
+          | 'route_service_time_learn'
           | 'support_session_expiry'
           | 'support_housekeeping'
           | 'assistant_ai_sweep'
@@ -61150,6 +61290,90 @@ export interface operations {
         };
       };
       /** @description Valor fuera de rango o falta la distribuidora */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutePlanningV3Controller_estado: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ServiceTimeDto'];
+        };
+      };
+      /** @description Falta la distribuidora (super admin sin X-Distributor) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Sin token o token inválido */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  RoutePlanningV3Controller_patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PatchRoutePlanningSettingsV3Dto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProcessConfigResponseDto'];
+        };
+      };
+      /** @description Valor fuera de rango, modo inválido (`serviceMinutesMode`) o falta la distribuidora */
       400: {
         headers: {
           [name: string]: unknown;

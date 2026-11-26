@@ -16,6 +16,7 @@ import {
   getLoadSuggestion,
   getRoutePlanDay,
   getRoutePlanningSettings,
+  getRouteServiceTime,
   getRouteSheet,
   getRouteSheetExecution,
   getRouteSheetPath,
@@ -37,7 +38,7 @@ import type {
   CreateRoutePlanningHolidayBody,
   CreateRouteSheetBody,
   FailedStopBody,
-  PatchRoutePlanningSettingsBody,
+  PatchRoutePlanningSettingsV3Body,
   RoutePlanDay,
   RouteSheet,
   RouteSheetExecution,
@@ -53,6 +54,7 @@ export const routePlanKeys = {
   day: (date: string) => plans.detail(date),
   lateOrders: (date: string) => [...plans.detail(date), 'late-orders'] as const,
   settings: () => plans.detail('settings'),
+  serviceTime: () => plans.detail('service-time'),
   holidays: () => plans.detail('holidays'),
 };
 
@@ -143,12 +145,18 @@ export const useLoadSuggestion = (id: string | undefined) =>
 export const useRoutePlanningSettings = ({ enabled = true }: Options = {}) =>
   useQuery({ queryKey: routePlanKeys.settings(), queryFn: getRoutePlanningSettings, enabled });
 
+/** El tiempo de atención aprendido y el vigente (tarjeta de los parámetros de las hojas de ruta). */
+export const useRouteServiceTime = ({ enabled = true }: Options = {}) =>
+  useQuery({ queryKey: routePlanKeys.serviceTime(), queryFn: getRouteServiceTime, enabled });
+
 export const useUpdateRoutePlanningSettings = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: PatchRoutePlanningSettingsBody) => patchRoutePlanningSettings(body),
+    mutationFn: (body: PatchRoutePlanningSettingsV3Body) => patchRoutePlanningSettings(body),
     onSuccess: (saved) => {
       queryClient.setQueryData(routePlanKeys.settings(), saved);
+      // El modo cambia lo que rige («vigente»).
+      void queryClient.invalidateQueries({ queryKey: routePlanKeys.serviceTime() });
       // Los mismos parámetros se ven en «Procesos automáticos».
       return queryClient.invalidateQueries({ queryKey: queryKeys.moduleConfig.all });
     },

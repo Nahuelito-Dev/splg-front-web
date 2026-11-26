@@ -3,12 +3,14 @@ import { useId, useMemo, useState } from 'react';
 import { useForm, useFormContext } from 'react-hook-form';
 import { Button, Checkbox, Form, FormInput, Modal } from '../../common/components/ui';
 import { errorMessage } from '../../services/api/errors';
-import type { PatchRoutePlanningSettingsBody, ProcessConfig, ProcessConfigField } from '../../services/api/types';
+import type { PatchRoutePlanningSettingsV3Body, ProcessConfig, ProcessConfigField } from '../../services/api/types';
 import { useUpdateRoutePlanningSettings } from '../../services/queries/routeSheets';
 import { notify } from '../../utils/notifications';
 import { SettingsMeta } from '../Configuration/components/SettingsMeta';
 import { buildProcessSchema, processValues, rangeHint, type ProcessFormValues } from '../Configuration/processRules';
 import { WEEK_DAYS, toggleWorkingDay } from './routeSheetLabels';
+import { ServiceTimeCard } from './ServiceTimeCard';
+import { SERVICE_MODE_KEY, serviceModeFromValue } from './serviceTimeLabels';
 
 interface Props {
   config: ProcessConfig;
@@ -78,6 +80,9 @@ export const RouteSheetSettingsModal = ({ config, canWrite, writeHint, onClose }
   const formId = useId();
   const update = useUpdateRoutePlanningSettings();
   const [serverError, setServerError] = useState<string | null>(null);
+  // El modo de los minutos de servicio no es un campo común: lo dibuja `ServiceTimeCard`.
+  const fields = config.fields.filter((f) => f.key !== SERVICE_MODE_KEY);
+  const hasServiceMode = fields.length < config.fields.length;
   const schema = useMemo(() => buildProcessSchema(config), [config]);
   const methods = useForm<ProcessFormValues>({
     resolver: zodResolver(schema),
@@ -91,8 +96,9 @@ export const RouteSheetSettingsModal = ({ config, canWrite, writeHint, onClose }
   const submit = (values: ProcessFormValues) => {
     setServerError(null);
     const body = Object.fromEntries(
-      config.fields.map((f) => [f.key, Number(values[f.key])]),
-    ) as PatchRoutePlanningSettingsBody;
+      fields.map((f) => [f.key, Number(values[f.key])]),
+    ) as PatchRoutePlanningSettingsV3Body;
+    if (hasServiceMode) body.serviceMinutesMode = serviceModeFromValue(values[SERVICE_MODE_KEY]);
     update.mutate(body, {
       onSuccess: () => {
         notify.success('Hojas de ruta: parámetros guardados');
@@ -133,7 +139,7 @@ export const RouteSheetSettingsModal = ({ config, canWrite, writeHint, onClose }
         updatedByUserId={config.updatedByUserId}
       />
       <Form methods={methods} id={formId} onSubmit={submit} className="mt-4 grid gap-4 sm:grid-cols-2">
-        {config.fields.map((field) =>
+        {fields.map((field) =>
           field.key === 'workingDays' ? (
             <WorkingDaysField key={field.key} field={field} disabled={!canWrite} />
           ) : isSwitch(field) ? (
@@ -166,6 +172,7 @@ export const RouteSheetSettingsModal = ({ config, canWrite, writeHint, onClose }
             />
           ),
         )}
+        {hasServiceMode && <ServiceTimeCard disabled={!canWrite} />}
       </Form>
       {serverError && (
         <p role="alert" className="mt-4 text-sm text-danger">

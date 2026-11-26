@@ -30748,6 +30748,7 @@
                                 "route_planning_propose",
                                 "route_planning_close_days",
                                 "route_sheet_watch",
+                                "route_service_time_learn",
                                 "support_session_expiry",
                                 "support_housekeeping",
                                 "assistant_ai_sweep",
@@ -36565,6 +36566,90 @@
                 "summary": "Cambiar parámetros de la hoja de ruta",
                 "tags": [
                     "Route plans (v2)"
+                ]
+            }
+        },
+        "/api/v3/route-planning/service-time": {
+            "get": {
+                "description": "La mediana de «Llegué» a la entrega confirmada de los últimos 30 días (calculada cada noche), con el fijo que configuró el administrador, el modo elegido y con cuántos minutos se planifica hoy. Sólo lectura.",
+                "operationId": "RoutePlanningV3Controller_estado",
+                "parameters": [],
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ServiceTimeDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Falta la distribuidora (super admin sin X-Distributor)"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Tiempo de atención por parada: sugerido y vigente",
+                "tags": [
+                    "Route plans (v3)"
+                ]
+            }
+        },
+        "/api/v3/route-planning/settings": {
+            "patch": {
+                "description": "Cambia sólo los que vienen; el resto conserva su valor. `serviceMinutesMode` elige `fixed` o `learned`.",
+                "operationId": "RoutePlanningV3Controller_patch",
+                "parameters": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PatchRoutePlanningSettingsV3Dto"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProcessConfigResponseDto"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Valor fuera de rango, modo inválido (`serviceMinutesMode`) o falta la distribuidora"
+                    },
+                    "401": {
+                        "description": "Sin token o token inválido"
+                    },
+                    "403": {
+                        "description": "La cuenta no tiene el rol que pide el endpoint, o es un administrador cuyo rol de personal no tiene permiso para gestionar el despacho (`despacho.gestionar`). Super admin: los del modo soporte (`SUPPORT_SESSION_REQUIRED`, `SUPPORT_READ_ONLY`, `SUPPORT_SESSION_ENDED`, `SUPPORT_SCOPE_REQUIRED`). La función «Hoja de ruta» no está habilitada para la distribuidora (`MODULE_DISABLED`)"
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": []
+                    }
+                ],
+                "summary": "Cambiar parámetros de la hoja de ruta (con el modo de servicio)",
+                "tags": [
+                    "Route plans (v3)"
                 ]
             }
         },
@@ -73668,6 +73753,7 @@
                             "route_planning_propose",
                             "route_planning_close_days",
                             "route_sheet_watch",
+                            "route_service_time_learn",
                             "support_session_expiry",
                             "support_housekeeping",
                             "assistant_ai_sweep",
@@ -73793,6 +73879,7 @@
                             "route_planning_propose",
                             "route_planning_close_days",
                             "route_sheet_watch",
+                            "route_service_time_learn",
                             "support_session_expiry",
                             "support_housekeeping",
                             "assistant_ai_sweep",
@@ -73994,6 +74081,7 @@
                             "route_planning_propose",
                             "route_planning_close_days",
                             "route_sheet_watch",
+                            "route_service_time_learn",
                             "support_session_expiry",
                             "support_housekeeping",
                             "assistant_ai_sweep",
@@ -79072,6 +79160,186 @@
                         "maximum": 127,
                         "example": 63,
                         "description": "Días en que se reparte, como máscara de bits de los días ISO: lunes 1, martes 2, miércoles 4, jueves 8, viernes 16, sábado 32, domingo 64 (se suman). Por omisión 63 (lunes a sábado). La propuesta automática no arma un plan para un día no hábil y la reprogramación los saltea, igual que los feriados"
+                    }
+                }
+            },
+            "ServiceTimeDto": {
+                "type": "object",
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "enum": [
+                            "fixed",
+                            "learned"
+                        ],
+                        "description": "El modo elegido por el administrador"
+                    },
+                    "fixedMinutes": {
+                        "type": "number",
+                        "example": 10,
+                        "description": "«Minutos por parada» que configuró el administrador"
+                    },
+                    "suggestedMinutes": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 8,
+                        "description": "La mediana aprendida en minutos enteros (1 a 60); `null` si no hay entregas suficientes"
+                    },
+                    "p90Minutes": {
+                        "type": "number",
+                        "nullable": true,
+                        "example": 14.5,
+                        "description": "El percentil 90 de lo que tardaron, en minutos"
+                    },
+                    "effectiveMinutes": {
+                        "type": "number",
+                        "example": 10,
+                        "description": "Con cuántos minutos se planifica hoy: el fijo, o el sugerido si el modo es `learned` y hay muestra"
+                    },
+                    "samples": {
+                        "type": "number",
+                        "example": 42,
+                        "description": "Entregas válidas de la ventana"
+                    },
+                    "minSamples": {
+                        "type": "number",
+                        "example": 20,
+                        "description": "Entregas mínimas para que se use el tiempo aprendido"
+                    },
+                    "windowDays": {
+                        "type": "number",
+                        "example": 30,
+                        "description": "Días de historia que se miran"
+                    },
+                    "computedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true,
+                        "description": "Cuándo se calculó por última vez; `null` si todavía no"
+                    }
+                },
+                "required": [
+                    "mode",
+                    "fixedMinutes",
+                    "suggestedMinutes",
+                    "p90Minutes",
+                    "effectiveMinutes",
+                    "samples",
+                    "minSamples",
+                    "windowDays",
+                    "computedAt"
+                ]
+            },
+            "PatchRoutePlanningSettingsV3Dto": {
+                "type": "object",
+                "properties": {
+                    "enabled": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "example": 1,
+                        "description": "1 enciende la hoja de ruta (por omisión, si la distribuidora no guardó otro valor); 0 la apaga"
+                    },
+                    "cutoffHour": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 23,
+                        "description": "Hora del cierre del día anterior"
+                    },
+                    "cutoffMinute": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 59
+                    },
+                    "autoPropose": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "Al cierre, el sistema arma la propuesta solo"
+                    },
+                    "autoConfirm": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "example": 1,
+                        "description": "Pasada la ventana de revisión, el sistema confirma solo las hojas propuestas que se pueden confirmar (1, por omisión) o espera al administrador (0)"
+                    },
+                    "reviewMinutes": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 720,
+                        "example": 60,
+                        "description": "Minutos desde la propuesta que tiene el administrador para revisarla antes de que se confirme sola (por omisión 60; 0: se confirma al proponer)"
+                    },
+                    "maxStopsPerSheet": {
+                        "type": "number",
+                        "minimum": 2,
+                        "maximum": 40
+                    },
+                    "serviceMinutes": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 60,
+                        "description": "Minutos por parada"
+                    },
+                    "trafficFactor": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 3,
+                        "description": "Multiplica los tiempos de OSRM"
+                    },
+                    "etaWindowMinutes": {
+                        "type": "number",
+                        "minimum": 10,
+                        "maximum": 120
+                    },
+                    "etaRecalcMinSeconds": {
+                        "type": "number",
+                        "minimum": 30,
+                        "maximum": 900
+                    },
+                    "etaRecalcMinMeters": {
+                        "type": "number",
+                        "minimum": 50,
+                        "maximum": 5000
+                    },
+                    "etaNotifyShiftMinutes": {
+                        "type": "number",
+                        "minimum": 5,
+                        "maximum": 120
+                    },
+                    "lateOrderPolicy": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "0: el tardío va a M1; 1: se sugiere la hoja"
+                    },
+                    "notStartedAlertMinutes": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 240
+                    },
+                    "arrivalWaitMinutes": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 60,
+                        "description": "Minutos que el chofer espera en la puerta desde «Llegué» antes de que el sistema le sugiera marcar «No pude entregar» (por omisión 10)"
+                    },
+                    "workingDays": {
+                        "type": "number",
+                        "minimum": 1,
+                        "maximum": 127,
+                        "example": 63,
+                        "description": "Días en que se reparte, como máscara de bits de los días ISO: lunes 1, martes 2, miércoles 4, jueves 8, viernes 16, sábado 32, domingo 64 (se suman). Por omisión 63 (lunes a sábado). La propuesta automática no arma un plan para un día no hábil y la reprogramación los saltea, igual que los feriados"
+                    },
+                    "serviceMinutesMode": {
+                        "type": "string",
+                        "enum": [
+                            "fixed",
+                            "learned"
+                        ],
+                        "example": "fixed",
+                        "description": "`fixed` (por omisión): la propuesta usa `serviceMinutes`. `learned`: usa la mediana de lo que tardaron los choferes en los últimos 30 días, si hay entregas suficientes; si no, el fijo. Cambia las horas prometidas a los clientes"
                     }
                 }
             },
@@ -88084,6 +88352,7 @@
                             "route_planning_propose",
                             "route_planning_close_days",
                             "route_sheet_watch",
+                            "route_service_time_learn",
                             "support_session_expiry",
                             "support_housekeeping",
                             "assistant_ai_sweep",
@@ -88380,6 +88649,7 @@
                             "route_planning_propose",
                             "route_planning_close_days",
                             "route_sheet_watch",
+                            "route_service_time_learn",
                             "support_session_expiry",
                             "support_housekeeping",
                             "assistant_ai_sweep",
