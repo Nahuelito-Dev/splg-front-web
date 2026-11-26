@@ -1,24 +1,20 @@
-## v2.3.0 - 2026-11-23
+## v2.4.0 - 2026-11-26
 
 ### Funcionalidades
 
-- **efectivo:** ✨ efectivo cobrado y no rendido por chofer en el panel (e930c13)
-- **pedidos:** ✨ dónde y cuándo se confirmó la entrega en el detalle del pedido (a45458c)
-- **taller:** ✨ acierto antes y después de la corrección y «Aprobar pago» en las cuotas de seguro (57d63c9)
-- **pagos:** ✨ el panel deja de ofrecer la transferencia y su recargo para lo nuevo (8bcff57)
-- **seguimiento:** ✨ rediseño de las vistas de vehículos (4476e1e)
-- **plataforma:** ✨ logo de la empresa y foto de las personas en las pantallas de plataforma (8ebb23c)
-- **catalogo:** ✨ foto de proveedores, envases, cargas y productos en el panel (6f70e69)
-- **vehiculos:** ✨ foto del vehículo en pedidos, chofer, hojas de ruta y tablero de flota (02c0600)
-- **panel:** ✨ fotos de vehículos y personas donde el dato ya llegaba (6f91207)
-- **distribuidoras:** ✨ logo de la empresa en la tabla de plataforma (8cc0a55)
-- **flota:** ✨ tablero de tareas de flota tipo Trello con arrastrar y soltar (2eb54f4)
-- **despacho:** ✨ sección «Cómo viene el despacho» con las métricas de M1 (e5a13ab)
-- **modulos:** ✨ tarjeta «Acierto de la predicción» en recompra y planificador de taller (4fc29d2)
+- **seguridad:** ✨ la misma política de contraseña del back en los formularios del panel (7ec0c47)
+- **recupero:** ✨ riesgo del cliente en el caso y en su ficha, y el retiro aprovechando la hoja (8e6ae78)
+- **despacho:** ✨ choferes a medir por calle y el orden por calle en «Cómo viene el despacho» (fbdc26d)
+- **recompra:** ✨ ajuste de cada cliente y hora del aviso en las próximas recompras y en su ficha (815b294)
+- **hoja-de-ruta:** ✨ tiempo de atención por parada sugerido y vigente, con el modo fijo o aprendido (711c942)
+- **despacho:** ✨ método de asignación en «Cómo viene el despacho» y en el detalle del pedido (bca4791)
+- **avisos:** ✨ pantalla «Avisos enviados» y avisos del pedido en su detalle (ee75693)
+- **reportes:** ✨ utilización por vehículo con desglose de costos, gráfico y CSV (0813227)
+- **reportes:** ✨ resumen y ventas por chofer por GraphQL, con los mismos efectos de error que REST (98ea026)
+- **pedidos:** ✨ visitas fallidas: listado con filtros, historial de visitas en el pedido y fijar la nueva visita (a6ae9ba)
+- **pagos:** ✨ el panel deja de ofrecer la transferencia en configuración, cobros y reservas; salida para cerrar pedidos viejos (6f12e25)
 
-### Mantenimiento
+### Correcciones
 
-- **mensajes:** ✅ esperar el hilo antes de buscar la lista en el test de la conversación (a7cd2e1)
-- 🔧 licencia propietaria de OrixTech (e54b19a)
-- ✅ datos de ejemplo con un nombre de distribuidora neutro (e62fb88)
+- **reportes:** 🐛 tipos de utilización generados, costo/km una sola vez y sin la transferencia en el texto (7991765)
 
